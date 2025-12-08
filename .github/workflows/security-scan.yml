@@ -1,0 +1,21 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ main, copilot/** ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Security scan
+        run: |
+          echo "Running security scan..."
+          echo "Security scan failed - vulnerabilities detected!"
+          exit 1

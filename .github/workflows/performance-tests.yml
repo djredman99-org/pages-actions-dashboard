@@ -1,0 +1,21 @@
+name: Performance Tests
+
+on:
+  push:
+    branches: [ main, copilot/** ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  performance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Run performance tests
+        run: |
+          echo "Running performance tests..."
+          echo "Performance tests failed - thresholds exceeded!"
+          exit 1

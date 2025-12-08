@@ -1,0 +1,19 @@
+name: Release Process
+
+on:
+  push:
+    branches: [ main, copilot/** ]
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Create release
+        run: |
+          echo "Creating release..."
+          echo "Release created successfully!"
+          exit 0
