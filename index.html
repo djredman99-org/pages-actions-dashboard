@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Actions Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+
+        .workflow-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .workflow-item {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .workflow-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            border-color: #667eea;
+        }
+
+        .workflow-label {
+            font-weight: 600;
+            color: #34495e;
+            margin-bottom: 15px;
+            font-size: 0.95em;
+            word-wrap: break-word;
+            width: 100%;
+        }
+
+        .workflow-badge {
+            display: inline-block;
+            max-width: 100%;
+        }
+
+        .workflow-badge img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #e9ecef;
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        .instructions {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 4px;
+        }
+
+        .instructions h2 {
+            color: #1976d2;
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+
+        .instructions p {
+            color: #34495e;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .instructions code {
+            background: #fff;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        /* Responsive design */
+        @media (max-width: 1200px) {
+            .workflow-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        @media (max-width: 992px) {
+            .workflow-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .workflow-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .workflow-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 GitHub Actions Dashboard</h1>
+        <p class="subtitle">Monitoring workflow statuses across repositories</p>
+
+        <div class="instructions">
+            <h2>How to Add Your Workflows</h2>
+            <p>To add a workflow badge, use the following format:</p>
+            <p><code>https://github.com/{owner}/{repo}/actions/workflows/{workflow-file}/badge.svg</code></p>
+            <p>Replace the workflow items below with your own repositories and workflows.</p>
+        </div>
+
+        <div class="workflow-grid">
+            <!-- Workflow badges from this repository -->
+            
+            <div class="workflow-item">
+                <div class="workflow-label">CI Build</div>
+                <a href="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/ci-build.yml" class="workflow-badge">
+                    <img src="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/ci-build.yml/badge.svg" alt="CI Build Status">
+                </a>
+            </div>
+
+            <div class="workflow-item">
+                <div class="workflow-label">Unit Tests</div>
+                <a href="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/unit-tests.yml" class="workflow-badge">
+                    <img src="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/unit-tests.yml/badge.svg" alt="Unit Tests Status">
+                </a>
+            </div>
+
+            <div class="workflow-item">
+                <div class="workflow-label">Deploy Production</div>
+                <a href="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/deploy-production.yml" class="workflow-badge">
+                    <img src="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/deploy-production.yml/badge.svg" alt="Deploy Status">
+                </a>
+            </div>
+
+            <div class="workflow-item">
+                <div class="workflow-label">Code Quality</div>
+                <a href="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/code-quality.yml" class="workflow-badge">
+                    <img src="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/code-quality.yml/badge.svg" alt="Code Quality Status">
+                </a>
+            </div>
+
+            <div class="workflow-item">
+                <div class="workflow-label">Security Scan</div>
+                <a href="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/security-scan.yml" class="workflow-badge">
+                    <img src="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/security-scan.yml/badge.svg" alt="Security Status">
+                </a>
+            </div>
+
+            <div class="workflow-item">
+                <div class="workflow-label">Documentation</div>
+                <a href="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/documentation.yml" class="workflow-badge">
+                    <img src="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/documentation.yml/badge.svg" alt="Documentation Status">
+                </a>
+            </div>
+
+            <div class="workflow-item">
+                <div class="workflow-label">Release Process</div>
+                <a href="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/release.yml" class="workflow-badge">
+                    <img src="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/release.yml/badge.svg" alt="Release Status">
+                </a>
+            </div>
+
+            <div class="workflow-item">
+                <div class="workflow-label">Lint Check</div>
+                <a href="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/lint.yml" class="workflow-badge">
+                    <img src="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/lint.yml/badge.svg" alt="Lint Status">
+                </a>
+            </div>
+
+            <div class="workflow-item">
+                <div class="workflow-label">Integration Tests</div>
+                <a href="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/integration-tests.yml" class="workflow-badge">
+                    <img src="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/integration-tests.yml/badge.svg" alt="Integration Tests Status">
+                </a>
+            </div>
+
+            <div class="workflow-item">
+                <div class="workflow-label">Performance Tests</div>
+                <a href="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/performance-tests.yml" class="workflow-badge">
+                    <img src="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/performance-tests.yml/badge.svg" alt="Performance Status">
+                </a>
+            </div>
+
+            <div class="workflow-item">
+                <div class="workflow-label">E2E Tests</div>
+                <a href="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/e2e-tests.yml" class="workflow-badge">
+                    <img src="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/e2e-tests.yml/badge.svg" alt="E2E Tests Status">
+                </a>
+            </div>
+
+            <div class="workflow-item">
+                <div class="workflow-label">Code Coverage</div>
+                <a href="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/code-coverage.yml" class="workflow-badge">
+                    <img src="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/code-coverage.yml/badge.svg" alt="Code Coverage Status">
+                </a>
+            </div>
+
+            <div class="workflow-item">
+                <div class="workflow-label">Dependency Check</div>
+                <a href="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/dependency-check.yml" class="workflow-badge">
+                    <img src="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/dependency-check.yml/badge.svg" alt="Dependency Status">
+                </a>
+            </div>
+
+            <div class="workflow-item">
+                <div class="workflow-label">Docker Build</div>
+                <a href="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/docker-build.yml" class="workflow-badge">
+                    <img src="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/docker-build.yml/badge.svg" alt="Docker Build Status">
+                </a>
+            </div>
+
+            <div class="workflow-item">
+                <div class="workflow-label">Database Migration</div>
+                <a href="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/database-migration.yml" class="workflow-badge">
+                    <img src="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/database-migration.yml/badge.svg" alt="Migration Status">
+                </a>
+            </div>
+
+            <div class="workflow-item">
+                <div class="workflow-label">API Tests</div>
+                <a href="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/api-tests.yml" class="workflow-badge">
+                    <img src="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/api-tests.yml/badge.svg" alt="API Tests Status">
+                </a>
+            </div>
+
+            <div class="workflow-item">
+                <div class="workflow-label">Build Artifacts</div>
+                <a href="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/build-artifacts.yml" class="workflow-badge">
+                    <img src="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/build-artifacts.yml/badge.svg" alt="Artifacts Status">
+                </a>
+            </div>
+
+            <div class="workflow-item">
+                <div class="workflow-label">Smoke Tests</div>
+                <a href="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/smoke-tests.yml" class="workflow-badge">
+                    <img src="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/smoke-tests.yml/badge.svg" alt="Smoke Tests Status">
+                </a>
+            </div>
+
+            <div class="workflow-item">
+                <div class="workflow-label">Accessibility Tests</div>
+                <a href="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/accessibility-tests.yml" class="workflow-badge">
+                    <img src="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/accessibility-tests.yml/badge.svg" alt="Accessibility Tests Status">
+                </a>
+            </div>
+
+            <div class="workflow-item">
+                <div class="workflow-label">Load Tests</div>
+                <a href="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/load-tests.yml" class="workflow-badge">
+                    <img src="https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/load-tests.yml/badge.svg" alt="Load Tests Status">
+                </a>
+            </div>
+
+            <!-- Add more workflow items as needed -->
+            <!-- Copy the workflow-item div structure and modify the label, href, and img src -->
+            
+        </div>
+
+        <div class="footer">
+            <p>GitHub Actions Dashboard | Powered by GitHub Pages</p>
+            <p>Last updated: <span id="last-updated"></span></p>
+        </div>
+    </div>
+
+    <script>
+        // Display last updated time
+        document.getElementById('last-updated').textContent = new Date().toLocaleString();
+    </script>
+</body>
+</html>
