@@ -10,6 +10,8 @@ A GitHub Pages site that serves as a centralized dashboard for monitoring GitHub
 - **Responsive Design**: Adapts to different screen sizes (desktop, tablet, mobile)
 - **Easy Customization**: Simple HTML structure for adding/removing workflows
 - **Professional Styling**: Modern, clean interface with hover effects
+- **Fully Clickable Workflow Cards**: Click anywhere on a workflow card to navigate to its workflow runs page
+- **Accessible Keyboard Navigation**: Navigate and activate workflow cards using Tab and Enter keys with visible focus indicators
 
 ## Usage
 
@@ -26,16 +28,19 @@ Edit the `index.html` file to add your own workflows:
 
 ```html
 <div class="workflow-item">
-    <div class="workflow-label">Your Workflow Name</div>
-    <a href="https://github.com/owner/repo/actions" class="workflow-badge">
-        <img src="https://github.com/owner/repo/actions/workflows/workflow-file.yml/badge.svg" alt="Workflow Status">
+    <a href="https://github.com/owner/repo/actions/workflows/workflow-file.yml" class="workflow-card-link" aria-label="View Your Workflow Name workflow runs">
+        <div class="workflow-label">Your Workflow Name</div>
+        <span class="workflow-badge">
+            <img src="https://github.com/owner/repo/actions/workflows/workflow-file.yml/badge.svg" alt="Workflow Status">
+        </span>
     </a>
 </div>
 ```
 
 3. Update the following:
+   - **href**: Link to the workflow's actions page (e.g., `https://github.com/owner/repo/actions/workflows/workflow-file.yml`)
+   - **aria-label**: Descriptive label for accessibility (e.g., "View CI Build workflow runs")
    - **workflow-label**: Display name for your workflow
-   - **href**: Link to the workflow's actions page
    - **img src**: Badge URL for the workflow
    - **alt**: Alternative text for the badge
 
@@ -58,17 +63,21 @@ You can mix workflows from multiple repositories:
 ```html
 <!-- From repository A -->
 <div class="workflow-item">
-    <div class="workflow-label">Repo A - CI</div>
-    <a href="https://github.com/owner-a/repo-a/actions" class="workflow-badge">
-        <img src="https://github.com/owner-a/repo-a/actions/workflows/ci.yml/badge.svg" alt="CI Status">
+    <a href="https://github.com/owner-a/repo-a/actions/workflows/ci.yml" class="workflow-card-link" aria-label="View Repo A CI workflow runs">
+        <div class="workflow-label">Repo A - CI</div>
+        <span class="workflow-badge">
+            <img src="https://github.com/owner-a/repo-a/actions/workflows/ci.yml/badge.svg" alt="CI Status">
+        </span>
     </a>
 </div>
 
 <!-- From repository B -->
 <div class="workflow-item">
-    <div class="workflow-label">Repo B - Deploy</div>
-    <a href="https://github.com/owner-b/repo-b/actions" class="workflow-badge">
-        <img src="https://github.com/owner-b/repo-b/actions/workflows/deploy.yml/badge.svg" alt="Deploy Status">
+    <a href="https://github.com/owner-b/repo-b/actions/workflows/deploy.yml" class="workflow-card-link" aria-label="View Repo B Deploy workflow runs">
+        <div class="workflow-label">Repo B - Deploy</div>
+        <span class="workflow-badge">
+            <img src="https://github.com/owner-b/repo-b/actions/workflows/deploy.yml/badge.svg" alt="Deploy Status">
+        </span>
     </a>
 </div>
 ```
