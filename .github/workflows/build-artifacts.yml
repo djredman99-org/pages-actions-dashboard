@@ -5,6 +5,9 @@ on:
     branches: [ main, copilot/** ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   artifacts:
     runs-on: ubuntu-latest
