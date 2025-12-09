@@ -21,4 +21,4 @@ jobs:
         run: |
           echo "Running end-to-end tests..."
           echo "E2E tests passed!"
-          exit 0
+          exit 1
