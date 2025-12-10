@@ -30,7 +30,7 @@ class DashboardLoader {
         const statusBadge = document.createElement('span');
         statusBadge.className = 'workflow-status';
         
-        const displayStatus = getDisplayStatus(status.conclusion, status.status);
+        const displayStatus = getDisplayStatus(status.conclusion, status.status, this.api.debug);
         statusBadge.classList.add(displayStatus.class);
         statusBadge.textContent = displayStatus.text;
 
@@ -177,6 +177,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             DASHBOARD_CONFIG.github.token,
             DASHBOARD_CONFIG.github.apiBaseUrl
         );
+        
+        // Enable debug mode if configured
+        if (DASHBOARD_CONFIG.github.debug) {
+            apiClient.debug = true;
+        }
 
         // Initialize dashboard loader
         const dashboard = new DashboardLoader(DASHBOARD_CONFIG, apiClient);

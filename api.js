@@ -5,6 +5,7 @@ class GitHubActionsAPI {
     constructor(token, baseUrl = 'https://api.github.com') {
         this.token = token;
         this.baseUrl = baseUrl;
+        this.debug = false; // Set to true to enable debug logging
     }
 
     /**
@@ -58,15 +59,19 @@ class GitHubActionsAPI {
             if (data.workflow_runs && data.workflow_runs.length > 0) {
                 const run = data.workflow_runs[0];
                 // Debug: log the actual run data structure
-                console.log(`Fetched run for ${workflowFile}:`, {
-                    status: run.status,
-                    conclusion: run.conclusion,
-                    created_at: run.created_at
-                });
+                if (this.debug) {
+                    console.log(`Fetched run for ${workflowFile}:`, {
+                        status: run.status,
+                        conclusion: run.conclusion,
+                        created_at: run.created_at
+                    });
+                }
                 return run;
             }
             
-            console.warn(`No workflow runs found for ${owner}/${repo}/${workflowFile}`);
+            if (this.debug) {
+                console.log(`No workflow runs found for ${owner}/${repo}/${workflowFile}`);
+            }
             return null;
         } catch (error) {
             console.error(`Failed to get workflow runs for ${owner}/${repo}/${workflowFile}:`, error);
@@ -93,7 +98,9 @@ class GitHubActionsAPI {
         }
 
         // Debug logging to see actual values
-        console.log(`Workflow ${workflowFile}: status="${run.status}", conclusion="${run.conclusion}"`);
+        if (this.debug) {
+            console.log(`Workflow ${workflowFile}: status="${run.status}", conclusion="${run.conclusion}"`);
+        }
 
         return {
             conclusion: run.conclusion,
@@ -108,11 +115,14 @@ class GitHubActionsAPI {
  * Determine the display status based on workflow conclusion
  * @param {string|null} conclusion - Workflow conclusion (success, failure, cancelled, etc.)
  * @param {string} status - Workflow status (queued, in_progress, completed)
+ * @param {boolean} debug - Enable debug logging
  * @returns {Object} - Display status with color and text
  */
-function getDisplayStatus(conclusion, status) {
+function getDisplayStatus(conclusion, status, debug = false) {
     // Debug logging
-    console.log(`getDisplayStatus called with: status="${status}", conclusion="${conclusion}"`);
+    if (debug) {
+        console.log(`getDisplayStatus called with: status="${status}", conclusion="${conclusion}"`);
+    }
     
     // Handle unknown/error state explicitly
     if (status === 'unknown' || conclusion === 'unknown') {
