@@ -33,7 +33,6 @@ class DashboardLoader {
         const displayStatus = getDisplayStatus(status.conclusion, status.status);
         statusBadge.classList.add(displayStatus.class);
         statusBadge.textContent = displayStatus.text;
-        statusBadge.style.backgroundColor = displayStatus.color;
 
         link.appendChild(label);
         link.appendChild(statusBadge);

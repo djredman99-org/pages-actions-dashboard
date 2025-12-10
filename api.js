@@ -85,7 +85,7 @@ class GitHubActionsAPI {
         }
 
         return {
-            conclusion: run.conclusion || 'pending',
+            conclusion: run.conclusion,
             status: run.status,
             url: run.html_url,
             updatedAt: run.updated_at
@@ -95,7 +95,7 @@ class GitHubActionsAPI {
 
 /**
  * Determine the display status based on workflow conclusion
- * @param {string} conclusion - Workflow conclusion (success, failure, cancelled, etc.)
+ * @param {string|null} conclusion - Workflow conclusion (success, failure, cancelled, etc.)
  * @param {string} status - Workflow status (queued, in_progress, completed)
  * @returns {Object} - Display status with color and text
  */
@@ -140,6 +140,13 @@ function getDisplayStatus(conclusion, status) {
                 color: '#d73a49', // Red for timeout
                 text: 'timed out',
                 class: 'status-timeout'
+            };
+        case null:
+            // null conclusion with completed status means workflow didn't run
+            return {
+                color: '#6c757d', // Gray for not run
+                text: 'not run',
+                class: 'status-unknown'
             };
         default:
             return {
