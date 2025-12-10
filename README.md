@@ -26,26 +26,29 @@ See [SETUP.md](SETUP.md) for detailed configuration instructions.
 
 ## Quick Start
 
-### 1. Set Up Authentication
+### 1. Create a Personal Access Token
 
-The dashboard requires a GitHub token to access workflow information. You have two options:
+1. Go to GitHub Settings → Developer settings → Personal access tokens → Fine-grained tokens
+2. Click "Generate new token"
+3. Configure the token:
+   - **Token name**: `Actions Dashboard`
+   - **Expiration**: Choose your preferred duration
+   - **Repository access**: Select the repositories you want to monitor
+   - **Permissions** → Repository permissions:
+     - **Actions**: Read-only
+     - **Metadata**: Read-only (automatically granted)
+4. Click "Generate token" and copy it
 
-**Option A: Personal Access Token (Simpler)**
-1. Create a fine-grained Personal Access Token with `actions:read` permission
-2. Add it as a repository secret named `DASHBOARD_TOKEN`
+### 2. Configure Your Dashboard
 
-**Option B: GitHub App (Recommended for Organizations)**
-1. Create a GitHub App with `actions:read` permission
-2. Install the app on your repositories
-3. Generate an installation access token
-4. Add it as a repository secret named `DASHBOARD_TOKEN`
+Edit `config.js`:
 
-👉 See [SETUP.md](SETUP.md) for detailed step-by-step instructions.
+1. Replace `YOUR_TOKEN_HERE` with your Personal Access Token:
+```javascript
+token: 'github_pat_your_actual_token_here',
+```
 
-### 2. Configure Your Workflows
-
-Edit `config.js` to specify which workflows to monitor:
-
+2. Configure your workflows:
 ```javascript
 workflows: [
     {
@@ -58,15 +61,15 @@ workflows: [
 ]
 ```
 
-### 3. Deploy
+### 3. Deploy to GitHub Pages
 
-The dashboard automatically deploys to GitHub Pages when you push to the main branch. The `deploy-dashboard.yml` workflow:
-1. Injects your token into the configuration
-2. Deploys the site to GitHub Pages
+1. Push your changes to the repository
+2. Go to repository Settings → Pages
+3. Under "Source", select your branch (usually `main`)
+4. Click "Save"
+5. Your dashboard will be available at `https://{your-username}.github.io/pages-actions-dashboard/`
 
-### 4. View Your Dashboard
-
-Once deployed, visit: `https://{your-username}.github.io/pages-actions-dashboard/`
+GitHub Pages will automatically build and deploy your site whenever you push changes.
 
 ## Configuration
 
@@ -77,7 +80,7 @@ Edit `config.js` to add or remove workflows:
 ```javascript
 const DASHBOARD_CONFIG = {
     github: {
-        token: '__GITHUB_TOKEN__', // Replaced at build time
+        token: 'YOUR_TOKEN_HERE',  // Replace with your PAT
         apiBaseUrl: 'https://api.github.com'
     },
     workflows: [
@@ -115,43 +118,63 @@ dashboard.setupAutoRefresh(10);
 The dashboard consists of:
 
 1. **index.html**: Main HTML page with styling
-2. **config.js**: Configuration for workflows and GitHub API
+2. **config.js**: Configuration for workflows and GitHub API (includes your PAT)
 3. **api.js**: GitHub API client for fetching workflow statuses
 4. **dashboard.js**: Dashboard loader that renders workflow cards
-5. **.github/workflows/deploy-dashboard.yml**: Deployment workflow that injects the token
+
+The dashboard is a static site that runs entirely in the browser. GitHub Pages automatically builds and deploys it from your repository.
 
 ## Security Considerations
 
-⚠️ **Important**: The GitHub token is embedded in the deployed site's JavaScript. While this enables client-side API calls for private repos:
+⚠️ **Important**: The GitHub token is embedded in the `config.js` file and deployed with the site. This means:
 
-- The token is visible in the browser's source code
-- Anyone with access to the GitHub Pages site can see it
-- Use tokens with minimal permissions (read-only access to Actions)
-- Consider the sensitivity of your workflow data
+- **The token is visible** in the browser's source code to anyone who can access your GitHub Pages site
+- **Use tokens with minimal permissions**: Only grant `actions:read` permission
+- **Limit repository access**: Use fine-grained tokens and only grant access to the specific repositories you want to monitor
+- **Set expiration dates**: Configure tokens to expire and rotate them regularly
+- **Monitor token usage**: Check GitHub's token usage logs regularly
+
+### When to Use This Approach
+
+✅ **Good for:**
+- Internal dashboards where the Pages site has the same access restrictions as the repositories
+- Monitoring non-sensitive workflow statuses
+- Testing and development environments
+
+⚠️ **Consider alternatives for:**
+- Public Pages sites monitoring private repositories with sensitive data
+- Production environments with strict security requirements
+
+### Higher Security Alternatives
 
 For higher security requirements, consider:
-- Implementing a backend proxy service
+- Implementing a backend proxy service to keep tokens server-side
 - Using OAuth flow for user authentication
 - Restricting GitHub Pages access (Enterprise feature)
+- See [SETUP.md](SETUP.md) for more details
 
 ## Troubleshooting
 
 ### Dashboard shows "Configuration Required"
-- Ensure `DASHBOARD_TOKEN` secret is set in repository settings
-- Check that the deployment workflow completed successfully
-- Verify the token was injected correctly in the deployed `config.js`
+- Check that you replaced `YOUR_TOKEN_HERE` in `config.js` with your actual token
+- Verify the changes were pushed to your repository
+- Clear your browser cache and reload the page
 
 ### Authentication errors
 - Verify your token is valid and hasn't expired
 - Check token permissions include `actions:read`
 - For private repos, ensure the token has access to those repositories
+- Make sure the token is correctly pasted in `config.js` (no extra spaces or quotes)
 
 ### Workflow not found errors
 - Verify repository owner, name, and workflow file in `config.js`
 - Ensure workflow files exist in the specified repositories
 - Check that the token has access to those repositories
 
-See [SETUP.md](SETUP.md) for more troubleshooting tips.
+### Changes not appearing
+- GitHub Pages may take a few minutes to rebuild after pushing changes
+- Check the Actions tab for any build errors
+- Clear your browser cache and do a hard refresh (Ctrl+Shift+R or Cmd+Shift+R)
 
 ## Migrating from Badge-Based Dashboard
 

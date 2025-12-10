@@ -3,13 +3,11 @@
 
 const DASHBOARD_CONFIG = {
     // GitHub App Configuration
-    // Note: For security, the actual token should be injected at build time
-    // and never committed to the repository
     github: {
-        // The GitHub API token will be injected by the build process
-        // You can use a GitHub App installation token or a Personal Access Token
-        // with 'actions:read' permission
-        token: '__GITHUB_TOKEN__', // This will be replaced at build time
+        // Replace 'YOUR_TOKEN_HERE' with your Personal Access Token
+        // The token needs 'actions:read' permission to fetch workflow statuses
+        // For private/internal repos, create a fine-grained PAT with access to those repos
+        token: 'YOUR_TOKEN_HERE',
         apiBaseUrl: 'https://api.github.com'
     },
 
