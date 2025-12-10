@@ -56,9 +56,17 @@ class GitHubActionsAPI {
             const data = await this.request(endpoint);
             
             if (data.workflow_runs && data.workflow_runs.length > 0) {
-                return data.workflow_runs[0];
+                const run = data.workflow_runs[0];
+                // Debug: log the actual run data structure
+                console.log(`Fetched run for ${workflowFile}:`, {
+                    status: run.status,
+                    conclusion: run.conclusion,
+                    created_at: run.created_at
+                });
+                return run;
             }
             
+            console.warn(`No workflow runs found for ${owner}/${repo}/${workflowFile}`);
             return null;
         } catch (error) {
             console.error(`Failed to get workflow runs for ${owner}/${repo}/${workflowFile}:`, error);
@@ -84,6 +92,9 @@ class GitHubActionsAPI {
             };
         }
 
+        // Debug logging to see actual values
+        console.log(`Workflow ${workflowFile}: status="${run.status}", conclusion="${run.conclusion}"`);
+
         return {
             conclusion: run.conclusion,
             status: run.status,
@@ -100,6 +111,9 @@ class GitHubActionsAPI {
  * @returns {Object} - Display status with color and text
  */
 function getDisplayStatus(conclusion, status) {
+    // Debug logging
+    console.log(`getDisplayStatus called with: status="${status}", conclusion="${conclusion}"`);
+    
     // If workflow is still running
     if (status !== 'completed') {
         return {
