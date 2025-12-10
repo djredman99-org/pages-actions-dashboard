@@ -5,7 +5,7 @@ class GitHubActionsAPI {
     constructor(token, baseUrl = 'https://api.github.com') {
         this.token = token;
         this.baseUrl = baseUrl;
-        this.debug = false; // Set to true to enable debug logging
+        this.debug = true; // Set to true to enable debug logging
     }
 
     /**
