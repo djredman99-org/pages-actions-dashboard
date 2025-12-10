@@ -114,59 +114,77 @@ function getDisplayStatus(conclusion, status) {
     // Debug logging
     console.log(`getDisplayStatus called with: status="${status}", conclusion="${conclusion}"`);
     
-    // If workflow is still running
-    if (status !== 'completed') {
+    // Handle unknown/error state explicitly
+    if (status === 'unknown' || conclusion === 'unknown') {
+        return {
+            color: '#6c757d', // Gray for unknown
+            text: 'no runs',
+            class: 'status-unknown'
+        };
+    }
+    
+    // If workflow is queued or in progress
+    if (status === 'queued' || status === 'in_progress' || status === 'waiting') {
         return {
             color: '#dbab09', // Yellow for in-progress
             text: 'running',
             class: 'status-running'
         };
     }
-
-    // Map conclusions to display status
-    switch (conclusion) {
-        case 'success':
-            return {
-                color: '#2ea043', // Green for success
-                text: 'passing',
-                class: 'status-success'
-            };
-        case 'failure':
-            return {
-                color: '#d73a49', // Red for failure
-                text: 'failing',
-                class: 'status-failure'
-            };
-        case 'cancelled':
-            return {
-                color: '#6c757d', // Gray for cancelled
-                text: 'cancelled',
-                class: 'status-cancelled'
-            };
-        case 'skipped':
-            return {
-                color: '#6c757d', // Gray for skipped
-                text: 'skipped',
-                class: 'status-skipped'
-            };
-        case 'timed_out':
-            return {
-                color: '#d73a49', // Red for timeout
-                text: 'timed out',
-                class: 'status-timeout'
-            };
-        case null:
-            // null conclusion with completed status means workflow didn't run
-            return {
-                color: '#6c757d', // Gray for not run
-                text: 'not run',
-                class: 'status-unknown'
-            };
-        default:
-            return {
-                color: '#6c757d', // Gray for unknown
-                text: 'unknown',
-                class: 'status-unknown'
-            };
+    
+    // If workflow status is completed, check the conclusion
+    if (status === 'completed') {
+        switch (conclusion) {
+            case 'success':
+                return {
+                    color: '#2ea043', // Green for success
+                    text: 'passing',
+                    class: 'status-success'
+                };
+            case 'failure':
+                return {
+                    color: '#d73a49', // Red for failure
+                    text: 'failing',
+                    class: 'status-failure'
+                };
+            case 'cancelled':
+                return {
+                    color: '#6c757d', // Gray for cancelled
+                    text: 'cancelled',
+                    class: 'status-cancelled'
+                };
+            case 'skipped':
+                return {
+                    color: '#6c757d', // Gray for skipped
+                    text: 'skipped',
+                    class: 'status-skipped'
+                };
+            case 'timed_out':
+                return {
+                    color: '#d73a49', // Red for timeout
+                    text: 'timed out',
+                    class: 'status-timeout'
+                };
+            case null:
+                // null conclusion with completed status means workflow didn't run
+                return {
+                    color: '#6c757d', // Gray for not run
+                    text: 'not run',
+                    class: 'status-unknown'
+                };
+            default:
+                return {
+                    color: '#6c757d', // Gray for unknown conclusion
+                    text: conclusion || 'unknown',
+                    class: 'status-unknown'
+                };
+        }
     }
+    
+    // If we get here, status has an unexpected value
+    return {
+        color: '#6c757d', // Gray for unknown
+        text: 'unknown',
+        class: 'status-unknown'
+    };
 }
