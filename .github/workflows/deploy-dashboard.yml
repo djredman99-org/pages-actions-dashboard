@@ -51,6 +51,7 @@ jobs:
   report-build-status:
     runs-on: ubuntu-latest
     needs: deploy
+    if: always()
     steps:
       - name: Report build status
         env:
