@@ -1,133 +1,201 @@
 # GitHub Actions Dashboard
 
-A GitHub Pages site that serves as a centralized dashboard for monitoring GitHub Actions workflow statuses across multiple repositories.
+A GitHub Pages site that serves as a centralized dashboard for monitoring GitHub Actions workflow statuses across multiple repositories, **including private and internal repositories**.
 
 ## Features
 
-- **5-Column Grid Layout**: Displays workflow badges in a clean, organized grid (5 across, responsive)
-- **Multi-Repository Support**: Monitor workflows from any GitHub repository
-- **Customizable Labels**: Clear labeling for each workflow
+- **5-Column Grid Layout**: Displays workflow statuses in a clean, organized grid (5 across, responsive)
+- **Multi-Repository Support**: Monitor workflows from any GitHub repository (public, private, or internal)
+- **Dynamic Status Indicators**: Real-time workflow status with color-coded badges (green for passing, red for failing, yellow for running)
+- **GitHub API Integration**: Fetches live workflow statuses using authenticated GitHub API calls
+- **Customizable Configuration**: Easy JSON-based configuration for adding/removing workflows
 - **Responsive Design**: Adapts to different screen sizes (desktop, tablet, mobile)
-- **Easy Customization**: Simple HTML structure for adding/removing workflows
+- **Auto-Refresh**: Automatically refreshes workflow statuses every 5 minutes
 - **Professional Styling**: Modern, clean interface with hover effects
 - **Fully Clickable Workflow Cards**: Click anywhere on a workflow card to navigate to its workflow runs page
 - **Accessible Keyboard Navigation**: Navigate and activate workflow cards using Tab and Enter keys with visible focus indicators
 
-## Usage
+## New: Private Repository Support
 
-### Viewing the Dashboard
+Unlike static badge images, this dashboard uses the GitHub API to fetch workflow statuses, enabling it to work with:
+- ✅ Public repositories
+- ✅ Private repositories
+- ✅ Internal repositories (GitHub Enterprise)
 
-Once GitHub Pages is enabled, visit: `https://{your-username}.github.io/pages-actions-dashboard/`
+See [SETUP.md](SETUP.md) for detailed configuration instructions.
 
-### Customizing Workflows
+## Quick Start
 
-Edit the `index.html` file to add your own workflows:
+### 1. Create a Personal Access Token
 
-1. Locate the workflow items in the `<div class="workflow-grid">` section
-2. Copy the workflow-item template:
+1. Go to GitHub Settings → Developer settings → Personal access tokens → Fine-grained tokens
+2. Click "Generate new token"
+3. Configure the token:
+   - **Token name**: `Actions Dashboard`
+   - **Expiration**: Choose your preferred duration
+   - **Repository access**: Select the repositories you want to monitor
+   - **Permissions** → Repository permissions:
+     - **Actions**: Read-only
+     - **Metadata**: Read-only (automatically granted)
+4. Click "Generate token" and copy it
 
-```html
-<div class="workflow-item">
-    <a href="https://github.com/owner/repo/actions/workflows/workflow-file.yml" class="workflow-card-link" aria-label="View Your Workflow Name workflow runs">
-        <div class="workflow-label">Your Workflow Name</div>
-        <span class="workflow-badge">
-            <img src="https://github.com/owner/repo/actions/workflows/workflow-file.yml/badge.svg" alt="Workflow Status">
-        </span>
-    </a>
-</div>
+### 2. Store Token as Repository Secret
+
+1. Go to your repository Settings → Secrets and variables → Actions
+2. Click "New repository secret"
+3. Name: `DASHBOARD_TOKEN`
+4. Value: Paste your Personal Access Token
+5. Click "Add secret"
+
+### 3. Configure Your Workflows
+
+Edit `config.js` to specify which workflows to monitor:
+
+```javascript
+workflows: [
+    {
+        owner: 'your-org',
+        repo: 'your-repo',
+        workflow: 'ci.yml',
+        label: 'CI Build'
+    },
+    // Add more workflows...
+]
 ```
 
-3. Update the following:
-   - **href**: Link to the workflow's actions page (e.g., `https://github.com/owner/repo/actions/workflows/workflow-file.yml`)
-   - **aria-label**: Descriptive label for accessibility (e.g., "View CI Build workflow runs")
-   - **workflow-label**: Display name for your workflow
-   - **img src**: Badge URL for the workflow
-   - **alt**: Alternative text for the badge
+### 4. Deploy to GitHub Pages
 
-### Badge URL Format
+The dashboard automatically deploys when you push to the main branch:
 
-GitHub Actions badges follow this format:
-```
-https://github.com/{owner}/{repo}/actions/workflows/{workflow-file}/badge.svg
-```
+1. The `deploy-dashboard.yml` workflow runs automatically
+2. It injects your `DASHBOARD_TOKEN` into the configuration
+3. Deploys the site to GitHub Pages
 
-**Example:**
-```
-https://github.com/microsoft/vscode/actions/workflows/ci.yml/badge.svg
-```
+Your dashboard will be available at `https://{your-username}.github.io/pages-actions-dashboard/`
 
-### Adding Workflows from Different Repositories
+## Configuration
 
-You can mix workflows from multiple repositories:
+### Workflow Configuration
 
-```html
-<!-- From repository A -->
-<div class="workflow-item">
-    <a href="https://github.com/owner-a/repo-a/actions/workflows/ci.yml" class="workflow-card-link" aria-label="View Repo A CI workflow runs">
-        <div class="workflow-label">Repo A - CI</div>
-        <span class="workflow-badge">
-            <img src="https://github.com/owner-a/repo-a/actions/workflows/ci.yml/badge.svg" alt="CI Status">
-        </span>
-    </a>
-</div>
+Edit `config.js` to add or remove workflows:
 
-<!-- From repository B -->
-<div class="workflow-item">
-    <a href="https://github.com/owner-b/repo-b/actions/workflows/deploy.yml" class="workflow-card-link" aria-label="View Repo B Deploy workflow runs">
-        <div class="workflow-label">Repo B - Deploy</div>
-        <span class="workflow-badge">
-            <img src="https://github.com/owner-b/repo-b/actions/workflows/deploy.yml/badge.svg" alt="Deploy Status">
-        </span>
-    </a>
-</div>
+```javascript
+const DASHBOARD_CONFIG = {
+    github: {
+        token: '__GITHUB_TOKEN__',  // Injected at build time
+        apiBaseUrl: 'https://api.github.com',
+        debug: false  // Set to true to enable debug logging
+    },
+    workflows: [
+        {
+            owner: 'your-org',       // Repository owner
+            repo: 'your-repo',       // Repository name
+            workflow: 'ci.yml',      // Workflow file name
+            label: 'CI Build'        // Display label
+        }
+        // Add more workflows...
+    ]
+};
 ```
 
-## Enabling GitHub Pages
+### Status Indicators
 
-1. Go to your repository settings
-2. Navigate to "Pages" in the left sidebar
-3. Under "Source", select the branch (usually `main` or `copilot/create-dashboard-site`)
-4. Click "Save"
-5. Your dashboard will be available at `https://{your-username}.github.io/pages-actions-dashboard/`
+The dashboard displays color-coded status indicators:
 
-## Customization
+- 🟢 **Green (passing)**: Workflow completed successfully
+- 🔴 **Red (failing)**: Workflow failed or timed out
+- 🟡 **Yellow (running)**: Workflow is currently in progress
+- ⚪ **Gray**: Workflow was cancelled, skipped, or status unknown
 
-### Adjusting Badge Size
+### Auto-Refresh
 
-Modify the CSS in `index.html` to change badge sizes:
+By default, the dashboard refreshes workflow statuses every 5 minutes. To change this, edit `dashboard.js`:
 
-```css
-.workflow-badge img {
-    max-width: 100%;
-    height: auto;
-    /* Add custom sizing */
-    width: 150px;  /* Set specific width */
-}
+```javascript
+// Set up auto-refresh every 10 minutes instead
+dashboard.setupAutoRefresh(10);
 ```
 
-### Changing Grid Columns
+## Architecture
 
-Modify the grid layout in the CSS:
+The dashboard consists of:
 
-```css
-.workflow-grid {
-    grid-template-columns: repeat(5, 1fr); /* Change 5 to your desired number */
-    gap: 25px;
-}
-```
+1. **index.html**: Main HTML page with styling
+2. **config.js**: Configuration for workflows and GitHub API
+3. **api.js**: GitHub API client for fetching workflow statuses
+4. **dashboard.js**: Dashboard loader that renders workflow cards
+5. **.github/workflows/deploy-dashboard.yml**: Deployment workflow that injects the token
 
-### Color Scheme
+### How It Works
 
-Update the gradient background and colors in the `<style>` section to match your preferences.
+1. You store your PAT as a repository secret (`DASHBOARD_TOKEN`)
+2. When you push to main, the deploy workflow runs
+3. The workflow injects your token into `config.js` at build time
+4. The modified site is deployed to GitHub Pages
+5. The dashboard uses the injected token to fetch workflow statuses
 
-## Example Preview
+## Security Considerations
 
-The dashboard displays:
-- Clear labels for each workflow
-- Clickable badges that link to the workflow's actions page
-- Responsive grid that adapts to screen size
-- Hover effects for better interactivity
-- Instructions for easy customization
+⚠️ **Important**: The GitHub token is embedded in the deployed site's JavaScript. This means:
+
+- **The token is visible** in the browser's source code to anyone who can access your GitHub Pages site
+- **Use tokens with minimal permissions**: Only grant `actions:read` permission
+- **Limit repository access**: Use fine-grained tokens and only grant access to the specific repositories you want to monitor
+- **Set expiration dates**: Configure tokens to expire and rotate them regularly
+- **Monitor token usage**: Check GitHub's token usage logs regularly
+
+### When to Use This Approach
+
+✅ **Good for:**
+- Internal dashboards where the Pages site has the same access restrictions as the repositories
+- Monitoring non-sensitive workflow statuses
+- Testing and development environments
+
+⚠️ **Consider alternatives for:**
+- Public Pages sites monitoring private repositories with sensitive data
+- Production environments with strict security requirements
+
+### Higher Security Alternatives
+
+For higher security requirements, consider:
+- Implementing a backend proxy service to keep tokens server-side
+- Using OAuth flow for user authentication
+- Restricting GitHub Pages access (Enterprise feature)
+- See [SETUP.md](SETUP.md) for more details
+
+## Troubleshooting
+
+### Dashboard shows "Configuration Required"
+- Ensure `DASHBOARD_TOKEN` secret is set in repository settings
+- Check that the deployment workflow completed successfully
+- Verify the token was injected correctly in the deployed `config.js`
+
+### Authentication errors (401 Unauthorized)
+- Verify your token is valid and hasn't expired
+- Check token permissions include `actions:read`
+- For private repos, ensure the token has access to those specific repositories
+- Regenerate the token if needed and update the `DASHBOARD_TOKEN` secret
+
+### Workflow not found errors
+- Verify repository owner, name, and workflow file in `config.js`
+- Ensure workflow files exist in the specified repositories
+- Check that the token has access to those repositories
+
+### Changes not appearing
+- Check the Actions tab for deployment workflow status
+- Deployment workflow must complete successfully for changes to appear
+- Check the Actions tab for any build errors
+- Clear your browser cache and do a hard refresh (Ctrl+Shift+R or Cmd+Shift+R)
+
+## Migrating from Badge-Based Dashboard
+
+If you're upgrading from the old badge-based dashboard:
+
+1. Your existing workflow links will continue to work
+2. Update `config.js` with your workflow definitions
+3. Set up authentication (see SETUP.md)
+4. The new dashboard will fetch live statuses instead of using static badge images
+5. Private and internal repositories will now work correctly
 
 ## License
 
