@@ -47,3 +47,13 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  report-build-status:
+    runs-on: ubuntu-latest
+    needs: deploy
+    steps:
+      - name: Report build status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api -X POST "repos/$GITHUB_REPOSITORY/pages/telemetry"
