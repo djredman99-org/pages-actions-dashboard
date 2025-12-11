@@ -28,14 +28,14 @@ jobs:
         run: |
           # Replace the placeholder token in config.js with the actual token
           # Using awk to safely handle special characters in the token
-          awk -v token="$DASHBOARD_TOKEN" '{gsub(/__GITHUB_TOKEN__/, token)}1' config.js > config.js.tmp
-          mv config.js.tmp config.js
+          awk -v token="$DASHBOARD_TOKEN" '{gsub(/__GITHUB_TOKEN__/, token)}1' pages/config.js > pages/config.js.tmp
+          mv pages/config.js.tmp pages/config.js
           echo "Token injection completed"
         
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: 'pages'
 
   deploy:
     environment:

@@ -6,7 +6,7 @@ This guide explains how to set up authentication for the GitHub Actions Dashboar
 
 The dashboard uses the GitHub API to fetch workflow statuses. To access workflows in private and internal repositories, you need to authenticate using a **Personal Access Token (PAT)**.
 
-The token is directly embedded in the `config.js` file that gets deployed with your GitHub Pages site.
+The token is directly embedded in the `pages/config.js` file that gets deployed with your GitHub Pages site.
 
 ## Creating a Personal Access Token
 
@@ -28,7 +28,7 @@ The token is directly embedded in the `config.js` file that gets deployed with y
 
 ### Step 2: Add Token to Configuration
 
-1. Open `config.js` in your repository
+1. Open `pages/config.js` in your repository
 2. Find the line: `token: 'YOUR_TOKEN_HERE',`
 3. Replace `YOUR_TOKEN_HERE` with your actual token:
    ```javascript
@@ -38,7 +38,7 @@ The token is directly embedded in the `config.js` file that gets deployed with y
 
 ### Step 3: Configure Your Workflows
 
-Edit the `workflows` array in `config.js` to specify which workflows you want to monitor:
+Edit the `workflows` array in `pages/config.js` to specify which workflows you want to monitor:
 
 ```javascript
 workflows: [
@@ -69,7 +69,7 @@ Once you've configured the token and workflows:
 
 ⚠️ **Important Security Notes:**
 
-1. **Token Exposure**: The token is embedded directly in the `config.js` file that gets deployed to GitHub Pages:
+1. **Token Exposure**: The token is embedded directly in the `pages/config.js` file that gets deployed to GitHub Pages:
    - Anyone with access to your Pages site can view the token in the browser's source code
    - Anyone with the token can access workflow information from the repositories you've granted access to
    - The token should have minimal permissions (read-only access to Actions only)
@@ -118,7 +118,7 @@ After configuration:
 
 ### "Configuration Required" message appears
 
-- Verify you replaced `YOUR_TOKEN_HERE` with your actual token in `config.js`
+- Verify you replaced `YOUR_TOKEN_HERE` with your actual token in `pages/config.js`
 - Make sure there are no extra spaces or quotes around the token
 - Check that you committed and pushed the changes
 - Wait a few minutes for GitHub Pages to rebuild, then hard refresh your browser (Ctrl+Shift+R)
@@ -132,7 +132,7 @@ After configuration:
 
 ### "Workflow not found" errors
 
-- Verify the repository owner, name, and workflow file names in `config.js` match exactly
+- Verify the repository owner, name, and workflow file names in `pages/config.js` match exactly
 - Check that workflow files exist in `.github/workflows/` in those repositories
 - Ensure the token has access to those repositories (check token's repository access settings)
 - Verify the workflow file name includes the `.yml` or `.yaml` extension
@@ -149,7 +149,7 @@ After configuration:
 - GitHub API has rate limits (5,000 requests/hour for authenticated requests)
 - The dashboard auto-refreshes every 5 minutes by default
 - Each page load makes one API call per workflow
-- For many workflows (20+), consider increasing the refresh interval in `dashboard.js`:
+- For many workflows (20+), consider increasing the refresh interval in `pages/dashboard.js`:
   ```javascript
   dashboard.setupAutoRefresh(10); // Change to 10 minutes
   ```
