@@ -203,8 +203,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const dashboard = new DashboardLoader(DASHBOARD_CONFIG, apiClient, workflowManager);
         
         // Expose dashboard instance globally for console access
-        dashboardInstance = dashboard;
         window.dashboardInstance = dashboard;
+        dashboardInstance = dashboard;
 
         // Load workflows
         await dashboard.loadWorkflows();

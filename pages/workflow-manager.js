@@ -88,6 +88,20 @@ class WorkflowManager {
     }
 
     /**
+     * Validate that a workflow can be removed (must be user-added)
+     * @param {Object} workflow - Workflow object to validate
+     * @private
+     */
+    _validateRemovable(workflow) {
+        if (!workflow) {
+            throw new Error('Workflow not found');
+        }
+        if (workflow.source !== 'user') {
+            throw new Error('Cannot remove workflows from config.js. Only user-added workflows can be removed.');
+        }
+    }
+
+    /**
      * Remove a custom workflow
      * @param {number} index - Index in the combined workflow list
      * @returns {boolean} - Success status
@@ -96,14 +110,7 @@ class WorkflowManager {
         const allWorkflows = this.getAllWorkflows();
         const workflow = allWorkflows[index];
 
-        if (!workflow) {
-            throw new Error('Workflow not found at index ' + index);
-        }
-
-        // Only allow removing custom workflows
-        if (workflow.source !== 'user') {
-            throw new Error('Cannot remove workflows from config.js. Only user-added workflows can be removed.');
-        }
+        this._validateRemovable(workflow);
 
         // Find in custom workflows and remove
         const customIndex = this.customWorkflows.findIndex(wf =>
@@ -137,11 +144,7 @@ class WorkflowManager {
 
         if (customIndex !== -1) {
             const workflowToRemove = this.customWorkflows[customIndex];
-            
-            // Only allow removing custom workflows
-            if (workflowToRemove.source !== 'user') {
-                throw new Error('Cannot remove workflows from config.js');
-            }
+            this._validateRemovable(workflowToRemove);
 
             this.customWorkflows.splice(customIndex, 1);
             this.saveCustomWorkflows();
