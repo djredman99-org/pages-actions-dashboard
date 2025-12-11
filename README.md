@@ -49,7 +49,7 @@ See [SETUP.md](SETUP.md) for detailed configuration instructions.
 
 ### 3. Configure Your Workflows
 
-Edit `config.js` to specify which workflows to monitor:
+Edit `pages/config.js` to specify which workflows to monitor:
 
 ```javascript
 workflows: [
@@ -77,7 +77,7 @@ Your dashboard will be available at `https://{your-username}.github.io/pages-act
 
 ### Workflow Configuration
 
-Edit `config.js` to add or remove workflows:
+Edit `pages/config.js` to add or remove workflows:
 
 ```javascript
 const DASHBOARD_CONFIG = {
@@ -109,7 +109,7 @@ The dashboard displays color-coded status indicators:
 
 ### Auto-Refresh
 
-By default, the dashboard refreshes workflow statuses every 5 minutes. To change this, edit `dashboard.js`:
+By default, the dashboard refreshes workflow statuses every 5 minutes. To change this, edit `pages/dashboard.js`:
 
 ```javascript
 // Set up auto-refresh every 10 minutes instead
@@ -120,17 +120,17 @@ dashboard.setupAutoRefresh(10);
 
 The dashboard consists of:
 
-1. **index.html**: Main HTML page with styling
-2. **config.js**: Configuration for workflows and GitHub API
-3. **api.js**: GitHub API client for fetching workflow statuses
-4. **dashboard.js**: Dashboard loader that renders workflow cards
+1. **pages/index.html**: Main HTML page with styling
+2. **pages/config.js**: Configuration for workflows and GitHub API
+3. **pages/api.js**: GitHub API client for fetching workflow statuses
+4. **pages/dashboard.js**: Dashboard loader that renders workflow cards
 5. **.github/workflows/deploy-dashboard.yml**: Deployment workflow that injects the token
 
 ### How It Works
 
 1. You store your PAT as a repository secret (`DASHBOARD_TOKEN`)
 2. When you push to main, the deploy workflow runs
-3. The workflow injects your token into `config.js` at build time
+3. The workflow injects your token into `pages/config.js` at build time
 4. The modified site is deployed to GitHub Pages
 5. The dashboard uses the injected token to fetch workflow statuses
 
@@ -168,7 +168,7 @@ For higher security requirements, consider:
 ### Dashboard shows "Configuration Required"
 - Ensure `DASHBOARD_TOKEN` secret is set in repository settings
 - Check that the deployment workflow completed successfully
-- Verify the token was injected correctly in the deployed `config.js`
+- Verify the token was injected correctly in the deployed `pages/config.js`
 
 ### Authentication errors (401 Unauthorized)
 - Verify your token is valid and hasn't expired
@@ -177,7 +177,7 @@ For higher security requirements, consider:
 - Regenerate the token if needed and update the `DASHBOARD_TOKEN` secret
 
 ### Workflow not found errors
-- Verify repository owner, name, and workflow file in `config.js`
+- Verify repository owner, name, and workflow file in `pages/config.js`
 - Ensure workflow files exist in the specified repositories
 - Check that the token has access to those repositories
 
@@ -192,7 +192,7 @@ For higher security requirements, consider:
 If you're upgrading from the old badge-based dashboard:
 
 1. Your existing workflow links will continue to work
-2. Update `config.js` with your workflow definitions
+2. Update `pages/config.js` with your workflow definitions
 3. Set up authentication (see SETUP.md)
 4. The new dashboard will fetch live statuses instead of using static badge images
 5. Private and internal repositories will now work correctly
