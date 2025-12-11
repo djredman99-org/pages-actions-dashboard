@@ -6,9 +6,11 @@ A GitHub Pages site that serves as a centralized dashboard for monitoring GitHub
 
 - **5-Column Grid Layout**: Displays workflow statuses in a clean, organized grid (5 across, responsive)
 - **Multi-Repository Support**: Monitor workflows from any GitHub repository (public, private, or internal)
+- **Dynamic Workflow Management**: Add/remove workflows at runtime without redeploying (via browser console)
 - **Dynamic Status Indicators**: Real-time workflow status with color-coded badges (green for passing, red for failing, yellow for running)
 - **GitHub API Integration**: Fetches live workflow statuses using authenticated GitHub API calls
 - **Customizable Configuration**: Easy JSON-based configuration for adding/removing workflows
+- **Local Storage Persistence**: User-added workflows persist in browser local storage
 - **Responsive Design**: Adapts to different screen sizes (desktop, tablet, mobile)
 - **Auto-Refresh**: Automatically refreshes workflow statuses every 5 minutes
 - **Professional Styling**: Modern, clean interface with hover effects
@@ -116,6 +118,34 @@ By default, the dashboard refreshes workflow statuses every 5 minutes. To change
 dashboard.setupAutoRefresh(10);
 ```
 
+## Dynamic Workflow Management
+
+### NEW: Runtime Workflow Management
+
+You can now add and remove workflows at runtime without editing `config.js`! 
+
+**Via Browser Console:**
+```javascript
+// Add a workflow
+dashboardInstance.workflowManager.addWorkflow({
+  owner: 'microsoft',
+  repo: 'vscode',
+  workflow: 'ci.yml',
+  label: 'VS Code CI'
+});
+await dashboardInstance.loadWorkflows();
+
+// Remove a workflow
+dashboardInstance.workflowManager.removeWorkflowByProps('microsoft', 'vscode', 'ci.yml');
+await dashboardInstance.loadWorkflows();
+```
+
+Custom workflows are stored in browser local storage and persist across page reloads.
+
+📖 **Full Documentation**: See [DYNAMIC_WORKFLOWS.md](DYNAMIC_WORKFLOWS.md) for complete API reference and usage examples.
+
+**Future**: UI controls for adding/removing workflows will be added in a separate enhancement. Long-term solution will use Azure Storage for permanent, cross-device persistence (issue #7).
+
 ## Architecture
 
 The dashboard consists of:
@@ -123,8 +153,9 @@ The dashboard consists of:
 1. **pages/index.html**: Main HTML page with styling
 2. **pages/config.js**: Configuration for workflows and GitHub API
 3. **pages/api.js**: GitHub API client for fetching workflow statuses
-4. **pages/dashboard.js**: Dashboard loader that renders workflow cards
-5. **.github/workflows/deploy-dashboard.yml**: Deployment workflow that injects the token
+4. **pages/workflow-manager.js**: Manages workflow data from multiple sources (config + local storage)
+5. **pages/dashboard.js**: Dashboard loader that renders workflow cards
+6. **.github/workflows/deploy-dashboard.yml**: Deployment workflow that injects the token
 
 ### How It Works
 
@@ -133,6 +164,7 @@ The dashboard consists of:
 3. The workflow injects your token into `pages/config.js` at build time
 4. The modified site is deployed to GitHub Pages
 5. The dashboard uses the injected token to fetch workflow statuses
+6. WorkflowManager merges workflows from config.js with user-added workflows from local storage
 
 ## Security Considerations
 

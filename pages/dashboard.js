@@ -2,10 +2,10 @@
 // Loads workflow statuses and renders them dynamically
 
 class DashboardLoader {
-    constructor(config, apiClient) {
+    constructor(config, apiClient, workflowManager) {
         this.config = config;
         this.api = apiClient;
-        this.workflows = config.workflows;
+        this.workflowManager = workflowManager;
     }
 
     /**
@@ -90,8 +90,11 @@ class DashboardLoader {
             return;
         }
 
+        // Get all workflows from the workflow manager (config + custom)
+        const workflows = this.workflowManager.getAllWorkflows();
+
         // Create loading placeholders
-        const placeholders = this.workflows.map(workflow => {
+        const placeholders = workflows.map(workflow => {
             const card = this.createLoadingCard(workflow);
             grid.appendChild(card);
             return { workflow, card };
@@ -176,6 +179,9 @@ class DashboardLoader {
     }
 }
 
+// Global dashboard instance for console access and testing
+let dashboardInstance = null;
+
 // Initialize dashboard when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -190,8 +196,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             apiClient.debug = true;
         }
 
+        // Initialize workflow manager with config workflows
+        const workflowManager = new WorkflowManager(DASHBOARD_CONFIG.workflows);
+
         // Initialize dashboard loader
-        const dashboard = new DashboardLoader(DASHBOARD_CONFIG, apiClient);
+        const dashboard = new DashboardLoader(DASHBOARD_CONFIG, apiClient, workflowManager);
+        
+        // Expose dashboard instance globally for console access
+        window.dashboardInstance = dashboard;
+        dashboardInstance = dashboard;
 
         // Load workflows
         await dashboard.loadWorkflows();
@@ -200,6 +213,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         dashboard.setupAutoRefresh(5);
 
         console.log('Dashboard initialized successfully');
+        console.log(`Loaded ${workflowManager.getAllWorkflows().length} workflows (${workflowManager.getCustomWorkflowCount()} custom)`);
+        console.log('Tip: Use dashboardInstance.workflowManager to add/remove workflows via console');
     } catch (error) {
         console.error('Failed to initialize dashboard:', error);
     }
