@@ -1,3 +1,6 @@
+[![Database Migration](https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/database-migration.yml/badge.svg)](https://github.com/djredman99-org/pages-actions-dashboard/actions/workflows/database-migration.yml)
+
+
 # GitHub Actions Dashboard
 
 A GitHub Pages site that serves as a centralized dashboard for monitoring GitHub Actions workflow statuses across multiple repositories, **including private and internal repositories**.
