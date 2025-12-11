@@ -85,7 +85,7 @@ class DashboardLoader {
         grid.innerHTML = '';
 
         // Check if token is configured
-        if (this.api.token === 'YOUR_TOKEN_HERE' || !this.api.token) {
+        if (this.api.token === '__GITHUB_TOKEN__' || !this.api.token) {
             this.showTokenError(grid);
             return;
         }
@@ -132,9 +132,9 @@ class DashboardLoader {
             <h3>⚠️ Configuration Required</h3>
             <p>GitHub token not configured. Please follow these steps:</p>
             <ol>
-                <li>Create a Personal Access Token with <code>actions:read</code> permission</li>
-                <li>Edit <code>config.js</code> and replace <code>YOUR_TOKEN_HERE</code> with your token</li>
-                <li>Push the changes to your repository</li>
+                <li>Create a GitHub App or Personal Access Token with <code>actions:read</code> permission</li>
+                <li>Configure the token in your build/deployment process</li>
+                <li>The token should replace <code>__GITHUB_TOKEN__</code> in config.js</li>
             </ol>
             <p>See the README for detailed setup instructions.</p>
         `;

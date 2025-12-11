@@ -39,16 +39,18 @@ See [SETUP.md](SETUP.md) for detailed configuration instructions.
      - **Metadata**: Read-only (automatically granted)
 4. Click "Generate token" and copy it
 
-### 2. Configure Your Dashboard
+### 2. Store Token as Repository Secret
 
-Edit `config.js`:
+1. Go to your repository Settings → Secrets and variables → Actions
+2. Click "New repository secret"
+3. Name: `DASHBOARD_TOKEN`
+4. Value: Paste your Personal Access Token
+5. Click "Add secret"
 
-1. Replace `YOUR_TOKEN_HERE` with your Personal Access Token:
-```javascript
-token: 'github_pat_your_actual_token_here',
-```
+### 3. Configure Your Workflows
 
-2. Configure your workflows:
+Edit `config.js` to specify which workflows to monitor:
+
 ```javascript
 workflows: [
     {
@@ -61,15 +63,15 @@ workflows: [
 ]
 ```
 
-### 3. Deploy to GitHub Pages
+### 4. Deploy to GitHub Pages
 
-1. Push your changes to the repository
-2. Go to repository Settings → Pages
-3. Under "Source", select your branch (usually `main`)
-4. Click "Save"
-5. Your dashboard will be available at `https://{your-username}.github.io/pages-actions-dashboard/`
+The dashboard automatically deploys when you push to the main branch:
 
-GitHub Pages will automatically build and deploy your site whenever you push changes.
+1. The `deploy-dashboard.yml` workflow runs automatically
+2. It injects your `DASHBOARD_TOKEN` into the configuration
+3. Deploys the site to GitHub Pages
+
+Your dashboard will be available at `https://{your-username}.github.io/pages-actions-dashboard/`
 
 ## Configuration
 
@@ -80,8 +82,9 @@ Edit `config.js` to add or remove workflows:
 ```javascript
 const DASHBOARD_CONFIG = {
     github: {
-        token: 'YOUR_TOKEN_HERE',  // Replace with your PAT
-        apiBaseUrl: 'https://api.github.com'
+        token: '__GITHUB_TOKEN__',  // Injected at build time
+        apiBaseUrl: 'https://api.github.com',
+        debug: false  // Set to true to enable debug logging
     },
     workflows: [
         {
@@ -118,15 +121,22 @@ dashboard.setupAutoRefresh(10);
 The dashboard consists of:
 
 1. **index.html**: Main HTML page with styling
-2. **config.js**: Configuration for workflows and GitHub API (includes your PAT)
+2. **config.js**: Configuration for workflows and GitHub API
 3. **api.js**: GitHub API client for fetching workflow statuses
 4. **dashboard.js**: Dashboard loader that renders workflow cards
+5. **.github/workflows/deploy-dashboard.yml**: Deployment workflow that injects the token
 
-The dashboard is a static site that runs entirely in the browser. GitHub Pages automatically builds and deploys it from your repository.
+### How It Works
+
+1. You store your PAT as a repository secret (`DASHBOARD_TOKEN`)
+2. When you push to main, the deploy workflow runs
+3. The workflow injects your token into `config.js` at build time
+4. The modified site is deployed to GitHub Pages
+5. The dashboard uses the injected token to fetch workflow statuses
 
 ## Security Considerations
 
-⚠️ **Important**: The GitHub token is embedded in the `config.js` file and deployed with the site. This means:
+⚠️ **Important**: The GitHub token is embedded in the deployed site's JavaScript. This means:
 
 - **The token is visible** in the browser's source code to anyone who can access your GitHub Pages site
 - **Use tokens with minimal permissions**: Only grant `actions:read` permission
@@ -156,15 +166,15 @@ For higher security requirements, consider:
 ## Troubleshooting
 
 ### Dashboard shows "Configuration Required"
-- Check that you replaced `YOUR_TOKEN_HERE` in `config.js` with your actual token
-- Verify the changes were pushed to your repository
-- Clear your browser cache and reload the page
+- Ensure `DASHBOARD_TOKEN` secret is set in repository settings
+- Check that the deployment workflow completed successfully
+- Verify the token was injected correctly in the deployed `config.js`
 
-### Authentication errors
+### Authentication errors (401 Unauthorized)
 - Verify your token is valid and hasn't expired
 - Check token permissions include `actions:read`
-- For private repos, ensure the token has access to those repositories
-- Make sure the token is correctly pasted in `config.js` (no extra spaces or quotes)
+- For private repos, ensure the token has access to those specific repositories
+- Regenerate the token if needed and update the `DASHBOARD_TOKEN` secret
 
 ### Workflow not found errors
 - Verify repository owner, name, and workflow file in `config.js`
@@ -172,7 +182,8 @@ For higher security requirements, consider:
 - Check that the token has access to those repositories
 
 ### Changes not appearing
-- GitHub Pages may take a few minutes to rebuild after pushing changes
+- Check the Actions tab for deployment workflow status
+- Deployment workflow must complete successfully for changes to appear
 - Check the Actions tab for any build errors
 - Clear your browser cache and do a hard refresh (Ctrl+Shift+R or Cmd+Shift+R)
 
