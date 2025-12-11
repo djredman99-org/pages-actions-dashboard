@@ -97,22 +97,29 @@ class DashboardLoader {
             return { workflow, card };
         });
 
-        // Load each workflow status
-        for (const { workflow, card } of placeholders) {
-            try {
-                const status = await this.api.getWorkflowStatus(
-                    workflow.owner,
-                    workflow.repo,
-                    workflow.workflow
-                );
+        // Load all workflow statuses in parallel
+        const statusPromises = placeholders.map(({ workflow }) => 
+            this.api.getWorkflowStatus(
+                workflow.owner,
+                workflow.repo,
+                workflow.workflow
+            )
+        );
 
-                const newCard = this.createWorkflowCard(workflow, status);
+        const results = await Promise.allSettled(statusPromises);
+
+        // Update cards with results
+        results.forEach((result, index) => {
+            const { workflow, card } = placeholders[index];
+            
+            if (result.status === 'fulfilled') {
+                const newCard = this.createWorkflowCard(workflow, result.value);
                 grid.replaceChild(newCard, card);
-            } catch (error) {
-                console.error(`Failed to load workflow ${workflow.label}:`, error);
-                this.showErrorCard(grid, card, workflow, error);
+            } else {
+                console.error(`Failed to load workflow ${workflow.label}:`, result.reason);
+                this.showErrorCard(grid, card, workflow, result.reason);
             }
-        }
+        });
 
         // Update last updated time
         const lastUpdatedElement = document.getElementById('last-updated');
