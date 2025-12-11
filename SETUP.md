@@ -112,7 +112,7 @@ After configuration:
 - ✅ You should see workflow cards with colored status badges (green, red, yellow, or gray)
 - ✅ Clicking a card should take you to that workflow's runs page
 - ✅ The "Last updated" time should show the current time
-- ❌ If you see "Configuration Required", double-check your token in `config.js`
+- ❌ If you see "Configuration Required", double-check your token in `pages/config.js`
 
 ## Troubleshooting
 
