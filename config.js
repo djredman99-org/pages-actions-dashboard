@@ -7,7 +7,7 @@ const DASHBOARD_CONFIG = {
         // Replace 'YOUR_TOKEN_HERE' with your Personal Access Token
         // The token needs 'actions:read' permission to fetch workflow statuses
         // For private/internal repos, create a fine-grained PAT with access to those repos
-        token: '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',
+        token: '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',
         apiBaseUrl: 'https://api.github.com',
         debug: false // Set to true to enable debug logging in browser console
     },
