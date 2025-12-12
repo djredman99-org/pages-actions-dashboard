@@ -1,19 +1,17 @@
 // Configuration for GitHub Actions Dashboard
-// This file contains the workflow definitions and GitHub App settings
+// This file contains the Azure Function endpoint and settings
 
 const DASHBOARD_CONFIG = {
-    // GitHub App Configuration
-    github: {
-        // This token will be injected at build time by the deployment workflow
-        // Store your PAT as a repository secret named DASHBOARD_TOKEN
-        // The token needs 'actions:read' permission to fetch workflow statuses
-        token: '__GITHUB_TOKEN__',
-        apiBaseUrl: 'https://api.github.com',
+    // Azure Function Configuration
+    azureFunction: {
+        // Azure Function URL that will be injected at build time
+        // This function handles authentication with GitHub App and returns workflow statuses
+        url: '__AZURE_FUNCTION_URL__',
         debug: false // Set to true to enable debug logging in browser console
     },
 
-    // Workflow definitions
-    // Each workflow should specify the owner, repo, and workflow file name
+    // Legacy configuration (deprecated - workflows now stored in Azure Storage)
+    // Kept for backward compatibility during migration
     workflows: [
         {
             owner: 'djredman99-org',
