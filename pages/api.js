@@ -1,113 +1,112 @@
 // GitHub Actions Dashboard API Client
-// Handles authentication and API calls to GitHub
+// Handles API calls to Azure Function backend
 
 class GitHubActionsAPI {
-    constructor(token, baseUrl = 'https://api.github.com') {
-        this.token = token;
-        this.baseUrl = baseUrl;
+    constructor(functionUrl) {
+        this.functionUrl = functionUrl;
         this.debug = true; // Set to true to enable debug logging
+        this.cache = null;
+        this.cacheTimestamp = null;
+        this.cacheTTL = 60000; // 1 minute cache
     }
 
     /**
-     * Make an authenticated request to the GitHub API
-     * @param {string} endpoint - API endpoint path
-     * @returns {Promise<Object>} - API response
+     * Get all workflow statuses from Azure Function
+     * @returns {Promise<Array>} - Array of workflow statuses
      */
-    async request(endpoint) {
-        const url = `${this.baseUrl}${endpoint}`;
-        
+    async getAllWorkflowStatuses() {
+        // Check cache
+        if (this.cache && this.cacheTimestamp && (Date.now() - this.cacheTimestamp < this.cacheTTL)) {
+            if (this.debug) {
+                console.log('Returning cached workflow statuses');
+            }
+            return this.cache;
+        }
+
         try {
-            const response = await fetch(url, {
+            const response = await fetch(`${this.functionUrl}/api/get-workflow-statuses`, {
+                method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${this.token}`,
-                    'Accept': 'application/vnd.github+json',
-                    'X-GitHub-Api-Version': '2022-11-28'
+                    'Accept': 'application/json'
                 }
             });
 
             if (!response.ok) {
-                if (response.status === 401) {
-                    throw new Error('Authentication failed. Please check your GitHub token.');
-                } else if (response.status === 403) {
-                    throw new Error('Rate limit exceeded or insufficient permissions.');
+                if (response.status === 500) {
+                    throw new Error('Azure Function error. Check function configuration.');
                 } else if (response.status === 404) {
-                    throw new Error('Workflow not found. Repository may be inaccessible.');
+                    throw new Error('Azure Function not found. Check URL configuration.');
                 }
-                throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
+                throw new Error(`Azure Function error: ${response.status} ${response.statusText}`);
             }
 
-            return await response.json();
+            const data = await response.json();
+            
+            if (this.debug) {
+                console.log('Received workflow statuses from Azure Function:', data);
+            }
+
+            // Cache the results
+            this.cache = data.workflows || [];
+            this.cacheTimestamp = Date.now();
+
+            return this.cache;
         } catch (error) {
-            console.error(`API request failed for ${endpoint}:`, error);
+            console.error('Failed to get workflow statuses from Azure Function:', error);
             throw error;
         }
     }
 
     /**
-     * Get the latest workflow run for a specific workflow
-     * @param {string} owner - Repository owner
-     * @param {string} repo - Repository name
-     * @param {string} workflowFile - Workflow file name (e.g., 'ci.yml')
-     * @returns {Promise<Object>} - Workflow run data
-     */
-    async getLatestWorkflowRun(owner, repo, workflowFile) {
-        const endpoint = `/repos/${owner}/${repo}/actions/workflows/${workflowFile}/runs?per_page=1&page=1`;
-        
-        try {
-            const data = await this.request(endpoint);
-            
-            if (data.workflow_runs && data.workflow_runs.length > 0) {
-                const run = data.workflow_runs[0];
-                // Debug: log the actual run data structure
-                if (this.debug) {
-                    console.log(`Fetched run for ${workflowFile}:`, {
-                        status: run.status,
-                        conclusion: run.conclusion,
-                        created_at: run.created_at
-                    });
-                }
-                return run;
-            }
-            
-            if (this.debug) {
-                console.log(`No workflow runs found for ${owner}/${repo}/${workflowFile}`);
-            }
-            return null;
-        } catch (error) {
-            console.error(`Failed to get workflow runs for ${owner}/${repo}/${workflowFile}:`, error);
-            return null;
-        }
-    }
-
-    /**
-     * Get the status and conclusion of a workflow
+     * Get the status for a specific workflow
      * @param {string} owner - Repository owner
      * @param {string} repo - Repository name
      * @param {string} workflowFile - Workflow file name
      * @returns {Promise<Object>} - Status object with conclusion, status, and run URL
      */
     async getWorkflowStatus(owner, repo, workflowFile) {
-        const run = await this.getLatestWorkflowRun(owner, repo, workflowFile);
-        
-        if (!run) {
+        try {
+            const allStatuses = await this.getAllWorkflowStatuses();
+            
+            // Find the specific workflow in the results
+            const workflow = allStatuses.find(w => 
+                w.owner === owner && 
+                w.repo === repo && 
+                w.workflow === workflowFile
+            );
+
+            if (workflow) {
+                return {
+                    conclusion: workflow.conclusion,
+                    status: workflow.status,
+                    url: workflow.url,
+                    updatedAt: workflow.updatedAt
+                };
+            }
+
+            // If not found, return unknown status
             return {
                 conclusion: 'unknown',
                 status: 'unknown',
                 url: `https://github.com/${owner}/${repo}/actions/workflows/${workflowFile}`
             };
+        } catch (error) {
+            console.error(`Failed to get status for ${owner}/${repo}/${workflowFile}:`, error);
+            return {
+                conclusion: 'error',
+                status: 'error',
+                url: `https://github.com/${owner}/${repo}/actions/workflows/${workflowFile}`,
+                error: error.message
+            };
         }
+    }
 
-        // Debug logging to see actual values
-        if (this.debug) {
-            console.log(`Workflow ${workflowFile}: status="${run.status}", conclusion="${run.conclusion}"`);
-        }
-
-        return {
-            conclusion: run.conclusion,
-            status: run.status,
-            url: run.html_url,
-            updatedAt: run.updated_at
-        };
+    /**
+     * Clear the cache (useful for manual refresh)
+     */
+    clearCache() {
+        this.cache = null;
+        this.cacheTimestamp = null;
     }
 }
 

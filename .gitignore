@@ -16,3 +16,23 @@ Thumbs.db
 .vscode/
 .idea/
 *.iml
+
+# Azure Function files
+function-app/node_modules/
+function-app/local.settings.json
+function-app/.vscode/
+function-app/dist/
+function-app/.funcignore
+
+# Azure Infrastructure files
+infrastructure/parameters.json
+infrastructure/deployment-output.json
+infrastructure/deployment-outputs.env
+
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build outputs
+dist/
+build/

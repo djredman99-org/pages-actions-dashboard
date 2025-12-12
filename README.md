@@ -6,74 +6,85 @@ A GitHub Pages site that serves as a centralized dashboard for monitoring GitHub
 
 - **5-Column Grid Layout**: Displays workflow statuses in a clean, organized grid (5 across, responsive)
 - **Multi-Repository Support**: Monitor workflows from any GitHub repository (public, private, or internal)
-- **Dynamic Workflow Management**: Add/remove workflows at runtime without redeploying (via browser console)
+- **Azure Function Backend**: Secure serverless backend handles GitHub API calls
+- **Centralized Configuration**: Workflow configurations stored in Azure Storage, not hardcoded
 - **Dynamic Status Indicators**: Real-time workflow status with color-coded badges (green for passing, red for failing, yellow for running)
-- **GitHub API Integration**: Fetches live workflow statuses using authenticated GitHub API calls
-- **Customizable Configuration**: Easy JSON-based configuration for adding/removing workflows
-- **Local Storage Persistence**: User-added workflows persist in browser local storage
+- **GitHub App Authentication**: Secure authentication using GitHub Apps (no exposed tokens)
 - **Responsive Design**: Adapts to different screen sizes (desktop, tablet, mobile)
 - **Auto-Refresh**: Automatically refreshes workflow statuses every 5 minutes
 - **Professional Styling**: Modern, clean interface with hover effects
 - **Fully Clickable Workflow Cards**: Click anywhere on a workflow card to navigate to its workflow runs page
 - **Accessible Keyboard Navigation**: Navigate and activate workflow cards using Tab and Enter keys with visible focus indicators
 
-## New: Private Repository Support
+## Architecture
 
-Unlike static badge images, this dashboard uses the GitHub API to fetch workflow statuses, enabling it to work with:
-- ✅ Public repositories
-- ✅ Private repositories
-- ✅ Internal repositories (GitHub Enterprise)
+### New: Azure Function Backend (Recommended)
 
-See [SETUP.md](SETUP.md) for detailed configuration instructions.
+The dashboard now uses a secure Azure Function backend that:
+- ✅ Stores GitHub App credentials securely in Azure Key Vault
+- ✅ Uses Managed Identity for secure access (no credentials in code)
+- ✅ Stores workflow configurations in Azure Storage (cross-device sync)
+- ✅ Eliminates token exposure in the browser
+- ✅ Works with public, private, and internal repositories
 
-## Quick Start
+**Setup Guide**: See [AZURE_SETUP.md](AZURE_SETUP.md) for complete deployment instructions.
 
-### 1. Create a Personal Access Token
+### Legacy: Direct GitHub API (Deprecated)
 
-1. Go to GitHub Settings → Developer settings → Personal access tokens → Fine-grained tokens
-2. Click "Generate new token"
-3. Configure the token:
-   - **Token name**: `Actions Dashboard`
-   - **Expiration**: Choose your preferred duration
-   - **Repository access**: Select the repositories you want to monitor
-   - **Permissions** → Repository permissions:
-     - **Actions**: Read-only
-     - **Metadata**: Read-only (automatically granted)
-4. Click "Generate token" and copy it
+The original architecture using Personal Access Tokens is still supported but deprecated. See [SETUP.md](SETUP.md) for legacy setup instructions.
 
-### 2. Store Token as Repository Secret
+## Quick Start (Azure Function Backend)
 
-1. Go to your repository Settings → Secrets and variables → Actions
-2. Click "New repository secret"
-3. Name: `DASHBOARD_TOKEN`
-4. Value: Paste your Personal Access Token
-5. Click "Add secret"
+### 1. Prerequisites
 
-### 3. Configure Your Workflows
+- Azure subscription with permissions to create resources
+- Azure CLI installed and configured
+- Node.js 18+ and Azure Functions Core Tools
+- GitHub App created and installed on your repositories
 
-Edit `pages/config.js` to specify which workflows to monitor:
+### 2. Deploy Azure Infrastructure
 
-```javascript
-workflows: [
-    {
-        owner: 'your-org',
-        repo: 'your-repo',
-        workflow: 'ci.yml',
-        label: 'CI Build'
-    },
-    // Add more workflows...
-]
+```bash
+cd infrastructure
+cp parameters.example.json parameters.json
+# Edit parameters.json with your GitHub App credentials
+./deploy.sh
 ```
 
-### 4. Deploy to GitHub Pages
+This creates:
+- Azure Function App (serverless backend)
+- Azure Key Vault (stores GitHub App credentials)
+- Azure Storage (stores workflow configurations)
+- Managed Identity (secure access without storing credentials)
 
-The dashboard automatically deploys when you push to the main branch:
+### 3. Deploy Function App Code
 
-1. The `deploy-dashboard.yml` workflow runs automatically
-2. It injects your `DASHBOARD_TOKEN` into the configuration
-3. Deploys the site to GitHub Pages
+```bash
+cd function-app
+npm install
+func azure functionapp publish <FUNCTION_APP_NAME>
+```
+
+### 4. Upload Workflow Configuration
+
+```bash
+# Edit workflows.json with your workflows
+az storage blob upload \
+  --account-name <STORAGE_ACCOUNT_NAME> \
+  --container-name workflow-configs \
+  --name workflows.json \
+  --file workflows.json \
+  --auth-mode login
+```
+
+### 5. Configure GitHub Pages
+
+1. Add `AZURE_FUNCTION_URL` as a repository secret
+2. Push to deploy: Changes auto-deploy to GitHub Pages
 
 Your dashboard will be available at `https://{your-username}.github.io/pages-actions-dashboard/`
+
+**📖 Detailed Setup Guide**: See [AZURE_SETUP.md](AZURE_SETUP.md) for complete instructions.
 
 ## Configuration
 
@@ -148,52 +159,65 @@ Custom workflows are stored in browser local storage and persist across page rel
 
 ## Architecture
 
+### Azure Function Backend Architecture
+
 The dashboard consists of:
 
+**Frontend (GitHub Pages):**
 1. **pages/index.html**: Main HTML page with styling
-2. **pages/config.js**: Configuration for workflows and GitHub API
-3. **pages/api.js**: GitHub API client for fetching workflow statuses
-4. **pages/workflow-manager.js**: Manages workflow data from multiple sources (config + local storage)
-5. **pages/dashboard.js**: Dashboard loader that renders workflow cards
-6. **.github/workflows/deploy-dashboard.yml**: Deployment workflow that injects the token
+2. **pages/config.js**: Configuration for Azure Function URL
+3. **pages/api.js**: API client that calls Azure Function
+4. **pages/dashboard.js**: Dashboard loader that renders workflow cards
+5. **pages/workflow-manager.js**: Manages workflow data (kept for backward compatibility)
+
+**Backend (Azure):**
+1. **function-app/**: Azure Function App code (Node.js)
+   - `get-workflow-statuses`: HTTP-triggered function that returns workflow statuses
+   - `github-auth.js`: GitHub App authentication module
+   - `keyvault-client.js`: Azure Key Vault client for retrieving secrets
+   - `storage-client.js`: Azure Storage client for workflow configurations
+2. **infrastructure/**: Bicep templates for Azure resources
+   - `main.bicep`: Main infrastructure template
+   - `deploy.sh`: Deployment script
 
 ### How It Works
 
-1. You store your PAT as a repository secret (`DASHBOARD_TOKEN`)
-2. When you push to main, the deploy workflow runs
-3. The workflow injects your token into `pages/config.js` at build time
-4. The modified site is deployed to GitHub Pages
-5. The dashboard uses the injected token to fetch workflow statuses
-6. WorkflowManager merges workflows from config.js with user-added workflows from local storage
+1. Azure infrastructure is deployed (Function App, Key Vault, Storage)
+2. GitHub App credentials stored in Key Vault
+3. Workflow configurations uploaded to Azure Storage
+4. Function App uses Managed Identity to access Key Vault and Storage
+5. GitHub Pages site calls Azure Function to get workflow statuses
+6. Function authenticates with GitHub using App credentials
+7. Function returns workflow statuses as JSON
+8. Dashboard displays the results
 
-## Security Considerations
+**Security**: GitHub credentials never exposed to the browser, stored securely in Azure Key Vault.
 
-⚠️ **Important**: The GitHub token is embedded in the deployed site's JavaScript. This means:
+## Security
 
-- **The token is visible** in the browser's source code to anyone who can access your GitHub Pages site
-- **Use tokens with minimal permissions**: Only grant `actions:read` permission
-- **Limit repository access**: Use fine-grained tokens and only grant access to the specific repositories you want to monitor
-- **Set expiration dates**: Configure tokens to expire and rotate them regularly
-- **Monitor token usage**: Check GitHub's token usage logs regularly
+### Azure Function Backend (Recommended)
 
-### When to Use This Approach
+✅ **Secure by design**:
+- **No exposed credentials**: GitHub App credentials stored in Azure Key Vault
+- **Managed Identity**: Function App accesses Azure services without storing credentials
+- **Server-side authentication**: All GitHub API calls happen server-side
+- **CORS protection**: Configure allowed origins to restrict access
+- **Audit logging**: Application Insights tracks all function invocations
 
-✅ **Good for:**
-- Internal dashboards where the Pages site has the same access restrictions as the repositories
-- Monitoring non-sensitive workflow statuses
-- Testing and development environments
-
-⚠️ **Consider alternatives for:**
-- Public Pages sites monitoring private repositories with sensitive data
+✅ **Best for**:
 - Production environments with strict security requirements
+- Public GitHub Pages sites monitoring private repositories
+- Organizations with compliance requirements
+- Any scenario requiring credential security
 
-### Higher Security Alternatives
+### Legacy Architecture (Deprecated)
 
-For higher security requirements, consider:
-- Implementing a backend proxy service to keep tokens server-side
-- Using OAuth flow for user authentication
-- Restricting GitHub Pages access (Enterprise feature)
-- See [SETUP.md](SETUP.md) for more details
+⚠️ **Security limitations**:
+- GitHub token embedded in deployed JavaScript (visible in browser)
+- Suitable only for internal dashboards with same access restrictions
+- Requires regular token rotation and monitoring
+
+**Migration recommended**: Migrate to Azure Function backend for better security.
 
 ## Troubleshooting
 
