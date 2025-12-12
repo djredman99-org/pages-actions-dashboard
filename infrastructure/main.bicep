@@ -167,7 +167,8 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
       ]
       cors: {
         allowedOrigins: [
-          '*' // TODO: Restrict to your GitHub Pages domain in production
+          'https://*.github.io' // Restrict to GitHub Pages domains
+          // TODO: Update to specific domain in production: 'https://your-org.github.io'
         ]
         supportCredentials: false
       }

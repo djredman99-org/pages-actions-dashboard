@@ -31,9 +31,14 @@ async function getWorkflowConfigurations(storageAccountUrl, containerName, blobN
         // Download and parse the blob content
         const downloadResponse = await blobClient.download(0);
         const downloaded = await streamToBuffer(downloadResponse.readableStreamBody);
-        const workflows = JSON.parse(downloaded.toString());
-
-        return workflows;
+        
+        try {
+            const workflows = JSON.parse(downloaded.toString());
+            return workflows;
+        } catch (parseError) {
+            console.error('Failed to parse workflows.json:', parseError);
+            throw new Error(`Invalid JSON in workflows configuration: ${parseError.message}`);
+        }
     } catch (error) {
         console.error('Failed to get workflow configurations from storage:', error);
         throw new Error(`Storage access failed: ${error.message}`);

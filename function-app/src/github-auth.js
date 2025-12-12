@@ -76,7 +76,8 @@ async function getAppInstallations(appId, privateKey) {
         return installations;
     } catch (error) {
         console.error('Failed to get app installations:', error);
-        throw new Error(`Failed to get installations: ${error.message}`);
+        const errorDetails = error.status ? `HTTP ${error.status}: ${error.message}` : error.message;
+        throw new Error(`Failed to get GitHub App installations: ${errorDetails}`);
     }
 }
 
