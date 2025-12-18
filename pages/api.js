@@ -5,9 +5,6 @@ class GitHubActionsAPI {
     constructor(functionUrl) {
         this.functionUrl = functionUrl;
         this.debug = true; // Set to true to enable debug logging
-        this.cache = null;
-        this.cacheTimestamp = null;
-        this.cacheTTL = 60000; // 1 minute cache
         this.inflightRequest = null; // Track in-flight requests to prevent duplicates
     }
 
@@ -16,14 +13,6 @@ class GitHubActionsAPI {
      * @returns {Promise<Array>} - Array of workflow statuses
      */
     async getAllWorkflowStatuses() {
-        // Check cache
-        if (this.cache && this.cacheTimestamp && (Date.now() - this.cacheTimestamp < this.cacheTTL)) {
-            if (this.debug) {
-                console.log('Returning cached workflow statuses');
-            }
-            return this.cache;
-        }
-
         // If there's already a request in flight, return that promise
         if (this.inflightRequest) {
             if (this.debug) {
@@ -57,11 +46,7 @@ class GitHubActionsAPI {
                     console.log('Received workflow statuses from Azure Function:', data);
                 }
 
-                // Cache the results
-                this.cache = data.workflows || [];
-                this.cacheTimestamp = Date.now();
-
-                return this.cache;
+                return data.workflows || [];
             } finally {
                 // Clear the in-flight request tracker
                 this.inflightRequest = null;
@@ -113,14 +98,6 @@ class GitHubActionsAPI {
                 error: error.message
             };
         }
-    }
-
-    /**
-     * Clear the cache (useful for manual refresh)
-     */
-    clearCache() {
-        this.cache = null;
-        this.cacheTimestamp = null;
     }
 }
 
