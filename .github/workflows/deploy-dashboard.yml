@@ -24,7 +24,7 @@ jobs:
       
       - name: Inject Azure Function URL
         env:
-          AZURE_FUNCTION_URL: ${{ vars.AZURE_FUNCTION_URL }}
+          AZURE_FUNCTION_URL: ${{ secrets.AZURE_FUNCTION_URL }}
         run: |
           # Replace the placeholder Azure Function URL in config.js with the actual URL
           # Using awk to safely handle special characters in the URL
