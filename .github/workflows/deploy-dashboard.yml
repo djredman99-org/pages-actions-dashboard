@@ -2,7 +2,7 @@ name: Deploy Dashboard to GitHub Pages
 
 on:
   push:
-    branches: [ main, copilot/make-dashboard-usability-better ]
+    branches: [ main, copilot/move-api-logice-to-azure-function ]
   workflow_dispatch:
 
 permissions:
