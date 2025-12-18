@@ -6,7 +6,7 @@ const DASHBOARD_CONFIG = {
     azureFunction: {
         // Azure Function URL that will be injected at build time
         // This function handles authentication with GitHub App and returns workflow statuses
-        url: '__AZURE_FUNCTION_URL__',
+        url: 'https://ghactionsdash-func-dev.azurewebsites.net',
         debug: false // Set to true to enable debug logging in browser console
     },
 

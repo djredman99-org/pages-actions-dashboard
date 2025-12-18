@@ -1,7 +1,6 @@
 // GitHub App Authentication Module
 // Handles GitHub App authentication using private key from Key Vault
 
-const crypto = require('crypto');
 const { createAppAuth } = require('@octokit/auth-app');
 const { Octokit } = require('@octokit/rest');
 
