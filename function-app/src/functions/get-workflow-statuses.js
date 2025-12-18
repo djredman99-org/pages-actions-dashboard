@@ -70,14 +70,15 @@ function findInstallationForRepo(installations, owner, repo) {
 /**
  * HTTP trigger function to get workflow statuses
  * 
- * Security Note: authLevel is 'function' so callers must provide a function key.
- * For production, also consider:
- * - Implementing rate limiting
+ * Security Note: authLevel is 'anonymous' to allow direct access from GitHub Pages.
+ * Security is provided by CORS configuration which restricts allowed origins.
+ * For production, consider:
  * - Restricting CORS origins to specific domains
+ * - Implementing rate limiting via Azure API Management
  */
 app.http('get-workflow-statuses', {
     methods: ['GET', 'POST'],
-    authLevel: 'function',
+    authLevel: 'anonymous',
     handler: async (request, context) => {
         context.log('Processing request for workflow statuses');
 
