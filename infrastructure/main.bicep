@@ -23,6 +23,11 @@ param githubAppId string
 @secure()
 param githubAppPrivateKey string
 
+@description('CORS allowed origins for the function app (e.g., https://your-org.github.io)')
+param corsAllowedOrigins array = [
+  'https://*.github.io'
+]
+
 // Variables
 var storageAccountName = '${baseName}${environment}'
 var functionAppName = '${baseName}-func-${environment}'
@@ -74,13 +79,13 @@ resource applicationInsights 'Microsoft.Insights/components@2020-02-02' = {
   }
 }
 
-// App Service Plan (Basic plan)
+// App Service Plan (Consumption plan for serverless)
 resource appServicePlan 'Microsoft.Web/serverfarms@2022-09-01' = {
   name: appServicePlanName
   location: location
   sku: {
-    name: 'B1'
-    tier: 'Basic'
+    name: 'Y1'
+    tier: 'Dynamic'
   }
   properties: {}
 }
@@ -165,10 +170,7 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
         }
       ]
       cors: {
-        allowedOrigins: [
-          'https://*.github.io' // Restrict to GitHub Pages domains
-          // TODO: Update to specific domain in production: 'https://your-org.github.io'
-        ]
+        allowedOrigins: corsAllowedOrigins
         supportCredentials: false
       }
       ftpsState: 'Disabled'

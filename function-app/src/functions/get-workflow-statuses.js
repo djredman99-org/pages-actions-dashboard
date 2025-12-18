@@ -70,15 +70,14 @@ function findInstallationForRepo(installations, owner, repo) {
 /**
  * HTTP trigger function to get workflow statuses
  * 
- * Security Note: authLevel is 'anonymous' for easy access from GitHub Pages.
- * For production, consider:
- * - Changing to 'function' and requiring function keys
+ * Security Note: authLevel is 'function' so callers must provide a function key.
+ * For production, also consider:
  * - Implementing rate limiting
  * - Restricting CORS origins to specific domains
  */
 app.http('get-workflow-statuses', {
     methods: ['GET', 'POST'],
-    authLevel: 'anonymous',
+    authLevel: 'function',
     handler: async (request, context) => {
         context.log('Processing request for workflow statuses');
 
@@ -108,18 +107,38 @@ app.http('get-workflow-statuses', {
 
             // Get workflow configurations from Azure Storage
             context.log('Retrieving workflow configurations from Storage');
-            const workflows = await getWorkflowConfigurations(
+            const rawWorkflows = await getWorkflowConfigurations(
                 storageAccountUrl,
                 workflowConfigContainer
             );
+
+            // Validate workflow structure
+            const workflows = rawWorkflows.filter(workflow => {
+                if (!workflow || typeof workflow !== 'object') {
+                    context.log('Invalid workflow object:', workflow);
+                    return false;
+                }
+                if (typeof workflow.owner !== 'string' || !workflow.owner) {
+                    context.log('Invalid or missing owner in workflow:', workflow);
+                    return false;
+                }
+                if (typeof workflow.repo !== 'string' || !workflow.repo) {
+                    context.log('Invalid or missing repo in workflow:', workflow);
+                    return false;
+                }
+                if (typeof workflow.workflow !== 'string' || !workflow.workflow) {
+                    context.log('Invalid or missing workflow in workflow:', workflow);
+                    return false;
+                }
+                return true;
+            });
 
             if (!workflows || workflows.length === 0) {
                 context.log('No workflows configured');
                 return {
                     status: 200,
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
+                        'Content-Type': 'application/json'
                     },
                     jsonBody: {
                         workflows: [],
@@ -205,7 +224,6 @@ app.http('get-workflow-statuses', {
                 status: 200,
                 headers: {
                     'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*',
                     'Cache-Control': 'public, max-age=60'
                 },
                 jsonBody: {
@@ -220,12 +238,11 @@ app.http('get-workflow-statuses', {
             return {
                 status: 500,
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
+                    'Content-Type': 'application/json'
                 },
                 jsonBody: {
                     error: 'Internal server error',
-                    message: error.message
+                    message: 'An error occurred while processing your request. Please try again later.'
                 }
             };
         }

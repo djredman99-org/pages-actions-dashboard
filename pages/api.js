@@ -8,6 +8,7 @@ class GitHubActionsAPI {
         this.cache = null;
         this.cacheTimestamp = null;
         this.cacheTTL = 60000; // 1 minute cache
+        this.inflightRequest = null; // Track in-flight requests to prevent duplicates
     }
 
     /**
@@ -23,38 +24,51 @@ class GitHubActionsAPI {
             return this.cache;
         }
 
-        try {
-            const response = await fetch(`${this.functionUrl}/api/get-workflow-statuses`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                if (response.status === 500) {
-                    throw new Error('Azure Function error. Check function configuration.');
-                } else if (response.status === 404) {
-                    throw new Error('Azure Function not found. Check URL configuration.');
-                }
-                throw new Error(`Azure Function error: ${response.status} ${response.statusText}`);
-            }
-
-            const data = await response.json();
-            
+        // If there's already a request in flight, return that promise
+        if (this.inflightRequest) {
             if (this.debug) {
-                console.log('Received workflow statuses from Azure Function:', data);
+                console.log('Request already in flight, waiting for it to complete');
             }
-
-            // Cache the results
-            this.cache = data.workflows || [];
-            this.cacheTimestamp = Date.now();
-
-            return this.cache;
-        } catch (error) {
-            console.error('Failed to get workflow statuses from Azure Function:', error);
-            throw error;
+            return this.inflightRequest;
         }
+
+        // Create new request
+        this.inflightRequest = (async () => {
+            try {
+                const response = await fetch(`${this.functionUrl}/api/get-workflow-statuses`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    if (response.status === 500) {
+                        throw new Error('Azure Function error. Check function configuration.');
+                    } else if (response.status === 404) {
+                        throw new Error('Azure Function not found. Check URL configuration.');
+                    }
+                    throw new Error(`Azure Function error: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                if (this.debug) {
+                    console.log('Received workflow statuses from Azure Function:', data);
+                }
+
+                // Cache the results
+                this.cache = data.workflows || [];
+                this.cacheTimestamp = Date.now();
+
+                return this.cache;
+            } finally {
+                // Clear the in-flight request tracker
+                this.inflightRequest = null;
+            }
+        })();
+
+        return this.inflightRequest;
     }
 
     /**

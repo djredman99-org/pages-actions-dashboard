@@ -12,16 +12,6 @@ const { Octokit } = require('@octokit/rest');
  */
 async function createGitHubAppClient(appId, privateKey) {
     try {
-        // Create app authentication
-        const auth = createAppAuth({
-            appId: appId,
-            privateKey: privateKey,
-        });
-
-        // Get app installation token
-        // Note: This requires the app to be installed on the target repositories
-        const appAuthentication = await auth({ type: 'app' });
-
         // Create Octokit instance with app authentication
         const octokit = new Octokit({
             authStrategy: createAppAuth,
