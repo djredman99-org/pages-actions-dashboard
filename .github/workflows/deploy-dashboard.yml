@@ -22,15 +22,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Inject Azure Function URL
+      - name: Inject Azure Function Configuration
         env:
           AZURE_FUNCTION_URL: ${{ secrets.AZURE_FUNCTION_URL }}
+          AZURE_FUNCTION_KEY: ${{ secrets.AZURE_FUNCTION_KEY }}
         run: |
           # Replace the placeholder Azure Function URL in config.js with the actual URL
-          # Using awk to safely handle special characters in the URL
+          # Using awk to safely handle special characters in the URL and key
           awk -v url="$AZURE_FUNCTION_URL" '{gsub(/__AZURE_FUNCTION_URL__/, url)}1' pages/config.js > pages/config.js.tmp
           mv pages/config.js.tmp pages/config.js
-          echo "Azure Function URL injection completed"
+          awk -v key="$AZURE_FUNCTION_KEY" '{gsub(/__AZURE_FUNCTION_KEY__/, key)}1' pages/config.js > pages/config.js.tmp
+          mv pages/config.js.tmp pages/config.js
+          echo "Azure Function configuration injection completed"
         
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

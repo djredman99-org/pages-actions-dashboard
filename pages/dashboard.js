@@ -211,8 +211,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Initialize API client with Azure Function URL
-        const apiClient = new GitHubActionsAPI(DASHBOARD_CONFIG.azureFunction.url);
+        // Initialize API client with Azure Function URL and key
+        const apiClient = new GitHubActionsAPI(
+            DASHBOARD_CONFIG.azureFunction.url,
+            DASHBOARD_CONFIG.azureFunction.key
+        );
         
         // Enable debug mode if configured
         if (DASHBOARD_CONFIG.azureFunction.debug) {

@@ -2,8 +2,9 @@
 // Handles API calls to Azure Function backend
 
 class GitHubActionsAPI {
-    constructor(functionUrl) {
+    constructor(functionUrl, functionKey) {
         this.functionUrl = functionUrl;
+        this.functionKey = functionKey;
         this.debug = true; // Set to true to enable debug logging
         this.cache = null;
         this.cacheTimestamp = null;
@@ -35,7 +36,12 @@ class GitHubActionsAPI {
         // Create new request
         this.inflightRequest = (async () => {
             try {
-                const response = await fetch(`${this.functionUrl}/api/get-workflow-statuses`, {
+                // Build URL with function key
+                const url = this.functionKey 
+                    ? `${this.functionUrl}/api/get-workflow-statuses?code=${this.functionKey}`
+                    : `${this.functionUrl}/api/get-workflow-statuses`;
+                    
+                const response = await fetch(url, {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json'
