@@ -24,12 +24,11 @@ param githubAppId string
 param githubAppPrivateKey string
 
 // Variables
-var uniqueSuffix = uniqueString(resourceGroup().id)
-var storageAccountName = '${baseName}${environment}${uniqueSuffix}'
-var functionAppName = '${baseName}-func-${environment}-${uniqueSuffix}'
-var appServicePlanName = '${baseName}-plan-${environment}-${uniqueSuffix}'
-var keyVaultName = '${baseName}-kv-${environment}-${take(uniqueSuffix, 6)}'
-var applicationInsightsName = '${baseName}-ai-${environment}-${uniqueSuffix}'
+var storageAccountName = '${baseName}${environment}'
+var functionAppName = '${baseName}-func-${environment}'
+var appServicePlanName = '${baseName}-plan-${environment}'
+var keyVaultName = '${baseName}-kv-${environment}'
+var applicationInsightsName = '${baseName}-ai-${environment}'
 var storageContainerName = 'workflow-configs'
 
 // Storage Account for workflow configurations and function app storage
@@ -75,13 +74,13 @@ resource applicationInsights 'Microsoft.Insights/components@2020-02-02' = {
   }
 }
 
-// App Service Plan (Consumption plan for serverless)
+// App Service Plan (Basic plan)
 resource appServicePlan 'Microsoft.Web/serverfarms@2022-09-01' = {
   name: appServicePlanName
   location: location
   sku: {
-    name: 'Y1'
-    tier: 'Dynamic'
+    name: 'B1'
+    tier: 'Basic'
   }
   properties: {}
 }
@@ -142,7 +141,7 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
         }
         {
           name: 'WEBSITE_NODE_DEFAULT_VERSION'
-          value: '~18'
+          value: '~20'
         }
         {
           name: 'APPINSIGHTS_INSTRUMENTATIONKEY'

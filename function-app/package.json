@@ -16,6 +16,5 @@
     "@octokit/rest": "^20.0.0"
   },
   "devDependencies": {
-    "@azure/functions-core-tools": "^4.0.0"
   }
 }

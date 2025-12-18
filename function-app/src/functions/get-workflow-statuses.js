@@ -1,6 +1,7 @@
 // Azure Function: Get Workflow Statuses
 // HTTP-triggered function that returns workflow statuses for the dashboard
 
+const crypto = require('crypto');
 const { app } = require('@azure/functions');
 const { getSecret } = require('../keyvault-client');
 const { getWorkflowConfigurations } = require('../storage-client');

@@ -1,6 +1,7 @@
 // Azure Key Vault Client Module
 // Handles retrieving secrets from Azure Key Vault using managed identity
 
+const crypto = require('crypto');
 const { DefaultAzureCredential } = require('@azure/identity');
 const { SecretClient } = require('@azure/keyvault-secrets');
 

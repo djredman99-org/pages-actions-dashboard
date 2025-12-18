@@ -92,6 +92,40 @@ Before you begin, ensure you have:
 
    **Important**: Replace the private key content with your actual private key from the `.pem` file. Include the full content including the BEGIN and END lines.
 
+   **Security Warning**: 
+   - ⚠️ **Never commit `parameters.json` with secrets to source control**
+   - For production deployments, use Azure Key Vault references or inject secrets via CI/CD pipelines
+   - Consider using GitHub Actions secrets for automated deployments
+
+### Alternative: Manual Secret Upload (Recommended for Development)
+
+Instead of putting the private key in `parameters.json`, you can deploy the infrastructure first with a placeholder, then manually upload the private key:
+
+1. **Use placeholder in parameters.json**:
+   ```json
+   "githubAppPrivateKey": {
+     "value": "PLACEHOLDER_WILL_BE_REPLACED"
+   }
+   ```
+
+2. **Deploy infrastructure** (Step 3 below)
+
+3. **Upload private key manually**:
+   
+   **Option A: Upload file directly (Recommended)**
+   ```bash
+   # Upload your .pem file directly to Key Vault
+   az keyvault secret set \
+     --vault-name ghactionsdash-kv-dev \
+     --name github-app-private-key \
+     --file /path/to/your/private-key.pem
+   ```
+
+   **Option B: Via VS Code file upload**
+   - In VS Code/Codespace: Right-click Explorer → "Upload..." → Select your `.pem` file
+   - Run: `az keyvault secret set --vault-name ghactionsdash-kv-dev --name github-app-private-key --file ./uploaded-file.pem`
+   - Clean up: `rm ./uploaded-file.pem`
+
 ## Step 3: Deploy Azure Infrastructure
 
 1. Login to Azure CLI:
@@ -137,7 +171,7 @@ Before you begin, ensure you have:
 
 3. Deploy to Azure:
    ```bash
-   func azure functionapp publish <FUNCTION_APP_NAME>
+   func azure functionapp publish <FUNCTION_APP_NAME> --javascript
    ```
 
    Replace `<FUNCTION_APP_NAME>` with the name from the deployment outputs.
@@ -312,6 +346,148 @@ az functionapp config set \
   --resource-group <RESOURCE_GROUP_NAME> \
   --always-on true
 ```
+
+## Troubleshooting
+
+### Resource Provider Registration Error
+
+If you encounter an error like this during deployment:
+
+```
+Failed to register resource provider 'microsoft.operationalinsights'. 
+Ensure that microsoft.operationalinsights is registered for this subscription.
+```
+
+**Solution**: Register the required resource provider:
+
+```bash
+az provider register --namespace microsoft.operationalinsights
+```
+
+You may also need to register other providers:
+
+```bash
+# Register all commonly needed providers for Azure Functions
+az provider register --namespace microsoft.operationalinsights
+az provider register --namespace microsoft.insights  
+az provider register --namespace microsoft.web
+az provider register --namespace microsoft.storage
+az provider register --namespace microsoft.keyvault
+```
+
+**Check registration status**:
+```bash
+az provider show -n microsoft.operationalinsights --query "registrationState"
+```
+
+Wait for the status to change from "Registering" to "Registered" (usually 2-5 minutes), then retry your deployment.
+
+### App Service Quota Errors
+
+If you encounter quota errors for App Service Plans:
+
+```
+Operation cannot be completed without additional quota.
+Current Limit (Basic VMs): 0
+```
+
+**Solutions**:
+1. **Request quota increase**: Go to Azure Portal → Subscriptions → Usage + quotas → Request increase for "App Service Plans"
+2. **Try different region**: Deploy to a region with available quota
+3. **Use different subscription**: If using a trial/student subscription, consider upgrading
+
+### Storage Blob Permission Errors
+
+If you encounter permission errors when uploading workflows.json:
+
+```
+You do not have the required permissions needed to perform this operation.
+Depending on your operation, you may need to be assigned one of the following roles:
+    "Storage Blob Data Owner"
+    "Storage Blob Data Contributor"
+    "Storage Blob Data Reader"
+```
+
+**Solutions**:
+
+1. **Assign Storage Blob Data Contributor role**:
+   ```bash
+   # Get your user object ID
+   USER_ID=$(az ad signed-in-user show --query objectId -o tsv)
+   
+   # Assign Storage Blob Data Contributor role
+   az role assignment create \
+     --assignee $USER_ID \
+     --role "Storage Blob Data Contributor" \
+     --scope "/subscriptions/YOUR_SUBSCRIPTION_ID/resourceGroups/ghactionsdash-rg/providers/Microsoft.Storage/storageAccounts/ghactionsdashdev"
+   ```
+
+2. **Alternative: Use account key authentication**:
+   ```bash
+   az storage blob upload \
+     --account-name ghactionsdashdev \
+     --container-name workflow-configs \
+     --name workflows.json \
+     --file workflows.json \
+     --auth-mode key
+   ```
+
+3. **Grant permissions through Azure Portal**:
+   - Go to Azure Portal → Storage Account → Access Control (IAM)
+   - Click "Add role assignment"
+   - Select "Storage Blob Data Contributor"
+   - Assign to your user account
+
+### GitHub App Private Key Format Error
+
+If you encounter an authentication error when the Function App tries to access GitHub:
+
+```
+"GitHub App authentication failed: secretOrPrivateKey must be an asymmetric key when using RS256"
+```
+
+**Cause**: The GitHub App private key in Key Vault is not properly formatted.
+
+**Solutions**:
+
+1. **Re-upload the private key with proper formatting**:
+   ```bash
+   # Upload the private key directly from the .pem file
+   az keyvault secret set \
+     --vault-name ghactionsdash-kv-dev \
+     --name github-app-private-key \
+     --file /path/to/your/private-key.pem
+   ```
+
+2. **Verify the private key format**:
+   ```bash
+   # Check the stored private key (first few lines)
+   az keyvault secret show \
+     --vault-name ghactionsdash-kv-dev \
+     --name github-app-private-key \
+     --query "value" -o tsv | head -5
+   ```
+
+   The output should start with:
+   ```
+   -----BEGIN RSA PRIVATE KEY-----
+   ```
+
+3. **If using parameters.json, ensure proper escaping**:
+   ```json
+   {
+     "githubAppPrivateKey": {
+       "value": "-----BEGIN RSA PRIVATE KEY-----\\nMIIEow...\\n-----END RSA PRIVATE KEY-----"
+     }
+   }
+   ```
+   
+   **Note**: Use `\\n` for newlines in JSON, not literal line breaks.
+
+4. **Restart Function App after updating the key**:
+   ```bash
+   az functionapp restart --name ghactionsdash-func-dev --resource-group ghactionsdash-rg
+   ```
 
 ## Support
 
