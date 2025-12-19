@@ -177,8 +177,15 @@ class DashboardLoader {
                 newCardsMap.set(key, card);
             });
 
-            // If this is the first load or we have an error message, clear and rebuild
-            if (existingCards.length === 0 || this.hasErrorState(grid)) {
+            // Check if any existing cards are missing the data-workflow-key attribute
+            // If so, treat this as a first load to ensure clean state
+            const hasCardsWithoutKey = existingCards.some(card => 
+                !card.classList.contains('config-error') && 
+                !card.getAttribute('data-workflow-key')
+            );
+
+            // If this is the first load, we have an error message, or cards are missing keys, clear and rebuild
+            if (existingCards.length === 0 || this.hasErrorState(grid) || hasCardsWithoutKey) {
                 grid.innerHTML = '';
                 workflowStatuses.forEach(workflow => {
                     const key = this.getWorkflowKey(workflow);
@@ -195,11 +202,9 @@ class DashboardLoader {
                     const key = card.getAttribute('data-workflow-key');
                     if (key) {
                         existingCardsMap.set(key, card);
-                    } else {
-                        // Log warning for cards without workflow key
-                        console.warn('Found workflow card without data-workflow-key attribute, removing it');
-                        grid.removeChild(card);
                     }
+                    // Note: we don't remove cards without keys here anymore
+                    // because we already checked for that case above
                 });
 
                 // Replace existing cards with updated versions in the same order as workflowStatuses
