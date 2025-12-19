@@ -230,6 +230,12 @@ Instead of putting the private key in `parameters.json`, you can deploy the infr
    - Click "New repository secret"
    - Name: `AZURE_FUNCTION_URL`
    - Value: `https://<FUNCTION_APP_NAME>.azurewebsites.net` (from deployment outputs)
+   
+   **Important**: Use only the **base URL** without any path or endpoint. 
+   - ✅ Correct: `https://actionsdash-func-dev.azurewebsites.net`
+   - ❌ Incorrect: `https://actionsdash-func-dev.azurewebsites.net/api/get-workflow-statuses`
+   
+   The frontend code will automatically append the `/api/get-workflow-statuses` endpoint path.
 
 2. The deployment workflow will automatically inject this URL into the Pages site
 
