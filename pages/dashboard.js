@@ -80,6 +80,15 @@ class DashboardLoader {
     }
 
     /**
+     * Check if the grid has an error state displayed
+     * @param {HTMLElement} grid - Workflow grid element
+     * @returns {boolean} - True if grid has error state
+     */
+    hasErrorState(grid) {
+        return grid.querySelector('.config-error') !== null;
+    }
+
+    /**
      * Update refresh status indicator
      * @param {boolean} isRefreshing - Whether a refresh is in progress
      * @param {Date} lastRefreshTime - Last successful refresh time
@@ -100,7 +109,9 @@ class DashboardLoader {
         } else {
             refreshStatus.classList.remove('refreshing');
             if (lastRefreshTime) {
-                const timeString = lastRefreshTime.toLocaleString('en-US', {
+                // Use user's browser locale for localized time formatting
+                const locale = navigator.language || 'en-US';
+                const timeString = lastRefreshTime.toLocaleString(locale, {
                     timeZoneName: 'short'
                 });
                 refreshStatusText.textContent = `Last updated: ${timeString}`;
@@ -129,7 +140,7 @@ class DashboardLoader {
 
             if (!workflowStatuses || workflowStatuses.length === 0) {
                 // Only clear grid if there are no workflows (first load scenario)
-                if (grid.children.length === 0 || grid.querySelector('.config-error')) {
+                if (grid.children.length === 0 || this.hasErrorState(grid)) {
                     grid.innerHTML = '';
                     this.showNoWorkflowsMessage(grid);
                 }
@@ -157,7 +168,7 @@ class DashboardLoader {
             });
 
             // If this is the first load or we have an error message, clear and rebuild
-            if (existingCards.length === 0 || existingCards.some(el => el.classList.contains('config-error'))) {
+            if (existingCards.length === 0 || this.hasErrorState(grid)) {
                 grid.innerHTML = '';
                 workflowStatuses.forEach(workflow => {
                     const key = this.getWorkflowKey(workflow);
@@ -212,7 +223,7 @@ class DashboardLoader {
         } catch (error) {
             console.error('Failed to load workflows:', error);
             // Only show error if grid is empty or already has an error
-            if (grid.children.length === 0 || grid.querySelector('.config-error')) {
+            if (grid.children.length === 0 || this.hasErrorState(grid)) {
                 grid.innerHTML = '';
                 this.showApiError(grid, error);
             }
