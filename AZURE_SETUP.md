@@ -112,6 +112,14 @@ Instead of putting the private key in `parameters.json`, you can deploy the infr
 
 3. **Upload private key manually**:
    
+   **Required Permissions**: To upload secrets to Key Vault, your user account needs the **Key Vault Secrets Officer** role or equivalent permissions (e.g., `Secret Set` permission). You can assign this role using:
+   ```bash
+   az role assignment create \
+     --role "Key Vault Secrets Officer" \
+     --assignee <your-user-email> \
+     --scope /subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.KeyVault/vaults/<keyvault-name>
+   ```
+   
    **Option A: Upload file directly (Recommended)**
    ```bash
    # Upload your .pem file directly to Key Vault
