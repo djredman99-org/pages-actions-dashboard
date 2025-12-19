@@ -490,18 +490,6 @@ az functionapp log tail \
    - Monitor failure patterns
    - Historical trends
 
-## Migration Path
-
-For existing users with PAT-based architecture:
-
-1. **Read**: [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md)
-2. **Deploy**: Azure infrastructure
-3. **Configure**: Repository secrets
-4. **Test**: Verify functionality
-5. **Cleanup**: Revoke old PAT
-
-**Estimated time**: 1-2 hours
-
 ## Conclusion
 
 The Azure Function backend provides a production-ready, secure, and scalable solution for the GitHub Actions Dashboard. It eliminates credential exposure, centralizes configuration management, and provides enterprise-grade monitoring and security features.
@@ -518,7 +506,6 @@ The Azure Function backend provides a production-ready, secure, and scalable sol
 ### Documentation
 
 - [AZURE_SETUP.md](AZURE_SETUP.md) - Complete setup guide
-- [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) - Migration from PAT architecture
 - [function-app/README.md](function-app/README.md) - Function development guide
 - [infrastructure/README.md](infrastructure/README.md) - Infrastructure details
 - [README.md](README.md) - Main project documentation
