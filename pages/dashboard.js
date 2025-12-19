@@ -91,7 +91,10 @@ class DashboardLoader {
         } else {
             refreshStatus.classList.remove('refreshing');
             if (lastRefreshTime) {
-                refreshStatusText.textContent = `Last updated: ${lastRefreshTime.toLocaleString()}`;
+                const timeString = lastRefreshTime.toLocaleString(undefined, {
+                    timeZoneName: 'short'
+                });
+                refreshStatusText.textContent = `Last updated: ${timeString}`;
             }
         }
     }
@@ -128,9 +131,9 @@ class DashboardLoader {
             // Instead of clearing the grid, update existing cards or add new ones
             // This prevents the visual "wipe" effect
             const existingCards = Array.from(grid.children);
-            const newCardsMap = new Map();
             
             // Create a map of workflow identifiers to new cards
+            const newCardsMap = new Map();
             workflowStatuses.forEach(workflow => {
                 const key = `${workflow.owner}/${workflow.repo}/${workflow.workflow}`;
                 const card = this.createWorkflowCard(workflow, {
@@ -139,6 +142,8 @@ class DashboardLoader {
                     url: workflow.url,
                     updatedAt: workflow.updatedAt
                 });
+                // Store the workflow key as a data attribute for reliable matching
+                card.setAttribute('data-workflow-key', key);
                 newCardsMap.set(key, card);
             });
 
@@ -153,32 +158,35 @@ class DashboardLoader {
                     }
                 });
             } else {
-                // Update existing cards in place
-                // Build a list of existing workflow keys
-                const existingKeys = new Set();
-                existingCards.forEach((card, index) => {
-                    // Try to determine the workflow key from the card
-                    // We'll need to update cards by index if we can't determine keys
-                    const workflow = workflowStatuses[index];
-                    if (workflow) {
-                        const key = `${workflow.owner}/${workflow.repo}/${workflow.workflow}`;
-                        existingKeys.add(key);
-                        const newCard = newCardsMap.get(key);
-                        if (newCard) {
-                            grid.replaceChild(newCard, card);
-                        }
+                // Update existing cards in place by matching workflow keys
+                // Build a map of existing workflow keys to their card elements
+                const existingCardsMap = new Map();
+                existingCards.forEach(card => {
+                    const key = card.getAttribute('data-workflow-key');
+                    if (key) {
+                        existingCardsMap.set(key, card);
                     }
                 });
 
-                // Add any new workflows that didn't exist before
+                // Replace existing cards with updated versions in the same order as workflowStatuses
                 workflowStatuses.forEach(workflow => {
                     const key = `${workflow.owner}/${workflow.repo}/${workflow.workflow}`;
-                    if (!existingKeys.has(key)) {
-                        const card = newCardsMap.get(key);
-                        if (card) {
-                            grid.appendChild(card);
-                        }
+                    const newCard = newCardsMap.get(key);
+                    const existingCard = existingCardsMap.get(key);
+                    
+                    if (existingCard && newCard) {
+                        // Replace existing card with updated one
+                        grid.replaceChild(newCard, existingCard);
+                        existingCardsMap.delete(key);
+                    } else if (newCard && !existingCard) {
+                        // New workflow - append at the end
+                        grid.appendChild(newCard);
                     }
+                });
+
+                // Remove any cards for workflows that no longer exist
+                existingCardsMap.forEach(card => {
+                    grid.removeChild(card);
                 });
             }
 
@@ -199,7 +207,7 @@ class DashboardLoader {
                 grid.innerHTML = '';
                 this.showApiError(grid, error);
             }
-            this.updateRefreshStatus(false, new Date());
+            // Don't update refresh status time on error - keep showing last successful refresh
         }
     }
 
