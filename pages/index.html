@@ -41,6 +41,45 @@
             font-size: 1.1em;
         }
 
+        .refresh-status {
+            margin-bottom: 20px;
+            padding: 12px 16px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9em;
+            color: #34495e;
+        }
+
+        .refresh-status.refreshing {
+            border-left-color: #dbab09;
+            background: #fff9e6;
+        }
+
+        .refresh-status-icon {
+            font-size: 1.2em;
+        }
+
+        .refresh-status.refreshing .refresh-status-icon {
+            animation: spin 1.5s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .refresh-status-text {
+            flex: 1;
+        }
+
         .workflow-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -259,6 +298,11 @@
             <p>This dashboard dynamically fetches workflow statuses from GitHub using the GitHub API.</p>
             <p>To configure your workflows, edit the <code>config.js</code> file and add your repository and workflow information.</p>
             <p>You'll need to set up authentication using a GitHub App or Personal Access Token. See the README for detailed instructions.</p>
+        </div>
+
+        <div id="refresh-status" class="refresh-status" style="display: none;">
+            <span class="refresh-status-icon">🔄</span>
+            <span class="refresh-status-text"></span>
         </div>
 
         <div class="workflow-grid">
