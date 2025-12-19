@@ -122,10 +122,6 @@
             font-size: 1em;
         }
 
-        .refresh-button:disabled .refresh-button-icon {
-            animation: spin 1.5s linear infinite;
-        }
-
         .workflow-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -340,10 +336,10 @@
         <p class="subtitle">Monitoring workflow statuses across repositories</p>
 
         <div class="instructions">
-            <h2>How to Configure Your Dashboard</h2>
-            <p>This dashboard dynamically fetches workflow statuses from GitHub using the GitHub API.</p>
-            <p>To configure your workflows, edit the <code>config.js</code> file and add your repository and workflow information.</p>
-            <p>You'll need to set up authentication using a GitHub App or Personal Access Token. See the README for detailed instructions.</p>
+            <h2>Dashboard Features</h2>
+            <p>This dashboard provides real-time monitoring of GitHub Actions workflow statuses across multiple repositories with enterprise-grade security.</p>
+            <p><strong>Key Features:</strong> Azure Function backend for secure API calls • GitHub App authentication with credentials stored in Azure Key Vault • Workflow configurations managed in Azure Storage • Manual refresh for instant updates • Auto-refresh every 5 minutes • Support for public, private, and internal repositories</p>
+            <p>See the <a href="https://github.com/djredman99-org/pages-actions-dashboard#readme" target="_blank" rel="noopener noreferrer">README</a> for setup and configuration instructions.</p>
         </div>
 
         <div id="refresh-status" class="refresh-status" style="display: none;">
