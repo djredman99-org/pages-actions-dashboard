@@ -80,6 +80,52 @@
             flex: 1;
         }
 
+        .refresh-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+            margin-bottom: 20px;
+        }
+
+        .refresh-button:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .refresh-button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .refresh-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .refresh-button:focus-visible {
+            outline: 2px solid #667eea;
+            outline-offset: 2px;
+        }
+
+        .refresh-button-icon {
+            font-size: 1.1em;
+        }
+
+        .refresh-button:disabled .refresh-button-icon {
+            animation: spin 1.5s linear infinite;
+        }
+
         .workflow-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -304,6 +350,11 @@
             <span class="refresh-status-icon">🔄</span>
             <span class="refresh-status-text"></span>
         </div>
+
+        <button id="refresh-button" class="refresh-button" aria-label="Refresh workflow statuses">
+            <span class="refresh-button-icon">🔄</span>
+            <span>Refresh</span>
+        </button>
 
         <div class="workflow-grid">
             <!-- Workflow items will be dynamically loaded by JavaScript -->

@@ -100,6 +100,7 @@ class DashboardLoader {
     updateRefreshStatus(isRefreshing, lastRefreshTime = null) {
         const refreshStatus = document.getElementById('refresh-status');
         const refreshStatusText = refreshStatus?.querySelector('.refresh-status-text');
+        const refreshButton = document.getElementById('refresh-button');
         
         if (!refreshStatus || !refreshStatusText) {
             return;
@@ -110,6 +111,10 @@ class DashboardLoader {
         if (isRefreshing) {
             refreshStatus.classList.add('refreshing');
             refreshStatusText.textContent = 'Refreshing workflow statuses...';
+            // Disable refresh button during refresh
+            if (refreshButton) {
+                refreshButton.disabled = true;
+            }
         } else {
             refreshStatus.classList.remove('refreshing');
             if (lastRefreshTime) {
@@ -125,6 +130,10 @@ class DashboardLoader {
                     console.warn('Failed to format time with locale:', error);
                     refreshStatusText.textContent = `Last updated: ${lastRefreshTime.toISOString()}`;
                 }
+            }
+            // Re-enable refresh button after refresh
+            if (refreshButton) {
+                refreshButton.disabled = false;
             }
         }
     }
@@ -320,6 +329,19 @@ class DashboardLoader {
             this.loadWorkflows();
         }, intervalMinutes * 60 * 1000);
     }
+
+    /**
+     * Set up manual refresh button
+     */
+    setupRefreshButton() {
+        const refreshButton = document.getElementById('refresh-button');
+        if (refreshButton) {
+            refreshButton.addEventListener('click', () => {
+                console.log('Manual refresh triggered by user');
+                this.loadWorkflows();
+            });
+        }
+    }
 }
 
 // Global dashboard instance for console access and testing
@@ -370,6 +392,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Load workflows
         await dashboard.loadWorkflows();
+
+        // Set up manual refresh button
+        dashboard.setupRefreshButton();
 
         // Set up auto-refresh every 5 minutes
         dashboard.setupAutoRefresh(5);
