@@ -303,6 +303,7 @@
         .instructions li {
             margin-bottom: 5px;
             break-inside: avoid;
+            -webkit-column-break-inside: avoid;
         }
 
         .instructions a {
@@ -330,6 +331,10 @@
         @media (max-width: 768px) {
             .workflow-grid {
                 grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .instructions ul {
+                column-count: 1;
             }
             
             h1 {
