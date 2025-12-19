@@ -71,6 +71,32 @@ class DashboardLoader {
     }
 
     /**
+     * Update refresh status indicator
+     * @param {boolean} isRefreshing - Whether a refresh is in progress
+     * @param {Date} lastRefreshTime - Last successful refresh time
+     */
+    updateRefreshStatus(isRefreshing, lastRefreshTime = null) {
+        const refreshStatus = document.getElementById('refresh-status');
+        const refreshStatusText = refreshStatus?.querySelector('.refresh-status-text');
+        
+        if (!refreshStatus || !refreshStatusText) {
+            return;
+        }
+
+        refreshStatus.style.display = 'flex';
+        
+        if (isRefreshing) {
+            refreshStatus.classList.add('refreshing');
+            refreshStatusText.textContent = 'Refreshing workflow statuses...';
+        } else {
+            refreshStatus.classList.remove('refreshing');
+            if (lastRefreshTime) {
+                refreshStatusText.textContent = `Last updated: ${lastRefreshTime.toLocaleString()}`;
+            }
+        }
+    }
+
+    /**
      * Load all workflow statuses and render them
      */
     async loadWorkflows() {
@@ -81,8 +107,8 @@ class DashboardLoader {
             return;
         }
 
-        // Clear existing content
-        grid.innerHTML = '';
+        // Show refreshing status
+        this.updateRefreshStatus(true);
 
         try {
             // Get all workflow statuses from Azure Function
@@ -90,30 +116,90 @@ class DashboardLoader {
             const workflowStatuses = await this.api.getAllWorkflowStatuses();
 
             if (!workflowStatuses || workflowStatuses.length === 0) {
-                this.showNoWorkflowsMessage(grid);
+                // Only clear grid if there are no workflows (first load scenario)
+                if (grid.children.length === 0 || grid.querySelector('.config-error')) {
+                    grid.innerHTML = '';
+                    this.showNoWorkflowsMessage(grid);
+                }
+                this.updateRefreshStatus(false, new Date());
                 return;
             }
 
-            // Create workflow cards
+            // Instead of clearing the grid, update existing cards or add new ones
+            // This prevents the visual "wipe" effect
+            const existingCards = Array.from(grid.children);
+            const newCardsMap = new Map();
+            
+            // Create a map of workflow identifiers to new cards
             workflowStatuses.forEach(workflow => {
+                const key = `${workflow.owner}/${workflow.repo}/${workflow.workflow}`;
                 const card = this.createWorkflowCard(workflow, {
                     conclusion: workflow.conclusion,
                     status: workflow.status,
                     url: workflow.url,
                     updatedAt: workflow.updatedAt
                 });
-                grid.appendChild(card);
+                newCardsMap.set(key, card);
             });
+
+            // If this is the first load or we have an error message, clear and rebuild
+            if (existingCards.length === 0 || existingCards.some(el => el.classList.contains('config-error'))) {
+                grid.innerHTML = '';
+                workflowStatuses.forEach(workflow => {
+                    const key = `${workflow.owner}/${workflow.repo}/${workflow.workflow}`;
+                    const card = newCardsMap.get(key);
+                    if (card) {
+                        grid.appendChild(card);
+                    }
+                });
+            } else {
+                // Update existing cards in place
+                // Build a list of existing workflow keys
+                const existingKeys = new Set();
+                existingCards.forEach((card, index) => {
+                    // Try to determine the workflow key from the card
+                    // We'll need to update cards by index if we can't determine keys
+                    const workflow = workflowStatuses[index];
+                    if (workflow) {
+                        const key = `${workflow.owner}/${workflow.repo}/${workflow.workflow}`;
+                        existingKeys.add(key);
+                        const newCard = newCardsMap.get(key);
+                        if (newCard) {
+                            grid.replaceChild(newCard, card);
+                        }
+                    }
+                });
+
+                // Add any new workflows that didn't exist before
+                workflowStatuses.forEach(workflow => {
+                    const key = `${workflow.owner}/${workflow.repo}/${workflow.workflow}`;
+                    if (!existingKeys.has(key)) {
+                        const card = newCardsMap.get(key);
+                        if (card) {
+                            grid.appendChild(card);
+                        }
+                    }
+                });
+            }
 
             // Update last updated time
             const lastUpdatedElement = document.getElementById('last-updated');
+            const lastRefreshTime = new Date();
             if (lastUpdatedElement) {
-                lastUpdatedElement.textContent = new Date().toLocaleString();
+                lastUpdatedElement.textContent = lastRefreshTime.toLocaleString();
             }
+            
+            // Update refresh status
+            this.updateRefreshStatus(false, lastRefreshTime);
 
         } catch (error) {
             console.error('Failed to load workflows:', error);
-            this.showApiError(grid, error);
+            // Only show error if grid is empty or already has an error
+            if (grid.children.length === 0 || grid.querySelector('.config-error')) {
+                grid.innerHTML = '';
+                this.showApiError(grid, error);
+            }
+            this.updateRefreshStatus(false, new Date());
         }
     }
 
