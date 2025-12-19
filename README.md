@@ -18,9 +18,7 @@ A GitHub Pages site that serves as a centralized dashboard for monitoring GitHub
 
 ## Architecture
 
-### New: Azure Function Backend (Recommended)
-
-The dashboard now uses a secure Azure Function backend that:
+The dashboard uses a secure Azure Function backend that:
 - ✅ Stores GitHub App credentials securely in Azure Key Vault
 - ✅ Uses Managed Identity for secure access (no credentials in code)
 - ✅ Stores workflow configurations in Azure Storage (cross-device sync)
@@ -29,11 +27,7 @@ The dashboard now uses a secure Azure Function backend that:
 
 **Setup Guide**: See [AZURE_SETUP.md](AZURE_SETUP.md) for complete deployment instructions.
 
-### Legacy: Direct GitHub API (Deprecated)
-
-The original architecture using Personal Access Tokens is still supported but deprecated. See [SETUP.md](SETUP.md) for legacy setup instructions.
-
-## Quick Start (Azure Function Backend)
+## Quick Start
 
 ### 1. Prerequisites
 
@@ -90,26 +84,32 @@ Your dashboard will be available at `https://{your-username}.github.io/pages-act
 
 ### Workflow Configuration
 
-Edit `pages/config.js` to add or remove workflows:
+Workflows are stored in Azure Storage (`workflows.json`). To add or update workflows:
 
-```javascript
-const DASHBOARD_CONFIG = {
-    github: {
-        token: '__GITHUB_TOKEN__',  // Injected at build time
-        apiBaseUrl: 'https://api.github.com',
-        debug: false  // Set to true to enable debug logging
-    },
-    workflows: [
-        {
-            owner: 'your-org',       // Repository owner
-            repo: 'your-repo',       // Repository name
-            workflow: 'ci.yml',      // Workflow file name
-            label: 'CI Build'        // Display label
-        }
-        // Add more workflows...
-    ]
-};
+```json
+[
+  {
+    "owner": "your-org",
+    "repo": "your-repo",
+    "workflow": "ci.yml",
+    "label": "CI Build"
+  }
+]
 ```
+
+Upload to Azure Storage:
+
+```bash
+az storage blob upload \
+  --account-name <STORAGE_ACCOUNT_NAME> \
+  --container-name workflow-configs \
+  --name workflows.json \
+  --file workflows.json \
+  --auth-mode login \
+  --overwrite
+```
+
+Changes take effect immediately (no redeployment needed).
 
 ### Status Indicators
 
@@ -131,9 +131,9 @@ dashboard.setupAutoRefresh(10);
 
 ## Dynamic Workflow Management
 
-### NEW: Runtime Workflow Management
+### Runtime Workflow Management
 
-You can now add and remove workflows at runtime without editing `config.js`! 
+You can add and remove workflows at runtime using the browser console! 
 
 **Via Browser Console:**
 ```javascript
@@ -155,11 +155,9 @@ Custom workflows are stored in browser local storage and persist across page rel
 
 📖 **Full Documentation**: See [DYNAMIC_WORKFLOWS.md](DYNAMIC_WORKFLOWS.md) for complete API reference and usage examples.
 
-**Future**: UI controls for adding/removing workflows will be added in a separate enhancement. Long-term solution will use Azure Storage for permanent, cross-device persistence (issue #7).
+**Note**: Runtime workflow changes are stored locally in the browser. For permanent, cross-device workflow configuration, update the `workflows.json` file in Azure Storage.
 
 ## Architecture
-
-### Azure Function Backend Architecture
 
 The dashboard consists of:
 
@@ -168,7 +166,7 @@ The dashboard consists of:
 2. **pages/config.js**: Configuration for Azure Function URL
 3. **pages/api.js**: API client that calls Azure Function
 4. **pages/dashboard.js**: Dashboard loader that renders workflow cards
-5. **pages/workflow-manager.js**: Manages workflow data (kept for backward compatibility)
+5. **pages/workflow-manager.js**: Manages workflow data
 
 **Backend (Azure):**
 1. **function-app/**: Azure Function App code (Node.js)
@@ -195,8 +193,6 @@ The dashboard consists of:
 
 ## Security
 
-### Azure Function Backend (Recommended)
-
 ✅ **Secure by design**:
 - **No exposed credentials**: GitHub App credentials stored in Azure Key Vault
 - **Managed Identity**: Function App accesses Azure services without storing credentials
@@ -210,48 +206,29 @@ The dashboard consists of:
 - Organizations with compliance requirements
 - Any scenario requiring credential security
 
-### Legacy Architecture (Deprecated)
-
-⚠️ **Security limitations**:
-- GitHub token embedded in deployed JavaScript (visible in browser)
-- Suitable only for internal dashboards with same access restrictions
-- Requires regular token rotation and monitoring
-
-**Migration recommended**: Migrate to Azure Function backend for better security.
-
 ## Troubleshooting
 
 ### Dashboard shows "Configuration Required"
-- Ensure `DASHBOARD_TOKEN` secret is set in repository settings
+- Ensure `AZURE_FUNCTION_URL` secret is set in repository settings
 - Check that the deployment workflow completed successfully
-- Verify the token was injected correctly in the deployed `pages/config.js`
+- Verify the URL was injected correctly in the deployed `pages/config.js`
 
-### Authentication errors (401 Unauthorized)
-- Verify your token is valid and hasn't expired
-- Check token permissions include `actions:read`
-- For private repos, ensure the token has access to those specific repositories
-- Regenerate the token if needed and update the `DASHBOARD_TOKEN` secret
+### Authentication errors
+- Verify GitHub App is properly installed on your repositories
+- Check that the App has "Actions: Read" permission
+- Verify App credentials are correctly stored in Azure Key Vault
+- Check Function App logs in Application Insights for detailed errors
 
 ### Workflow not found errors
-- Verify repository owner, name, and workflow file in `pages/config.js`
+- Verify repository owner, name, and workflow file in `workflows.json` in Azure Storage
 - Ensure workflow files exist in the specified repositories
-- Check that the token has access to those repositories
+- Check that the GitHub App has access to those repositories
 
 ### Changes not appearing
 - Check the Actions tab for deployment workflow status
 - Deployment workflow must complete successfully for changes to appear
 - Check the Actions tab for any build errors
 - Clear your browser cache and do a hard refresh (Ctrl+Shift+R or Cmd+Shift+R)
-
-## Migrating from Badge-Based Dashboard
-
-If you're upgrading from the old badge-based dashboard:
-
-1. Your existing workflow links will continue to work
-2. Update `pages/config.js` with your workflow definitions
-3. Set up authentication (see SETUP.md)
-4. The new dashboard will fetch live statuses instead of using static badge images
-5. Private and internal repositories will now work correctly
 
 ## License
 
