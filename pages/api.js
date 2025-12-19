@@ -27,7 +27,10 @@ class GitHubActionsAPI {
                 const response = await fetch(`${this.functionUrl}/api/get-workflow-statuses`, {
                     method: 'GET',
                     headers: {
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
                     }
                 });
 
