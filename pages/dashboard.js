@@ -71,6 +71,15 @@ class DashboardLoader {
     }
 
     /**
+     * Generate a unique key for a workflow
+     * @param {Object} workflow - Workflow object with owner, repo, and workflow properties
+     * @returns {string} - Unique workflow key
+     */
+    getWorkflowKey(workflow) {
+        return `${workflow.owner}/${workflow.repo}/${workflow.workflow}`;
+    }
+
+    /**
      * Update refresh status indicator
      * @param {boolean} isRefreshing - Whether a refresh is in progress
      * @param {Date} lastRefreshTime - Last successful refresh time
@@ -91,7 +100,7 @@ class DashboardLoader {
         } else {
             refreshStatus.classList.remove('refreshing');
             if (lastRefreshTime) {
-                const timeString = lastRefreshTime.toLocaleString(undefined, {
+                const timeString = lastRefreshTime.toLocaleString('en-US', {
                     timeZoneName: 'short'
                 });
                 refreshStatusText.textContent = `Last updated: ${timeString}`;
@@ -135,7 +144,7 @@ class DashboardLoader {
             // Create a map of workflow identifiers to new cards
             const newCardsMap = new Map();
             workflowStatuses.forEach(workflow => {
-                const key = `${workflow.owner}/${workflow.repo}/${workflow.workflow}`;
+                const key = this.getWorkflowKey(workflow);
                 const card = this.createWorkflowCard(workflow, {
                     conclusion: workflow.conclusion,
                     status: workflow.status,
@@ -151,7 +160,7 @@ class DashboardLoader {
             if (existingCards.length === 0 || existingCards.some(el => el.classList.contains('config-error'))) {
                 grid.innerHTML = '';
                 workflowStatuses.forEach(workflow => {
-                    const key = `${workflow.owner}/${workflow.repo}/${workflow.workflow}`;
+                    const key = this.getWorkflowKey(workflow);
                     const card = newCardsMap.get(key);
                     if (card) {
                         grid.appendChild(card);
@@ -170,7 +179,7 @@ class DashboardLoader {
 
                 // Replace existing cards with updated versions in the same order as workflowStatuses
                 workflowStatuses.forEach(workflow => {
-                    const key = `${workflow.owner}/${workflow.repo}/${workflow.workflow}`;
+                    const key = this.getWorkflowKey(workflow);
                     const newCard = newCardsMap.get(key);
                     const existingCard = existingCardsMap.get(key);
                     
@@ -207,7 +216,8 @@ class DashboardLoader {
                 grid.innerHTML = '';
                 this.showApiError(grid, error);
             }
-            // Don't update refresh status time on error - keep showing last successful refresh
+            // Clear the refreshing state but don't update timestamp to preserve last successful refresh time
+            this.updateRefreshStatus(false);
         }
     }
 
