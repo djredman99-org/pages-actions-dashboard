@@ -84,69 +84,74 @@ class DashboardLoader {
         // Clear existing content
         grid.innerHTML = '';
 
-        // Check if token is configured
-        if (this.api.token === '__GITHUB_TOKEN__' || !this.api.token) {
-            this.showTokenError(grid);
-            return;
-        }
+        try {
+            // Get all workflow statuses from Azure Function
+            // The function returns workflows with their statuses already populated
+            const workflowStatuses = await this.api.getAllWorkflowStatuses();
 
-        // Get all workflows from the workflow manager (config + custom)
-        const workflows = this.workflowManager.getAllWorkflows();
-
-        // Create loading placeholders
-        const placeholders = workflows.map(workflow => {
-            const card = this.createLoadingCard(workflow);
-            grid.appendChild(card);
-            return { workflow, card };
-        });
-
-        // Load all workflow statuses in parallel
-        const statusPromises = placeholders.map(({ workflow }) => 
-            this.api.getWorkflowStatus(
-                workflow.owner,
-                workflow.repo,
-                workflow.workflow
-            )
-        );
-
-        const results = await Promise.allSettled(statusPromises);
-
-        // Update cards with results
-        results.forEach((result, index) => {
-            const { workflow, card } = placeholders[index];
-            
-            if (result.status === 'fulfilled') {
-                const newCard = this.createWorkflowCard(workflow, result.value);
-                grid.replaceChild(newCard, card);
-            } else {
-                console.error(`Failed to load workflow ${workflow.label}:`, result.reason);
-                this.showErrorCard(grid, card, workflow, result.reason);
+            if (!workflowStatuses || workflowStatuses.length === 0) {
+                this.showNoWorkflowsMessage(grid);
+                return;
             }
-        });
 
-        // Update last updated time
-        const lastUpdatedElement = document.getElementById('last-updated');
-        if (lastUpdatedElement) {
-            lastUpdatedElement.textContent = new Date().toLocaleString();
+            // Create workflow cards
+            workflowStatuses.forEach(workflow => {
+                const card = this.createWorkflowCard(workflow, {
+                    conclusion: workflow.conclusion,
+                    status: workflow.status,
+                    url: workflow.url,
+                    updatedAt: workflow.updatedAt
+                });
+                grid.appendChild(card);
+            });
+
+            // Update last updated time
+            const lastUpdatedElement = document.getElementById('last-updated');
+            if (lastUpdatedElement) {
+                lastUpdatedElement.textContent = new Date().toLocaleString();
+            }
+
+        } catch (error) {
+            console.error('Failed to load workflows:', error);
+            this.showApiError(grid, error);
         }
     }
 
     /**
-     * Show an error message when token is not configured
+     * Show a message when no workflows are configured
      * @param {HTMLElement} grid - Workflow grid element
      */
-    showTokenError(grid) {
+    showNoWorkflowsMessage(grid) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'config-error';
+        messageDiv.innerHTML = `
+            <h3>ℹ️ No Workflows Configured</h3>
+            <p>No workflows are currently configured in Azure Storage.</p>
+            <p>To add workflows, upload a workflows.json file to the Azure Storage container.</p>
+            <p>See the README and infrastructure documentation for instructions.</p>
+        `;
+        grid.appendChild(messageDiv);
+    }
+
+    /**
+     * Show an error message when Azure Function API fails
+     * @param {HTMLElement} grid - Workflow grid element
+     * @param {Error} error - Error that occurred
+     */
+    showApiError(grid, error) {
         const errorDiv = document.createElement('div');
         errorDiv.className = 'config-error';
         errorDiv.innerHTML = `
-            <h3>⚠️ Configuration Required</h3>
-            <p>GitHub token not configured. Please follow these steps:</p>
+            <h3>⚠️ API Error</h3>
+            <p>Failed to load workflow statuses from Azure Function.</p>
+            <p><strong>Error:</strong> ${error.message}</p>
+            <p>Please check:</p>
             <ol>
-                <li>Create a GitHub App or Personal Access Token with <code>actions:read</code> permission</li>
-                <li>Configure the token in your build/deployment process</li>
-                <li>The token should replace <code>__GITHUB_TOKEN__</code> in config.js</li>
+                <li>Azure Function is deployed and running</li>
+                <li>Azure Function URL is configured correctly</li>
+                <li>GitHub App credentials are stored in Key Vault</li>
+                <li>Workflow configurations are uploaded to Azure Storage</li>
             </ol>
-            <p>See the README for detailed setup instructions.</p>
         `;
         grid.appendChild(errorDiv);
     }
@@ -185,18 +190,37 @@ let dashboardInstance = null;
 // Initialize dashboard when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        // Initialize API client
-        const apiClient = new GitHubActionsAPI(
-            DASHBOARD_CONFIG.github.token,
-            DASHBOARD_CONFIG.github.apiBaseUrl
-        );
+        // Check if Azure Function URL is configured
+        if (!DASHBOARD_CONFIG.azureFunction.url || DASHBOARD_CONFIG.azureFunction.url === '__AZURE_FUNCTION_URL__') {
+            console.error('Azure Function URL not configured. Dashboard cannot load.');
+            const grid = document.querySelector('.workflow-grid');
+            if (grid) {
+                grid.innerHTML = `
+                    <div class="config-error">
+                        <h3>⚠️ Configuration Required</h3>
+                        <p>Azure Function URL is not configured. Please:</p>
+                        <ol>
+                            <li>Deploy the Azure Function App infrastructure</li>
+                            <li>Deploy the function app code</li>
+                            <li>Update the AZURE_FUNCTION_URL in the deployment workflow</li>
+                        </ol>
+                        <p>See the README and infrastructure documentation for setup instructions.</p>
+                    </div>
+                `;
+            }
+            return;
+        }
+
+        // Initialize API client with Azure Function URL
+        const apiClient = new GitHubActionsAPI(DASHBOARD_CONFIG.azureFunction.url);
         
         // Enable debug mode if configured
-        if (DASHBOARD_CONFIG.github.debug) {
+        if (DASHBOARD_CONFIG.azureFunction.debug) {
             apiClient.debug = true;
         }
 
-        // Initialize workflow manager with config workflows
+        // Initialize workflow manager with config workflows (for backward compatibility)
+        // In the new architecture, workflows come from Azure Storage via the Function
         const workflowManager = new WorkflowManager(DASHBOARD_CONFIG.workflows);
 
         // Initialize dashboard loader
@@ -213,8 +237,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         dashboard.setupAutoRefresh(5);
 
         console.log('Dashboard initialized successfully');
-        console.log(`Loaded ${workflowManager.getAllWorkflows().length} workflows (${workflowManager.getCustomWorkflowCount()} custom)`);
-        console.log('Tip: Use dashboardInstance.workflowManager to add/remove workflows via console');
+        console.log('Using Azure Function backend for workflow statuses');
+        console.log('Tip: Workflows are now managed in Azure Storage');
     } catch (error) {
         console.error('Failed to initialize dashboard:', error);
     }

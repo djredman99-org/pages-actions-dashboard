@@ -2,7 +2,7 @@ name: Deploy Dashboard to GitHub Pages
 
 on:
   push:
-    branches: [ main, copilot/make-dashboard-usability-better ]
+    branches: [ main, copilot/move-api-logic-to-azure-function ]
   workflow_dispatch:
 
 permissions:
@@ -22,15 +22,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Inject GitHub Token
+      - name: Inject Azure Function URL
         env:
-          DASHBOARD_TOKEN: ${{ secrets.DASHBOARD_TOKEN }}
+          AZURE_FUNCTION_URL: ${{ secrets.AZURE_FUNCTION_URL }}
         run: |
-          # Replace the placeholder token in config.js with the actual token
-          # Using awk to safely handle special characters in the token
-          awk -v token="$DASHBOARD_TOKEN" '{gsub(/__GITHUB_TOKEN__/, token)}1' pages/config.js > pages/config.js.tmp
+          # Replace the placeholder Azure Function URL in config.js with the actual URL
+          # Using awk to safely handle special characters in the URL
+          awk -v url="$AZURE_FUNCTION_URL" '{gsub(/__AZURE_FUNCTION_URL__/, url)}1' pages/config.js > pages/config.js.tmp
           mv pages/config.js.tmp pages/config.js
-          echo "Token injection completed"
+          echo "Azure Function URL injection completed"
         
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "eastus"
+    },
+    "baseName": {
+      "value": "ghactionsdash"
+    },
+    "environment": {
+      "value": "dev"
+    },
+    "githubAppId": {
+      "value": "YOUR_GITHUB_APP_ID"
+    },
+    "githubAppPrivateKey": {
+      "value": "-----BEGIN RSA PRIVATE KEY-----\nYOUR_PRIVATE_KEY_HERE\n-----END RSA PRIVATE KEY-----"
+    }
+  }
+}
