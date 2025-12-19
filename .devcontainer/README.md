@@ -21,7 +21,7 @@ The devcontainer is configured with the following tools and features:
 - **GitHub Copilot Chat**: Chat interface for GitHub Copilot
 - **ESLint**: JavaScript linting
 
-## Usage
+## Usage Options
 
 ### GitHub Codespaces
 When you create a new Codespace for this repository, it will automatically use this configuration. All tools will be pre-installed and ready to use.
@@ -30,6 +30,9 @@ When you create a new Codespace for this repository, it will automatically use t
 1. Install the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
 2. Open the repository in VS Code
 3. Click "Reopen in Container" when prompted (or use Command Palette → "Dev Containers: Reopen in Container")
+
+### Local Development
+If you chose to develop this locally/your own infrastructure, please ensure you have the prerequisites installed [listed above](README.md#L10).
 
 ## Verifying Installation
 
