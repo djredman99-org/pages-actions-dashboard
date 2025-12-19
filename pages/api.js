@@ -24,7 +24,9 @@ class GitHubActionsAPI {
         // Create new request
         this.inflightRequest = (async () => {
             try {
-                const response = await fetch(`${this.functionUrl}/api/get-workflow-statuses`, {
+                // Add timestamp to URL to ensure cache-busting
+                const cacheBustingUrl = `${this.functionUrl}/api/get-workflow-statuses?t=${Date.now()}`;
+                const response = await fetch(cacheBustingUrl, {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json',
