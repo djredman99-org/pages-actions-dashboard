@@ -129,7 +129,7 @@ By default, the dashboard refreshes workflow statuses every 5 minutes. To change
 dashboard.setupAutoRefresh(10);
 ```
 
-## Dynamic Workflow Management
+## Dynamic Workflow Management (DEACTIVATED - IGNORE as of 12/18/2025)
 
 ### Runtime Workflow Management
 
