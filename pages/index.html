@@ -296,6 +296,25 @@
             font-size: 0.9em;
         }
 
+        .instructions ul {
+            margin: 10px 0 10px 20px;
+            color: #34495e;
+            line-height: 1.8;
+        }
+
+        .instructions li {
+            margin-bottom: 5px;
+        }
+
+        .instructions a {
+            color: #1976d2;
+            text-decoration: none;
+        }
+
+        .instructions a:hover {
+            text-decoration: underline;
+        }
+
         /* Responsive design */
         @media (max-width: 1200px) {
             .workflow-grid {
@@ -338,7 +357,15 @@
         <div class="instructions">
             <h2>Dashboard Features</h2>
             <p>This dashboard provides real-time monitoring of GitHub Actions workflow statuses across multiple repositories with enterprise-grade security.</p>
-            <p><strong>Key Features:</strong> Azure Function backend for secure API calls • GitHub App authentication with credentials stored in Azure Key Vault • Workflow configurations managed in Azure Storage • Manual refresh for instant updates • Auto-refresh every 5 minutes • Support for public, private, and internal repositories</p>
+            <p><strong>Key Features:</strong></p>
+            <ul>
+                <li>Azure Function backend for secure API calls</li>
+                <li>GitHub App authentication with credentials stored in Azure Key Vault</li>
+                <li>Workflow configurations managed in Azure Storage</li>
+                <li>Manual refresh for instant updates</li>
+                <li>Auto-refresh every 5 minutes</li>
+                <li>Support for public, private, and internal repositories</li>
+            </ul>
             <p>See the <a href="https://github.com/djredman99-org/pages-actions-dashboard#readme" target="_blank" rel="noopener noreferrer">README</a> for setup and configuration instructions.</p>
         </div>
 
