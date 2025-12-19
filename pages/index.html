@@ -118,10 +118,6 @@
             outline-offset: 2px;
         }
 
-        .refresh-button-icon {
-            font-size: 1em;
-        }
-
         .workflow-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -300,10 +296,13 @@
             margin: 10px 0 10px 20px;
             color: #34495e;
             line-height: 1.8;
+            column-count: 2;
+            column-gap: 30px;
         }
 
         .instructions li {
             margin-bottom: 5px;
+            break-inside: avoid;
         }
 
         .instructions a {
@@ -371,7 +370,6 @@
 
         <div id="refresh-status" class="refresh-status" style="display: none;">
             <button id="refresh-button" class="refresh-button" aria-label="Refresh workflow statuses">
-                <span class="refresh-button-icon" aria-hidden="true">🔄</span>
                 <span>Refresh</span>
             </button>
             <span class="refresh-status-icon" aria-hidden="true">🔄</span>
