@@ -76,6 +76,10 @@ class DashboardLoader {
      * @returns {string} - Unique workflow key
      */
     getWorkflowKey(workflow) {
+        if (!workflow?.owner || !workflow?.repo || !workflow?.workflow) {
+            console.warn('Invalid workflow object:', workflow);
+            return '';
+        }
         return `${workflow.owner}/${workflow.repo}/${workflow.workflow}`;
     }
 
@@ -109,12 +113,18 @@ class DashboardLoader {
         } else {
             refreshStatus.classList.remove('refreshing');
             if (lastRefreshTime) {
-                // Use user's browser locale for localized time formatting
-                const locale = navigator.language || 'en-US';
-                const timeString = lastRefreshTime.toLocaleString(locale, {
-                    timeZoneName: 'short'
-                });
-                refreshStatusText.textContent = `Last updated: ${timeString}`;
+                try {
+                    // Use user's browser locale for localized time formatting
+                    const locale = navigator.language || 'en-US';
+                    const timeString = lastRefreshTime.toLocaleString(locale, {
+                        timeZoneName: 'short'
+                    });
+                    refreshStatusText.textContent = `Last updated: ${timeString}`;
+                } catch (error) {
+                    // Fallback to ISO string if locale formatting fails
+                    console.warn('Failed to format time with locale:', error);
+                    refreshStatusText.textContent = `Last updated: ${lastRefreshTime.toISOString()}`;
+                }
             }
         }
     }
@@ -185,12 +195,20 @@ class DashboardLoader {
                     const key = card.getAttribute('data-workflow-key');
                     if (key) {
                         existingCardsMap.set(key, card);
+                    } else {
+                        // Log warning for cards without workflow key
+                        console.warn('Found workflow card without data-workflow-key attribute, removing it');
+                        grid.removeChild(card);
                     }
                 });
 
                 // Replace existing cards with updated versions in the same order as workflowStatuses
                 workflowStatuses.forEach(workflow => {
                     const key = this.getWorkflowKey(workflow);
+                    if (!key) {
+                        return; // Skip invalid workflows
+                    }
+                    
                     const newCard = newCardsMap.get(key);
                     const existingCard = existingCardsMap.get(key);
                     
