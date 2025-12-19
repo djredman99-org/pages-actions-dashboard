@@ -1,4 +1,4 @@
-# Dynamic Workflow Management Architecture
+# Dynamic Workflow Management Architecture (DEPRECATED) (will provide newer functionality soon)
 
 ## Overview
 
