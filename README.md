@@ -66,7 +66,7 @@ az keyvault secret set \
 ```bash
 cd function-app
 npm install
-func azure functionapp publish <FUNCTION_APP_NAME>
+func azure functionapp publish <FUNCTION_APP_NAME> --javascript
 ```
 
 ### 5. Upload Workflow Configuration
