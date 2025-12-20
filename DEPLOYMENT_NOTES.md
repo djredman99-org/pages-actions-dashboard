@@ -40,9 +40,7 @@ npm audit fix  # Apply automatic fixes if available
 
 ### GitHub Actions Workflows
 
-The implementation does not modify existing GitHub Actions workflows except for `deploy-dashboard.yml` which now injects `AZURE_FUNCTION_URL` instead of `DASHBOARD_TOKEN`.
-
-Other workflows in the repository remain unchanged and should continue to function normally.
+The Pages site is deployed with the `deploy-dashboard.yml`.
 
 ## Pre-Deployment Checklist
 
@@ -50,7 +48,6 @@ Before deploying this solution, ensure you have:
 
 - [ ] Azure subscription with appropriate permissions
 - [ ] Azure CLI installed and configured (`az login`)
-- [ ] Node.js 18+ installed
 - [ ] Azure Functions Core Tools installed
 - [ ] GitHub App created with:
   - [ ] App ID saved
@@ -60,8 +57,6 @@ Before deploying this solution, ensure you have:
 - [ ] Repository secret `AZURE_FUNCTION_URL` ready to be added
 
 ## Deployment Order
-
-**Critical**: Follow this exact order:
 
 1. **Deploy Azure Infrastructure** (infrastructure/deploy.sh)
    - Creates all Azure resources
@@ -79,7 +74,10 @@ Before deploying this solution, ensure you have:
 4. **Configure Repository Secret** (GitHub Settings)
    - Add `AZURE_FUNCTION_URL` with Function App URL
 
-5. **Deploy Pages Site** (merge PR or push to main)
+5. **Configure Pages on the Repository**
+   - Ensure you set to use GitHub Actions for deployment
+
+6. **Deploy Pages Site** (merge PR or push to main)
    - Automatically deploys with updated configuration
 
 ## Post-Deployment Verification
@@ -105,32 +103,6 @@ After deployment, verify:
 4. **Application Insights**:
    - Azure Portal → Function App → Application Insights
    - Verify requests are being logged
-
-## Rollback Procedure
-
-If issues occur after deployment:
-
-### Option 1: Revert PR
-```bash
-# Revert the merged PR commit
-git revert <PR_MERGE_COMMIT_SHA>
-git push
-```
-
-### Option 2: Quick Fix - Use Old Architecture
-1. Restore old `DASHBOARD_TOKEN` secret
-2. Revert changes to:
-   - pages/config.js
-   - pages/api.js
-   - pages/dashboard.js
-   - .github/workflows/deploy-dashboard.yml
-3. Push to trigger redeployment
-
-### Option 3: Azure Function Hotfix
-If only the function has issues:
-1. Fix function code
-2. Redeploy: `func azure functionapp publish <FUNCTION_APP_NAME>`
-3. Pages site doesn't need redeployment
 
 ## Common Issues
 
@@ -211,38 +183,11 @@ Recommended Azure Monitor alerts:
    - Condition: Daily cost > $1
    - Action: Email notification
 
-## Cost Management
-
-### Expected Monthly Costs
-
-For typical usage (10-20 workflows, auto-refresh every 5 minutes):
-
-- Function executions: ~8,640/month (every 5 min)
-- Storage operations: ~500/month (read workflows.json)
-- Key Vault operations: ~8,640/month (retrieve secrets)
-
-**Total**: $3-5/month
-
-### Cost Optimization Tips
-
-1. **Increase client-side cache TTL**:
-   - Edit `pages/api.js`: Change `cacheTTL` from 60000 to 120000 (2 minutes)
-   - Reduces function invocations
-
-2. **Reduce auto-refresh frequency**:
-   - Edit `pages/dashboard.js`: Change `setupAutoRefresh(5)` to `setupAutoRefresh(10)`
-   - Reduces page load impact on function calls
-
-3. **Use Azure Cost Management**:
-   - Set up budgets and alerts
-   - Monitor actual vs. expected costs
-
 ## Security Considerations
 
 ### Secrets Management
 
 **Never commit**:
-- parameters.json (contains GitHub App ID)
 - local.settings.json (contains Azure resource URLs)
 - Any file with actual credentials
 - GitHub App private key files (.pem)
@@ -269,15 +214,6 @@ Default configuration allows `https://*.github.io`. For production:
    ./infrastructure/deploy.sh
    ```
 
-### Function Authentication
-
-Current: `authLevel: 'anonymous'` (easy for GitHub Pages)
-
-For higher security:
-1. Change to `authLevel: 'function'`
-2. Generate function key
-3. Pass key in dashboard API calls: `?code=<KEY>`
-
 ## Support Resources
 
 - **Azure Documentation**: https://docs.microsoft.com/azure/azure-functions/
@@ -297,5 +233,5 @@ For issues specific to this implementation:
 
 ---
 
-**Last Updated**: 2025-12-12  
-**Version**: 1.0.0
+**Last Updated**: 2025-12-20  
+**Version**: 1.0.1
