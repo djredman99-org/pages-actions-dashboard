@@ -1,0 +1,123 @@
+# GitHub Actions Dashboard Color Schemes
+
+This document describes the two GitHub-aligned color schemes available for the dashboard.
+
+## Overview
+
+Two theme mock-ups have been created based on GitHub's official Primer design system:
+1. **Light Theme** (`index-light.html`) - Clean, professional light mode
+2. **Dark Theme** (`index-dark.html`) - Modern dark mode with reduced eye strain
+
+Both themes use authentic GitHub Primer colors to provide a familiar, GitHub-native experience.
+
+## Light Theme
+
+**File:** `pages/index-light.html`
+
+### Color Palette
+
+| Element | Color | Hex Code | Description |
+|---------|-------|----------|-------------|
+| Background | White | `#ffffff` | Clean white background |
+| Container Border | Black | `#000000` | Strong black border for main container |
+| Text (Primary) | Dark Gray | `#1b1f23` | Main text color |
+| Text (Secondary) | Gray | `#57606a` | Subtitles and secondary text |
+| Shaded Boxes | Light Gray | `#f6f8fa` | Workflow cards and info boxes |
+| Borders | Gray | `#d0d7de` | Default borders |
+| Refresh Button | GitHub Green | `#2ea44f` | Primary action button |
+| Button Text | White | `#ffffff` | Text on buttons |
+| Links | Blue | `#0969da` | Interactive links |
+| Success Status | Green | `#2ea043` | Passing workflows |
+| Failure Status | Red | `#d73a49` | Failed workflows |
+| Running Status | Yellow | `#dbab09` | In-progress workflows |
+
+### Design Characteristics
+- Crisp, high-contrast interface
+- Clean white canvas background
+- Light grey boxes for content sections
+- GitHub's signature green for primary actions
+- Minimal shadows and effects for a flat, modern look
+- Black borders for clear content separation
+
+## Dark Theme
+
+**File:** `pages/index-dark.html`
+
+### Color Palette
+
+| Element | Color | Hex Code | Description |
+|---------|-------|----------|-------------|
+| Background | Very Dark Gray | `#010409` | Deep background color |
+| Container Border | Light Gray | `#7d8590` | Visible border in dark mode |
+| Text (Primary) | Light Gray | `#e6edf3` | Main text color |
+| Text (Secondary) | Gray | `#7d8590` | Subtitles and secondary text |
+| Shaded Boxes | Dark | `#0d1117` | Workflow cards and info boxes |
+| Borders | Dark Gray | `#30363d` | Default borders |
+| Refresh Button | Dark Green | `#238636` | Primary action button |
+| Button Text | White | `#ffffff` | Text on buttons |
+| Links | Light Blue | `#58a6ff` | Interactive links |
+| Success Status | Dark Green | `#238636` | Passing workflows |
+| Failure Status | Red | `#da3633` | Failed workflows |
+| Running Status | Yellow | `#bf8700` | In-progress workflows |
+
+### Design Characteristics
+- Reduced eye strain with dark backgrounds
+- Light grey borders for subtle content separation
+- Black boxes for elevated content areas
+- GitHub's dark mode green for primary actions
+- Muted colors that maintain readability
+- Consistent with GitHub's dark theme experience
+
+## Implementation Details
+
+### GitHub Primer Colors
+
+Both themes are based on GitHub's official Primer design system colors. The color values were sourced from:
+- [GitHub Primer Design System](https://primer.style/)
+- [Primer Primitives](https://github.com/primer/primitives)
+- GitHub.com's actual light and dark themes
+
+### Status Colors
+
+Both themes use GitHub's semantic status colors:
+- **Success (Green)**: Light `#2ea043` / Dark `#238636`
+- **Failure (Red)**: Light `#d73a49` / Dark `#da3633`
+- **Running (Yellow)**: Light `#dbab09` / Dark `#bf8700`
+- **Neutral (Gray)**: Light `#6c757d` / Dark `#6e7681`
+
+### Accessibility
+
+- High contrast ratios meet WCAG AA standards
+- Color combinations tested for readability
+- Focus indicators use GitHub's blue (`#0969da` light / `#1f6feb` dark)
+- Colors maintain meaning for colorblind users
+
+## Usage
+
+To preview the themes:
+
+1. **Light Theme**: Open `pages/index-light.html` in a browser
+2. **Dark Theme**: Open `pages/index-dark.html` in a browser
+
+## Screenshots
+
+### Light Theme
+![Light Theme Screenshot](https://github.com/user-attachments/assets/0f2094f5-dde6-4b15-8de3-142759949bff)
+
+### Dark Theme
+![Dark Theme Screenshot](https://github.com/user-attachments/assets/7d8bcc72-03dd-45ee-971c-ba15e7f2d305)
+
+## Future Enhancements
+
+Potential improvements for theme implementation:
+- Add theme toggle switch to dynamically switch between themes
+- Use CSS custom properties for easier theme management
+- Implement user preference detection (prefers-color-scheme)
+- Store user theme choice in localStorage
+- Add additional theme variants (high contrast, etc.)
+
+## References
+
+- [GitHub Primer Design System](https://primer.style/)
+- [Primer Color Usage Documentation](https://primer.style/product/getting-started/foundations/color-usage/)
+- [GitHub Primer Primitives Repository](https://github.com/primer/primitives)
