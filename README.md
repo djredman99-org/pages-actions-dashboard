@@ -25,7 +25,12 @@ The dashboard uses a secure Azure Function backend:
 
 ## Quick Start
 
-**Prerequisites**: Azure subscription, Azure CLI, Node.js 18+, GitHub App
+**Prerequisites**:
+- Azure subscription with permissions to create resources
+- Azure CLI installed and configured
+- Azure Functions Core Tools
+- Node.js 18+
+- GitHub App created and installed on your repositories
 
 **Deployment Steps**:
 1. Deploy Azure infrastructure (Function App, Key Vault, Storage)
