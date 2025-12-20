@@ -66,14 +66,21 @@ Dashboard refreshes every 5 minutes by default. To change the interval, edit `pa
 
 ## Documentation
 
+### Getting Started
 - **[AZURE_SETUP.md](AZURE_SETUP.md)** - Complete deployment guide with step-by-step instructions
-- **[AZURE_IMPLEMENTATION.md](AZURE_IMPLEMENTATION.md)** - Detailed architecture and technical implementation
 - **[DEPLOYMENT_NOTES.md](DEPLOYMENT_NOTES.md)** - Deployment checklist, troubleshooting, and monitoring
-- **[COLOR_SCHEMES.md](COLOR_SCHEMES.md)** - Theme color palettes and usage
-- **[pages/THEMES.md](pages/THEMES.md)** - Theme system documentation and customization
-- **[DYNAMIC_WORKFLOWS.md](DYNAMIC_WORKFLOWS.md)** - (Deprecated) Dynamic workflow management reference
+
+### Technical Details
+- **[AZURE_IMPLEMENTATION.md](AZURE_IMPLEMENTATION.md)** - Detailed architecture and technical implementation
 - **[function-app/README.md](function-app/README.md)** - Function App development and deployment guide
 - **[infrastructure/README.md](infrastructure/README.md)** - Infrastructure as Code details
+
+### Customization
+- **[COLOR_SCHEMES.md](COLOR_SCHEMES.md)** - Theme color palettes and usage
+- **[pages/THEMES.md](pages/THEMES.md)** - Theme system documentation and customization
+
+### Legacy Documentation
+- **[DYNAMIC_WORKFLOWS.md](DYNAMIC_WORKFLOWS.md)** - (Deprecated) Dynamic workflow management reference
 
 ## Troubleshooting
 
