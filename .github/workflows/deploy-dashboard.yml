@@ -2,9 +2,9 @@ name: Deploy Dashboard to GitHub Pages
 
 on:
   push:
-    branches: [ main, copilot/move-api-logic-to-azure-function ]
+    branches: [ main ]
   workflow_dispatch:
-
+    
 permissions:
   contents: read
   pages: write
