@@ -95,15 +95,15 @@ Edit `parameters.json` with your values:
     },
     "githubAppId": {
       "value": "123456"
-    },
-    "githubAppPrivateKey": {
-      "value": "-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
     }
   }
 }
 ```
 
-**Important**: Keep `parameters.json` secure and never commit it to version control (it's in .gitignore).
+**Important**: 
+- Only the GitHub App ID is included in parameters.json
+- The private key will be uploaded separately using `az keyvault secret set` (see step 3 below)
+- Keep `parameters.json` secure and never commit it to version control (it's in .gitignore)
 
 ### 2. Run Deployment
 
@@ -118,14 +118,36 @@ The script will:
 4. Output deployment details
 5. Save outputs to `deployment-outputs.env`
 
-### 3. Verify Deployment
+### 3. Upload GitHub App Private Key
+
+**Security Note**: The private key is uploaded directly to Key Vault and never included in deployment parameters. This prevents the private key from being exposed in Azure deployment logs.
+
+```bash
+# Upload your .pem file directly to Key Vault
+az keyvault secret set \
+  --vault-name <KEY_VAULT_NAME> \
+  --name github-app-private-key \
+  --file /path/to/your/private-key.pem
+```
+
+Replace `<KEY_VAULT_NAME>` with the Key Vault name from the deployment outputs.
+
+### 4. Verify Deployment
 
 Check that all resources were created:
 ```bash
 az resource list --resource-group <RESOURCE_GROUP_NAME> --output table
 ```
 
-### 4. Save Outputs
+Verify the private key was uploaded:
+```bash
+az keyvault secret show \
+  --vault-name <KEY_VAULT_NAME> \
+  --name github-app-private-key \
+  --query "name"
+```
+
+### 5. Save Outputs
 
 The deployment outputs are saved to `deployment-outputs.env`. Source this file for subsequent operations:
 ```bash
@@ -182,7 +204,8 @@ Example resource names:
 ### Required Parameters
 
 - **githubAppId**: GitHub App ID (numeric)
-- **githubAppPrivateKey**: GitHub App private key (PEM format, full content)
+
+**Note**: The GitHub App private key is uploaded separately via `az keyvault secret set` and is not included as a parameter.
 
 ### Optional Parameters
 
@@ -391,8 +414,17 @@ jobs:
             --name github-actions-deployment \
             --resource-group ${{ secrets.RESOURCE_GROUP_NAME }} \
             --template-file main.bicep \
-            --parameters githubAppId=${{ secrets.GITHUB_APP_ID }} \
-            --parameters githubAppPrivateKey="${{ secrets.GITHUB_APP_PRIVATE_KEY }}"
+            --parameters githubAppId=${{ secrets.GITHUB_APP_ID }}
+      
+      - name: Upload GitHub App Private Key
+        run: |
+          # Upload private key to Key Vault
+          echo "${{ secrets.GITHUB_APP_PRIVATE_KEY }}" > /tmp/private-key.pem
+          az keyvault secret set \
+            --vault-name ${{ secrets.KEY_VAULT_NAME }} \
+            --name github-app-private-key \
+            --file /tmp/private-key.pem
+          rm /tmp/private-key.pem
 ```
 
 ## Support

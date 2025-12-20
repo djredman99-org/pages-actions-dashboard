@@ -19,10 +19,6 @@ param environment string = 'dev'
 @secure()
 param githubAppId string
 
-@description('GitHub App Private Key (PEM format)')
-@secure()
-param githubAppPrivateKey string
-
 @description('CORS allowed origins for the function app (e.g., https://your-org.github.io)')
 param corsAllowedOrigins array = [
   'https://*.github.io'
@@ -183,7 +179,7 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
   }
 }
 
-// Store GitHub App credentials in Key Vault
+// Store GitHub App ID in Key Vault
 resource githubAppIdSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   parent: keyVault
   name: 'github-app-id'
@@ -193,14 +189,9 @@ resource githubAppIdSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   }
 }
 
-resource githubAppPrivateKeySecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
-  parent: keyVault
-  name: 'github-app-private-key'
-  properties: {
-    value: githubAppPrivateKey
-    contentType: 'text/plain'
-  }
-}
+// Note: GitHub App private key should be uploaded manually using:
+// az keyvault secret set --vault-name <KEY_VAULT_NAME> --name github-app-private-key --file <PATH_TO_PEM_FILE>
+// This prevents the private key from being exposed in Azure deployment logs.
 
 // Role assignments for managed identity
 // Key Vault Secrets User role for reading secrets

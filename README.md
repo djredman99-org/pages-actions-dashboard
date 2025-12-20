@@ -41,7 +41,7 @@ The dashboard uses a secure Azure Function backend that:
 ```bash
 cd infrastructure
 cp parameters.example.json parameters.json
-# Edit parameters.json with your GitHub App credentials
+# Edit parameters.json with your GitHub App ID
 ./deploy.sh
 ```
 
@@ -51,7 +51,17 @@ This creates:
 - Azure Storage (stores workflow configurations)
 - Managed Identity (secure access without storing credentials)
 
-### 3. Deploy Function App Code
+### 3. Upload GitHub App Private Key
+
+```bash
+# Upload private key directly to Key Vault (prevents exposure in deployment logs)
+az keyvault secret set \
+  --vault-name <KEY_VAULT_NAME> \
+  --name github-app-private-key \
+  --file /path/to/your/private-key.pem
+```
+
+### 4. Deploy Function App Code
 
 ```bash
 cd function-app
@@ -59,7 +69,7 @@ npm install
 func azure functionapp publish <FUNCTION_APP_NAME>
 ```
 
-### 4. Upload Workflow Configuration
+### 5. Upload Workflow Configuration
 
 ```bash
 # Edit workflows.json with your workflows
@@ -71,7 +81,7 @@ az storage blob upload \
   --auth-mode login
 ```
 
-### 5. Configure GitHub Pages
+### 6. Configure GitHub Pages
 
 1. Add `AZURE_FUNCTION_URL` as a repository secret
 2. Push to deploy: Changes auto-deploy to GitHub Pages

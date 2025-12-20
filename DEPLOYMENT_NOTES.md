@@ -242,12 +242,15 @@ For typical usage (10-20 workflows, auto-refresh every 5 minutes):
 ### Secrets Management
 
 **Never commit**:
-- parameters.json (contains GitHub App credentials)
+- parameters.json (contains GitHub App ID)
 - local.settings.json (contains Azure resource URLs)
 - Any file with actual credentials
+- GitHub App private key files (.pem)
 
-**Rotate regularly**:
-- GitHub App private key (every 3-6 months)
+**Best Practices**:
+- GitHub App private key should be uploaded directly to Key Vault using `az keyvault secret set --file`
+- Never include the private key in deployment parameters to prevent exposure in Azure deployment logs
+- Rotate GitHub App private key regularly (every 3-6 months)
 - Review Key Vault access logs monthly
 
 ### CORS Configuration

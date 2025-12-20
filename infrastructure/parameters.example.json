@@ -13,9 +13,6 @@
     },
     "githubAppId": {
       "value": "YOUR_GITHUB_APP_ID"
-    },
-    "githubAppPrivateKey": {
-      "value": "-----BEGIN RSA PRIVATE KEY-----\nYOUR_PRIVATE_KEY_HERE\n-----END RSA PRIVATE KEY-----"
     }
   }
 }
