@@ -144,7 +144,7 @@ Function App (Managed Identity)
 
 **Advantages over Personal Access Tokens**:
 - ✅ Installation-scoped (can't access repos not installed to)
-- ✅ Higher rate limits (5,000 vs 1,000 requests/hour)
+- ✅ Higher rate limits (15,000 vs 5,000 requests/hour)
 - ✅ Organization-controlled (admins can revoke app)
 - ✅ Audit logs (track app activity)
 - ✅ No user account required
