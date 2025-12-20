@@ -1,0 +1,137 @@
+/* GitHub Primer Dark Theme */
+
+body {
+    background: #010409;
+}
+
+.container {
+    background: #010409;
+    border: 1px solid #7d8590;
+    box-shadow: none;
+}
+
+h1 {
+    color: #e6edf3;
+}
+
+.subtitle {
+    color: #7d8590;
+}
+
+.refresh-status {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    color: #e6edf3;
+}
+
+.refresh-status.refreshing {
+    border-color: #30363d;
+    background: #0d1117;
+}
+
+.refresh-button {
+    background: #238636;
+    color: #ffffff;
+    box-shadow: 0 1px 0 rgba(27, 31, 35, 0.1);
+}
+
+.refresh-button:hover:not(:disabled) {
+    background: #2ea043;
+    box-shadow: 0 1px 0 rgba(27, 31, 35, 0.1), 0 0 0 3px rgba(35, 134, 54, 0.4);
+}
+
+.refresh-button:disabled {
+    background: #0d1117;
+    color: #484f58;
+}
+
+.refresh-button:focus-visible {
+    outline: 2px solid #1f6feb;
+}
+
+.workflow-item {
+    background: #0d1117;
+    border: 1px solid #30363d;
+}
+
+.workflow-item:hover {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 8px 24px rgba(0, 0, 0, 0.12);
+    border-color: #1f6feb;
+}
+
+.workflow-card-link:focus-visible {
+    outline: 2px solid #1f6feb;
+}
+
+.workflow-label {
+    color: #e6edf3;
+}
+
+/* Dark theme status colors - GitHub Primer Dark variants */
+.status-success {
+    background-color: #238636;
+}
+
+.status-failure {
+    background-color: #da3633;
+}
+
+.status-running {
+    background-color: #bf8700;
+}
+
+.status-cancelled,
+.status-skipped,
+.status-unknown,
+.status-loading {
+    background-color: #6e7681;
+}
+
+.status-timeout {
+    background-color: #da3633;
+}
+
+.config-error {
+    background: #6e460008;
+    border: 1px solid #9e6a03;
+    color: #d29922;
+}
+
+.config-error h3 {
+    color: #d29922;
+}
+
+.config-error code {
+    background: #0d1117;
+    color: #ff7b72;
+}
+
+.footer {
+    border-top: 1px solid #30363d;
+    color: #7d8590;
+}
+
+.instructions {
+    background: #1f23281a;
+    border-left: 4px solid #1f6feb;
+}
+
+.instructions h2 {
+    color: #58a6ff;
+}
+
+.instructions p {
+    color: #e6edf3;
+}
+
+.instructions code {
+    background: #0d1117;
+}
+
+.instructions ul {
+    color: #e6edf3;
+}
+
+.instructions a {
+    color: #58a6ff;
+}
