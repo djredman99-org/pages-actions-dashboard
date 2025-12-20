@@ -115,3 +115,52 @@ h1 {
 .instructions a {
     color: #0969da;
 }
+
+/* Theme-specific settings button and modal styles */
+.settings-button {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #d0d7de;
+}
+
+.settings-button svg {
+    color: #1b1f23;
+}
+
+.modal-content {
+    background-color: #ffffff;
+    border: 1px solid #d0d7de;
+}
+
+.modal-header {
+    border-bottom-color: #d0d7de;
+}
+
+.modal-header h2 {
+    color: #1b1f23;
+}
+
+.close-button {
+    color: #57606a;
+}
+
+.close-button:hover {
+    background: #f6f8fa;
+    color: #1b1f23;
+}
+
+.setting-section h3 {
+    color: #1b1f23;
+}
+
+.theme-option {
+    border-color: #d0d7de;
+}
+
+.theme-option:hover {
+    border-color: #0969da;
+    background: #f6f8fa;
+}
+
+.theme-label {
+    color: #1b1f23;
+}
