@@ -99,21 +99,11 @@ h1 {
     outline-offset: 2px;
 }
 
-.workflow-grids-container {
-    display: flex;
-    flex-direction: column;
-    gap: 40px;
-}
-
-.repo-section {
-    display: flex;
-    flex-direction: column;
-}
-
 .workflow-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 25px;
+    margin-bottom: 30px;
 }
 
 .workflow-item {

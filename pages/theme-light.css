@@ -18,15 +18,6 @@ h1 {
     color: #57606a;
 }
 
-.repo-header {
-    font-size: 1.4em;
-    font-weight: 600;
-    color: #24292f;
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 3px solid #0969da;
-}
-
 .refresh-status {
     background: #f6f8fa;
     border: 1px solid #d0d7de;
