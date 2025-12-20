@@ -32,14 +32,6 @@ The Light and Dark themes use authentic GitHub Primer colors to provide a famili
 | Failure Status | Red | `#d73a49` | Failed workflows |
 | Running Status | Yellow | `#dbab09` | In-progress workflows |
 
-### Design Characteristics
-- Crisp, high-contrast interface
-- Clean white canvas background
-- Light grey boxes for content sections
-- GitHub's signature green for primary actions
-- Minimal shadows and effects for a flat, modern look
-- Black borders for clear content separation
-
 ## Dark Theme
 
 **File:** `pages/theme-dark.css`
@@ -60,14 +52,6 @@ The Light and Dark themes use authentic GitHub Primer colors to provide a famili
 | Success Status | Dark Green | `#238636` | Passing workflows |
 | Failure Status | Red | `#da3633` | Failed workflows |
 | Running Status | Yellow | `#bf8700` | In-progress workflows |
-
-### Design Characteristics
-- Reduced eye strain with dark backgrounds
-- Light grey borders for subtle content separation
-- Black boxes for elevated content areas
-- GitHub's dark mode green for primary actions
-- Muted colors that maintain readability
-- Consistent with GitHub's dark theme experience
 
 ## Implementation Details
 
@@ -117,14 +101,6 @@ The theme system uses a modular CSS architecture where the HTML structure is def
 
 ### Dark Theme
 ![Dark Theme Screenshot](https://github.com/user-attachments/assets/7d8bcc72-03dd-45ee-971c-ba15e7f2d305)
-
-## Future Enhancements
-
-Potential improvements for theme implementation:
-- Add additional theme variants (high contrast, custom colors, etc.)
-- Implement system preference detection (prefers-color-scheme) for automatic theme selection
-- Add more granular theme customization options
-- Support for custom user-defined themes
 
 ## References
 
