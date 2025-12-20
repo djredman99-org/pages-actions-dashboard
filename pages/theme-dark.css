@@ -18,6 +18,11 @@ h1 {
     color: #7d8590;
 }
 
+.repo-header {
+    color: #e6edf3;
+    border-bottom-color: #30363d;
+}
+
 .refresh-status {
     background: #0d1117;
     border: 1px solid #30363d;

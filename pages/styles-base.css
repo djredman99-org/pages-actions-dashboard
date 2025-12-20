@@ -99,6 +99,19 @@ h1 {
     outline-offset: 2px;
 }
 
+/* Repository section styles */
+.repo-section {
+    margin-bottom: 40px;
+}
+
+.repo-header {
+    font-size: 1.5em;
+    font-weight: 600;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid;
+}
+
 .workflow-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
