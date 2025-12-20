@@ -124,11 +124,30 @@
             outline-offset: 2px;
         }
 
+        .workflow-grids-container {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        .repo-section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .repo-header {
+            font-size: 1.4em;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
         .workflow-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
             gap: 25px;
-            margin-bottom: 30px;
         }
 
         .workflow-item {
@@ -229,7 +248,6 @@
         }
 
         .config-error {
-            grid-column: 1 / -1;
             background: #fff3cd;
             border: 2px solid #ffc107;
             border-radius: 8px;
@@ -391,8 +409,8 @@
             <span class="refresh-status-text"></span>
         </div>
 
-        <div class="workflow-grid">
-            <!-- Workflow items will be dynamically loaded by JavaScript -->
+        <div class="workflow-grids-container">
+            <!-- Repository-organized workflow grids will be dynamically loaded by JavaScript -->
             <!-- See config.js to configure your workflows -->
         </div>
 

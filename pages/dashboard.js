@@ -84,12 +84,12 @@ class DashboardLoader {
     }
 
     /**
-     * Check if the grid has an error state displayed
-     * @param {HTMLElement} grid - Workflow grid element
-     * @returns {boolean} - True if grid has error state
+     * Check if the container has an error state displayed
+     * @param {HTMLElement} container - Workflow grids container element
+     * @returns {boolean} - True if container has error state
      */
-    hasErrorState(grid) {
-        return grid.querySelector('.config-error') !== null;
+    hasErrorState(container) {
+        return container.querySelector('.config-error') !== null;
     }
 
     /**
@@ -139,13 +139,71 @@ class DashboardLoader {
     }
 
     /**
+     * Group workflows by repository
+     * @param {Array} workflows - Array of workflow objects
+     * @returns {Map} - Map of repository keys to workflow arrays
+     */
+    groupWorkflowsByRepository(workflows) {
+        const grouped = new Map();
+        
+        workflows.forEach(workflow => {
+            const repoKey = `${workflow.owner}/${workflow.repo}`;
+            if (!grouped.has(repoKey)) {
+                grouped.set(repoKey, []);
+            }
+            grouped.get(repoKey).push(workflow);
+        });
+        
+        return grouped;
+    }
+
+    /**
+     * Create a repository section with header and grid
+     * @param {string} repoKey - Repository key (owner/repo)
+     * @param {Array} workflows - Array of workflows for this repository
+     * @returns {HTMLElement} - Repository section element
+     */
+    createRepositorySection(repoKey, workflows) {
+        const section = document.createElement('div');
+        section.className = 'repo-section';
+        section.setAttribute('data-repo-key', repoKey);
+        
+        // Create repository header
+        const header = document.createElement('h2');
+        header.className = 'repo-header';
+        header.textContent = repoKey;
+        
+        // Create workflow grid for this repository
+        const grid = document.createElement('div');
+        grid.className = 'workflow-grid';
+        
+        // Add workflow cards to grid
+        workflows.forEach(workflow => {
+            const key = this.getWorkflowKey(workflow);
+            const card = this.createWorkflowCard(workflow, {
+                conclusion: workflow.conclusion,
+                status: workflow.status,
+                url: workflow.url,
+                updatedAt: workflow.updatedAt
+            });
+            card.setAttribute('data-workflow-key', key);
+            grid.appendChild(card);
+        });
+        
+        section.appendChild(header);
+        section.appendChild(grid);
+        
+        return section;
+    }
+
+    /**
      * Load all workflow statuses and render them
      */
     async loadWorkflows() {
-        const grid = document.querySelector('.workflow-grid');
+        const container = document.querySelector('.workflow-grids-container');
         
-        if (!grid) {
-            console.error('Workflow grid element not found');
+        if (!container) {
+            console.error('Workflow grids container element not found');
             return;
         }
 
@@ -158,87 +216,103 @@ class DashboardLoader {
             const workflowStatuses = await this.api.getAllWorkflowStatuses();
 
             if (!workflowStatuses || workflowStatuses.length === 0) {
-                // Only clear grid if there are no workflows (first load scenario)
-                if (grid.children.length === 0 || this.hasErrorState(grid)) {
-                    grid.innerHTML = '';
-                    this.showNoWorkflowsMessage(grid);
+                // Only clear container if there are no workflows (first load scenario)
+                if (container.children.length === 0 || this.hasErrorState(container)) {
+                    container.innerHTML = '';
+                    this.showNoWorkflowsMessage(container);
                 }
                 this.updateRefreshStatus(false, new Date());
                 return;
             }
 
-            // Instead of clearing the grid, update existing cards or add new ones
-            // This prevents the visual "wipe" effect
-            const existingCards = Array.from(grid.children);
+            // Group workflows by repository
+            const workflowsByRepo = this.groupWorkflowsByRepository(workflowStatuses);
             
-            // Create a map of workflow identifiers to new cards
-            const newCardsMap = new Map();
-            workflowStatuses.forEach(workflow => {
-                const key = this.getWorkflowKey(workflow);
-                const card = this.createWorkflowCard(workflow, {
-                    conclusion: workflow.conclusion,
-                    status: workflow.status,
-                    url: workflow.url,
-                    updatedAt: workflow.updatedAt
-                });
-                // Store the workflow key as a data attribute for reliable matching
-                card.setAttribute('data-workflow-key', key);
-                newCardsMap.set(key, card);
+            // Get existing repository sections
+            const existingSections = new Map();
+            Array.from(container.children).forEach(section => {
+                if (section.classList.contains('repo-section')) {
+                    const repoKey = section.getAttribute('data-repo-key');
+                    if (repoKey) {
+                        existingSections.set(repoKey, section);
+                    }
+                }
             });
 
-            // Check if any existing cards are missing the data-workflow-key attribute
-            // If so, treat this as a first load to ensure clean state
-            const hasCardsWithoutKey = existingCards.some(card => 
-                !card.classList.contains('config-error') && 
-                !card.getAttribute('data-workflow-key')
-            );
+            // Check if this is a first load or if we have an error state
+            const isFirstLoad = container.children.length === 0 || 
+                               this.hasErrorState(container) ||
+                               existingSections.size === 0;
 
-            // If this is the first load, we have an error message, or cards are missing keys, clear and rebuild
-            if (existingCards.length === 0 || this.hasErrorState(grid) || hasCardsWithoutKey) {
-                grid.innerHTML = '';
-                workflowStatuses.forEach(workflow => {
-                    const key = this.getWorkflowKey(workflow);
-                    const card = newCardsMap.get(key);
-                    if (card) {
-                        grid.appendChild(card);
-                    }
+            if (isFirstLoad) {
+                // Clear and rebuild everything
+                container.innerHTML = '';
+                
+                // Create sections for each repository
+                workflowsByRepo.forEach((workflows, repoKey) => {
+                    const section = this.createRepositorySection(repoKey, workflows);
+                    container.appendChild(section);
                 });
             } else {
-                // Update existing cards in place by matching workflow keys
-                // Build a map of existing workflow keys to their card elements
-                const existingCardsMap = new Map();
-                existingCards.forEach(card => {
-                    const key = card.getAttribute('data-workflow-key');
-                    if (key) {
-                        existingCardsMap.set(key, card);
-                    }
-                    // Note: we don't remove cards without keys here anymore
-                    // because we already checked for that case above
-                });
-
-                // Replace existing cards with updated versions in the same order as workflowStatuses
-                workflowStatuses.forEach(workflow => {
-                    const key = this.getWorkflowKey(workflow);
-                    if (!key) {
-                        return; // Skip invalid workflows
-                    }
+                // Update existing sections or add new ones
+                const updatedRepoKeys = new Set();
+                
+                // Process each repository
+                workflowsByRepo.forEach((workflows, repoKey) => {
+                    updatedRepoKeys.add(repoKey);
+                    const existingSection = existingSections.get(repoKey);
                     
-                    const newCard = newCardsMap.get(key);
-                    const existingCard = existingCardsMap.get(key);
-                    
-                    if (existingCard && newCard) {
-                        // Replace existing card with updated one
-                        grid.replaceChild(newCard, existingCard);
-                        existingCardsMap.delete(key);
-                    } else if (newCard && !existingCard) {
-                        // New workflow - append at the end
-                        grid.appendChild(newCard);
+                    if (existingSection) {
+                        // Update existing section
+                        const grid = existingSection.querySelector('.workflow-grid');
+                        if (grid) {
+                            // Update workflow cards in this grid
+                            const existingCards = new Map();
+                            Array.from(grid.children).forEach(card => {
+                                const key = card.getAttribute('data-workflow-key');
+                                if (key) {
+                                    existingCards.set(key, card);
+                                }
+                            });
+                            
+                            // Update or add workflow cards
+                            workflows.forEach(workflow => {
+                                const key = this.getWorkflowKey(workflow);
+                                const existingCard = existingCards.get(key);
+                                
+                                const newCard = this.createWorkflowCard(workflow, {
+                                    conclusion: workflow.conclusion,
+                                    status: workflow.status,
+                                    url: workflow.url,
+                                    updatedAt: workflow.updatedAt
+                                });
+                                newCard.setAttribute('data-workflow-key', key);
+                                
+                                if (existingCard) {
+                                    grid.replaceChild(newCard, existingCard);
+                                    existingCards.delete(key);
+                                } else {
+                                    grid.appendChild(newCard);
+                                }
+                            });
+                            
+                            // Remove cards that no longer exist
+                            existingCards.forEach(card => {
+                                grid.removeChild(card);
+                            });
+                        }
+                    } else {
+                        // Create new section
+                        const newSection = this.createRepositorySection(repoKey, workflows);
+                        container.appendChild(newSection);
                     }
                 });
-
-                // Remove any cards for workflows that no longer exist
-                existingCardsMap.forEach(card => {
-                    grid.removeChild(card);
+                
+                // Remove sections for repositories that no longer exist
+                existingSections.forEach((section, repoKey) => {
+                    if (!updatedRepoKeys.has(repoKey)) {
+                        container.removeChild(section);
+                    }
                 });
             }
 
@@ -254,10 +328,10 @@ class DashboardLoader {
 
         } catch (error) {
             console.error('Failed to load workflows:', error);
-            // Only show error if grid is empty or already has an error
-            if (grid.children.length === 0 || this.hasErrorState(grid)) {
-                grid.innerHTML = '';
-                this.showApiError(grid, error);
+            // Only show error if container is empty or already has an error
+            if (container.children.length === 0 || this.hasErrorState(container)) {
+                container.innerHTML = '';
+                this.showApiError(container, error);
             }
             // Clear the refreshing state but don't update timestamp to preserve last successful refresh time
             this.updateRefreshStatus(false);
@@ -266,9 +340,9 @@ class DashboardLoader {
 
     /**
      * Show a message when no workflows are configured
-     * @param {HTMLElement} grid - Workflow grid element
+     * @param {HTMLElement} container - Workflow grids container element
      */
-    showNoWorkflowsMessage(grid) {
+    showNoWorkflowsMessage(container) {
         const messageDiv = document.createElement('div');
         messageDiv.className = 'config-error';
         messageDiv.innerHTML = `
@@ -277,15 +351,15 @@ class DashboardLoader {
             <p>To add workflows, upload a workflows.json file to the Azure Storage container.</p>
             <p>See the README and infrastructure documentation for instructions.</p>
         `;
-        grid.appendChild(messageDiv);
+        container.appendChild(messageDiv);
     }
 
     /**
      * Show an error message when Azure Function API fails
-     * @param {HTMLElement} grid - Workflow grid element
+     * @param {HTMLElement} container - Workflow grids container element
      * @param {Error} error - Error that occurred
      */
-    showApiError(grid, error) {
+    showApiError(container, error) {
         const errorDiv = document.createElement('div');
         errorDiv.className = 'config-error';
         errorDiv.innerHTML = `
@@ -300,7 +374,7 @@ class DashboardLoader {
                 <li>Workflow configurations are uploaded to Azure Storage</li>
             </ol>
         `;
-        grid.appendChild(errorDiv);
+        container.appendChild(errorDiv);
     }
 
     /**
@@ -353,9 +427,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Check if Azure Function URL is configured
         if (!DASHBOARD_CONFIG.azureFunction.url || DASHBOARD_CONFIG.azureFunction.url === '__AZURE_FUNCTION_URL__') {
             console.error('Azure Function URL not configured. Dashboard cannot load.');
-            const grid = document.querySelector('.workflow-grid');
-            if (grid) {
-                grid.innerHTML = `
+            const container = document.querySelector('.workflow-grids-container');
+            if (container) {
+                container.innerHTML = `
                     <div class="config-error">
                         <h3>⚠️ Configuration Required</h3>
                         <p>Azure Function URL is not configured. Please:</p>
