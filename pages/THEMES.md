@@ -12,8 +12,6 @@ The dashboard now uses a modular CSS architecture that separates styling from HT
 ```
 pages/
 ├── index.html              # Main dashboard with theme switcher
-├── index-light.html        # Legacy: Dashboard with light theme only (no switcher)
-├── index-dark.html         # Legacy: Dashboard with dark theme only (no switcher)
 ├── styles-base.css         # Common styles shared across all themes
 ├── theme-default.css       # Default purple gradient theme
 ├── theme-light.css         # GitHub Primer light theme colors
@@ -40,7 +38,7 @@ pages/
 
 ## How to Use Themes
 
-### Using the Theme Switcher (Recommended)
+### Using the Theme Switcher
 
 The main dashboard (`index.html`) includes a dynamic theme switcher:
 
@@ -48,15 +46,6 @@ The main dashboard (`index.html`) includes a dynamic theme switcher:
 2. Click the settings button (⚙️) in the top-right corner
 3. Select your preferred theme (Default, Light, or Dark)
 4. Your choice is saved in browser localStorage and persists across sessions
-
-### Using Static Theme Files (Legacy)
-
-You can also directly access specific themes without the switcher:
-- `index.html` - Main dashboard with theme switcher (starts with Default theme)
-- `index-light.html` - Light theme only (no switcher)
-- `index-dark.html` - Dark theme only (no switcher)
-
-**Note**: The static theme files (`index-light.html` and `index-dark.html`) are legacy files maintained for backward compatibility. We recommend using `index.html` with the theme switcher for the best experience.
 
 ## Creating a New Theme
 
@@ -92,13 +81,24 @@ h1 {
 /* ... customize other elements ... */
 ```
 
-4. To use your custom theme, either:
-   - Add it to `theme-switcher.js` to make it available in the UI
-   - Create a new HTML file that references your theme CSS:
+4. Add your custom theme to `theme-switcher.js`:
+
+```javascript
+this.themes = {
+    default: 'theme-default.css',
+    light: 'theme-light.css',
+    dark: 'theme-dark.css',
+    custom: 'theme-custom.css'  // Add your theme here
+};
+```
+
+5. Update the settings modal in `index.html` to include your theme option:
 
 ```html
-<link rel="stylesheet" href="styles-base.css">
-<link rel="stylesheet" href="theme-custom.css">
+<label class="theme-option">
+    <input type="radio" name="theme" value="custom">
+    <span class="theme-label">Custom</span>
+</label>
 ```
 
 ## Theme CSS Properties
