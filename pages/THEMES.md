@@ -11,61 +11,41 @@ The dashboard now uses a modular CSS architecture that separates styling from HT
 
 ```
 pages/
-├── index.html              # Main dashboard (uses default purple gradient theme)
-├── index-light.html        # Dashboard with GitHub Primer light theme
-├── index-dark.html         # Dashboard with GitHub Primer dark theme
+├── index.html              # Main dashboard with theme switcher
 ├── styles-base.css         # Common styles shared across all themes
 ├── theme-default.css       # Default purple gradient theme
 ├── theme-light.css         # GitHub Primer light theme colors
-└── theme-dark.css          # GitHub Primer dark theme colors
+├── theme-dark.css          # GitHub Primer dark theme colors
+└── theme-switcher.js       # Dynamic theme switching logic
 ```
 
 ## Available Themes
 
 ### 1. Default Theme (Purple Gradient)
 - **File**: `theme-default.css`
-- **Used by**: `index.html`
 - **Description**: Professional purple gradient background with bright, modern colors
 - **Best for**: Modern, eye-catching dashboards
 
 ### 2. Light Theme (GitHub Primer)
 - **File**: `theme-light.css`
-- **Used by**: `index-light.html`
 - **Description**: Clean white background with GitHub's official Primer design system colors
 - **Best for**: Daytime use, maximum readability, professional settings
 
 ### 3. Dark Theme (GitHub Primer)
 - **File**: `theme-dark.css`
-- **Used by**: `index-dark.html`
 - **Description**: Dark background with muted colors based on GitHub's dark mode
 - **Best for**: Nighttime use, reduced eye strain, low-light environments
 
 ## How to Use Themes
 
-### Using an Existing Theme
+### Using the Theme Switcher
 
-Simply open the HTML file for the theme you want:
-- `index.html` - Default purple gradient theme
-- `index-light.html` - Light theme
-- `index-dark.html` - Dark theme
+The main dashboard (`index.html`) includes a dynamic theme switcher:
 
-### Changing the Default Theme
-
-To change which theme is used by `index.html`, edit the `<head>` section:
-
-```html
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitHub Actions Dashboard</title>
-    <link rel="stylesheet" href="styles-base.css">
-    <link rel="stylesheet" href="theme-default.css">  <!-- Change this line -->
-</head>
-```
-
-Replace `theme-default.css` with:
-- `theme-light.css` for light theme
-- `theme-dark.css` for dark theme
+1. Open the dashboard at `index.html`
+2. Click the settings button (⚙️) in the top-right corner
+3. Select your preferred theme (Default, Light, or Dark)
+4. Your choice is saved in browser localStorage and persists across sessions
 
 ## Creating a New Theme
 
@@ -101,11 +81,24 @@ h1 {
 /* ... customize other elements ... */
 ```
 
-4. Create a new HTML file (e.g., `index-custom.html`) or update an existing one:
+4. Add your custom theme to `theme-switcher.js`:
+
+```javascript
+this.themes = {
+    default: 'theme-default.css',
+    light: 'theme-light.css',
+    dark: 'theme-dark.css',
+    custom: 'theme-custom.css'  // Add your theme here
+};
+```
+
+5. Update the settings modal in `index.html` to include your theme option:
 
 ```html
-<link rel="stylesheet" href="styles-base.css">
-<link rel="stylesheet" href="theme-custom.css">
+<label class="theme-option">
+    <input type="radio" name="theme" value="custom">
+    <span class="theme-label">Custom</span>
+</label>
 ```
 
 ## Theme CSS Properties
