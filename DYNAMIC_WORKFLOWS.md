@@ -1,4 +1,6 @@
-# Dynamic Workflow Management Architecture (DEPRECATED) (will provide newer functionality soon)
+# Dynamic Workflow Management Architecture (DEPRECATED)
+
+**NOTE** The content in this document is no longer relevant at this time.  We are preserving it for guidance on a new implementation of this coming soon.
 
 ## Overview
 
