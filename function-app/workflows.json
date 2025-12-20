@@ -1,121 +1,121 @@
 [
   {
     "owner": "djredman99-org",
-    "repo": "pages-actions-dashboard",
+    "repo": "workflow-samples",
     "workflow": "ci-build.yml",
     "label": "CI Build"
   },
   {
     "owner": "djredman99-org",
-    "repo": "pages-actions-dashboard",
+    "repo": "workflow-samples",
     "workflow": "unit-tests.yml",
     "label": "Unit Tests"
   },
   {
     "owner": "djredman99-org",
-    "repo": "pages-actions-dashboard",
+    "repo": "workflow-samples",
     "workflow": "deploy-production.yml",
     "label": "Deploy Production"
   },
   {
     "owner": "djredman99-org",
-    "repo": "pages-actions-dashboard",
+    "repo": "workflow-samples",
     "workflow": "code-quality.yml",
     "label": "Code Quality"
   },
   {
     "owner": "djredman99-org",
-    "repo": "pages-actions-dashboard",
+    "repo": "workflow-samples",
     "workflow": "security-scan.yml",
     "label": "Security Scan"
   },
   {
     "owner": "djredman99-org",
-    "repo": "pages-actions-dashboard",
+    "repo": "workflow-samples",
     "workflow": "documentation.yml",
     "label": "Documentation"
   },
   {
     "owner": "djredman99-org",
-    "repo": "pages-actions-dashboard",
+    "repo": "workflow-samples",
     "workflow": "release.yml",
     "label": "Release Process"
   },
   {
     "owner": "djredman99-org",
-    "repo": "pages-actions-dashboard",
+    "repo": "workflow-samples",
     "workflow": "lint.yml",
     "label": "Lint Check"
   },
   {
     "owner": "djredman99-org",
-    "repo": "pages-actions-dashboard",
+    "repo": "workflow-samples",
     "workflow": "integration-tests.yml",
     "label": "Integration Tests"
   },
   {
     "owner": "djredman99-org",
-    "repo": "pages-actions-dashboard",
+    "repo": "workflow-samples",
     "workflow": "performance-tests.yml",
     "label": "Performance Tests"
   },
   {
     "owner": "djredman99-org",
-    "repo": "pages-actions-dashboard",
+    "repo": "workflow-samples",
     "workflow": "e2e-tests.yml",
     "label": "E2E Tests"
   },
   {
     "owner": "djredman99-org",
-    "repo": "pages-actions-dashboard",
+    "repo": "workflow-samples",
     "workflow": "code-coverage.yml",
     "label": "Code Coverage"
   },
   {
     "owner": "djredman99-org",
-    "repo": "pages-actions-dashboard",
+    "repo": "workflow-samples",
     "workflow": "dependency-check.yml",
     "label": "Dependency Check"
   },
   {
     "owner": "djredman99-org",
-    "repo": "pages-actions-dashboard",
+    "repo": "workflow-samples",
     "workflow": "docker-build.yml",
     "label": "Docker Build"
   },
   {
     "owner": "djredman99-org",
-    "repo": "pages-actions-dashboard",
+    "repo": "workflow-samples",
     "workflow": "database-migration.yml",
     "label": "Database Migration"
   },
   {
     "owner": "djredman99-org",
-    "repo": "pages-actions-dashboard",
+    "repo": "workflow-samples",
     "workflow": "api-tests.yml",
     "label": "API Tests"
   },
   {
     "owner": "djredman99-org",
-    "repo": "pages-actions-dashboard",
+    "repo": "workflow-samples",
     "workflow": "build-artifacts.yml",
     "label": "Build Artifacts"
   },
   {
     "owner": "djredman99-org",
-    "repo": "pages-actions-dashboard",
+    "repo": "workflow-samples",
     "workflow": "smoke-tests.yml",
     "label": "Smoke Tests"
   },
   {
     "owner": "djredman99-org",
-    "repo": "pages-actions-dashboard",
+    "repo": "workflow-samples",
     "workflow": "accessibility-tests.yml",
     "label": "Accessibility Tests"
   },
   {
     "owner": "djredman99-org",
-    "repo": "pages-actions-dashboard",
+    "repo": "workflow-samples",
     "workflow": "load-tests.yml",
     "label": "Load Tests"
   }
