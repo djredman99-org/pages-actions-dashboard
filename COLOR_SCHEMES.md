@@ -1,18 +1,19 @@
 # GitHub Actions Dashboard Color Schemes
 
-This document describes the two GitHub-aligned color schemes available for the dashboard.
+This document describes the color schemes available for the dashboard.
 
 ## Overview
 
-Two theme mock-ups have been created based on GitHub's official Primer design system:
-1. **Light Theme** (`index-light.html`) - Clean, professional light mode
-2. **Dark Theme** (`index-dark.html`) - Modern dark mode with reduced eye strain
+The dashboard includes three themes based on GitHub's official Primer design system:
+1. **Default Theme** - Professional purple gradient background with modern colors
+2. **Light Theme** - Clean, professional light mode
+3. **Dark Theme** - Modern dark mode with reduced eye strain
 
-Both themes use authentic GitHub Primer colors to provide a familiar, GitHub-native experience.
+The Light and Dark themes use authentic GitHub Primer colors to provide a familiar, GitHub-native experience. Users can switch between themes using the settings button in the dashboard.
 
 ## Light Theme
 
-**File:** `pages/index-light.html`
+**File:** `pages/theme-light.css`
 
 ### Color Palette
 
@@ -41,7 +42,7 @@ Both themes use authentic GitHub Primer colors to provide a familiar, GitHub-nat
 
 ## Dark Theme
 
-**File:** `pages/index-dark.html`
+**File:** `pages/theme-dark.css`
 
 ### Color Palette
 
@@ -94,10 +95,20 @@ Both themes use GitHub's semantic status colors:
 
 ## Usage
 
-To preview the themes:
+The dashboard includes a theme switcher that allows you to dynamically change between themes:
 
-1. **Light Theme**: Open `pages/index-light.html` in a browser
-2. **Dark Theme**: Open `pages/index-dark.html` in a browser
+1. **Open Settings**: Click the settings button (⚙️) in the top-right corner of the dashboard
+2. **Select Theme**: Choose from Default, Light, or Dark theme options
+3. **Theme Persists**: Your theme choice is saved in browser localStorage and persists across sessions
+
+### Technical Details
+
+- Main dashboard: `pages/index.html`
+- Theme CSS files: `pages/theme-default.css`, `pages/theme-light.css`, `pages/theme-dark.css`
+- Theme switcher logic: `pages/theme-switcher.js`
+- Base styles: `pages/styles-base.css`
+
+The theme system uses a modular CSS architecture where the HTML structure is defined once in `index.html`, and themes are applied by loading different CSS files. This makes it easy to maintain consistent styling and add new themes without duplicating HTML.
 
 ## Screenshots
 
@@ -110,11 +121,10 @@ To preview the themes:
 ## Future Enhancements
 
 Potential improvements for theme implementation:
-- Add theme toggle switch to dynamically switch between themes
-- Use CSS custom properties for easier theme management
-- Implement user preference detection (prefers-color-scheme)
-- Store user theme choice in localStorage
-- Add additional theme variants (high contrast, etc.)
+- Add additional theme variants (high contrast, custom colors, etc.)
+- Implement system preference detection (prefers-color-scheme) for automatic theme selection
+- Add more granular theme customization options
+- Support for custom user-defined themes
 
 ## References
 
