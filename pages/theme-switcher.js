@@ -136,6 +136,12 @@ class ThemeSwitcher {
             return;
         }
 
+        // Validate theme exists before applying
+        if (!this.themes[theme]) {
+            console.error(`Invalid theme: ${theme}`);
+            return;
+        }
+
         const themeFile = this.themes[theme];
         this.themeLink.href = themeFile;
     }
