@@ -82,35 +82,15 @@ Before you begin, ensure you have:
        },
        "githubAppId": {
          "value": "YOUR_GITHUB_APP_ID"
-       },
-       "githubAppPrivateKey": {
-         "value": "-----BEGIN RSA PRIVATE KEY-----\nYOUR_PRIVATE_KEY_HERE\n-----END RSA PRIVATE KEY-----"
        }
      }
    }
    ```
 
-   **Important**: Replace the private key content with your actual private key from the `.pem` file. Include the full content including the BEGIN and END lines.
-
-   **Security Warning**: 
+   **Important**: 
+   - Only the GitHub App ID is included in parameters.json
+   - The private key will be uploaded separately in Step 4
    - ⚠️ **Never commit `parameters.json` with secrets to source control**
-   - For production deployments, use Azure Key Vault references or inject secrets via CI/CD pipelines
-   - Consider using GitHub Actions secrets for automated deployments
-
-### Alternative: Manual Secret Upload (Recommended for Development)
-
-Instead of putting the private key in `parameters.json`, you can deploy the infrastructure first with a placeholder, then manually upload the private key:
-
-1. **Use placeholder in parameters.json**:
-   ```json
-   "githubAppPrivateKey": {
-     "value": "PLACEHOLDER_WILL_BE_REPLACED"
-   }
-   ```
-
-2. **Deploy infrastructure** (Step 3 below)
-
-3. **Upload private key manually**:
    
    **Required Permissions**: To upload secrets to Key Vault, your user account needs the **Key Vault Secrets Officer** role or equivalent permissions (e.g., `Secret Set` permission). You can assign this role using:
    ```bash
@@ -155,7 +135,7 @@ Instead of putting the private key in `parameters.json`, you can deploy the infr
    - Create a resource group
    - Deploy all Azure resources (Function App, Key Vault, Storage Account)
    - Configure managed identity permissions
-   - Store GitHub App credentials in Key Vault
+   - Store GitHub App ID in Key Vault
    - Output configuration details
 
 4. **Save the deployment outputs** - you'll need them for the next steps:
@@ -165,7 +145,44 @@ Instead of putting the private key in `parameters.json`, you can deploy the infr
    - Storage Account Name
    - Storage Container Name
 
-## Step 4: Deploy Function App Code
+## Step 4: Upload GitHub App Private Key
+
+**Security Note**: The private key is uploaded directly to Key Vault and never included in deployment parameters. This prevents the private key from being exposed in Azure deployment logs.
+
+1. **Required Permissions**: To upload secrets to Key Vault, your user account needs the **Key Vault Secrets Officer** role or equivalent permissions (e.g., `Secret Set` permission). You can assign this role using:
+   ```bash
+   az role assignment create \
+     --role "Key Vault Secrets Officer" \
+     --assignee <your-user-email> \
+     --scope /subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.KeyVault/vaults/<keyvault-name>
+   ```
+
+2. **Upload the private key** (Required):
+   
+   **Option A: Upload file directly (Recommended)**
+   ```bash
+   # Upload your .pem file directly to Key Vault
+   az keyvault secret set \
+     --vault-name <KEY_VAULT_NAME> \
+     --name github-app-private-key \
+     --file /path/to/your/private-key.pem
+   ```
+
+   **Option B: Via VS Code file upload**
+   - In VS Code/Codespace: Right-click Explorer → "Upload..." → Select your `.pem` file
+   - Run: `az keyvault secret set --vault-name <KEY_VAULT_NAME> --name github-app-private-key --file ./uploaded-file.pem`
+   - Clean up: `rm ./uploaded-file.pem`
+
+3. **Verify the upload**:
+   ```bash
+   # Check that the secret exists (shows metadata only, not the actual key)
+   az keyvault secret show \
+     --vault-name <KEY_VAULT_NAME> \
+     --name github-app-private-key \
+     --query "name"
+   ```
+
+## Step 5: Deploy Function App Code
 
 1. Navigate to the function app directory:
    ```bash
@@ -191,7 +208,7 @@ Instead of putting the private key in `parameters.json`, you can deploy the infr
 
    You should get a response (may be empty if no workflows configured yet).
 
-## Step 5: Upload Workflow Configuration
+## Step 6: Upload Workflow Configuration
 
 1. Edit `function-app/workflows.json` with your workflows:
    ```json
@@ -223,7 +240,7 @@ Instead of putting the private key in `parameters.json`, you can deploy the infr
      --auth-mode login
    ```
 
-## Step 6: Configure GitHub Pages Deployment
+## Step 7: Configure GitHub Pages Deployment
 
 1. Add Azure Function URL as a repository secret:
    - Go to your repository → Settings → Secrets and variables → Actions
@@ -246,7 +263,7 @@ Instead of putting the private key in `parameters.json`, you can deploy the infr
    git push
    ```
 
-## Step 7: Verify End-to-End Flow
+## Step 8: Verify End-to-End Flow
 
 1. Wait for GitHub Pages deployment to complete
 2. Visit your dashboard URL
@@ -487,18 +504,7 @@ If you encounter an authentication error when the Function App tries to access G
    -----BEGIN RSA PRIVATE KEY-----
    ```
 
-3. **If using parameters.json, ensure proper escaping**:
-   ```json
-   {
-     "githubAppPrivateKey": {
-       "value": "-----BEGIN RSA PRIVATE KEY-----\\nMIIEow...\\n-----END RSA PRIVATE KEY-----"
-     }
-   }
-   ```
-   
-   **Note**: Use `\\n` for newlines in JSON, not literal line breaks.
-
-4. **Restart Function App after updating the key**:
+2. **Restart Function App after updating the key**:
    ```bash
    az functionapp restart --name ghactionsdash-func-dev --resource-group ghactionsdash-rg
    ```
