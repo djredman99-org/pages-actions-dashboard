@@ -6,14 +6,6 @@ const { getWorkflowConfigurations, saveWorkflowConfigurations } = require('../st
 const crypto = require('crypto');
 
 /**
- * Generate a GUID for a workflow
- * @returns {string} GUID in standard format
- */
-function generateGuid() {
-    return crypto.randomUUID();
-}
-
-/**
  * Validate workflow input
  * @param {Object} workflow - Workflow object to validate
  * @returns {Object} Validation result with isValid and error
@@ -153,15 +145,15 @@ app.http('add-workflow', {
             }
 
             // Generate GUID for the new workflow
-            const guid = generateGuid();
+            const guid = crypto.randomUUID();
 
             // Create new workflow entry
             const newWorkflow = {
                 id: guid,
-                owner: owner,
-                repo: repo,
+                owner,
+                repo,
                 workflow: workflowFile,
-                label: label
+                label
             };
 
             // Add to workflows array

@@ -76,7 +76,7 @@ function ensureWorkflowGuids(workflows) {
     let needsSave = false;
     
     const updatedWorkflows = workflows.map(workflow => {
-        if (!workflow.id) {
+        if (!workflow.id || (typeof workflow.id === 'string' && workflow.id.trim() === '')) {
             needsSave = true;
             return {
                 id: crypto.randomUUID(),
