@@ -73,6 +73,7 @@ Dashboard refreshes every 5 minutes by default. To change the interval, edit `pa
 
 ### Getting Started
 - **[AZURE_SETUP.md](AZURE_SETUP.md)** - Complete deployment guide with step-by-step instructions
+- **[PAGES_SETUP.md](PAGES_SETUP.md)** - GitHub Pages configuration and authentication setup
 - **[DEPLOYMENT_NOTES.md](DEPLOYMENT_NOTES.md)** - Deployment checklist, troubleshooting, and monitoring
 
 ### Technical Details

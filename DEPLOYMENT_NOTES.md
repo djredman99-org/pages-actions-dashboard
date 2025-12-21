@@ -74,8 +74,10 @@ Before deploying this solution, ensure you have:
 4. **Configure Repository Secret** (GitHub Settings)
    - Add `AZURE_FUNCTION_URL` with Function App URL
 
-5. **Configure Pages on the Repository**
-   - Ensure you set to use GitHub Actions for deployment
+5. **Configure GitHub Pages** (GitHub Settings → Pages)
+   - Set **Source** to **"GitHub Actions"** (NOT "Deploy from a branch")
+   - This enables our custom build workflow to inject secrets
+   - 📖 See [PAGES_SETUP.md](PAGES_SETUP.md) for detailed setup and authentication info
 
 6. **Deploy Pages Site** (merge PR or push to main)
    - Automatically deploys with updated configuration
