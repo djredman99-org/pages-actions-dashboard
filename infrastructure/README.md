@@ -265,6 +265,8 @@ cors: {
 }
 ```
 
+📖 **Pages Setup**: See [PAGES_SETUP.md](../PAGES_SETUP.md) for complete GitHub Pages configuration and authentication setup.
+
 ### Add Additional Secrets
 
 To store additional secrets in Key Vault:

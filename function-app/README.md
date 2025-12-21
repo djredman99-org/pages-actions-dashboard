@@ -289,6 +289,8 @@ az functionapp cors add \
   --allowed-origins "https://your-org.github.io"
 ```
 
+📖 **Pages Setup**: See [PAGES_SETUP.md](../PAGES_SETUP.md) for complete GitHub Pages configuration and authentication setup.
+
 ### Function Keys
 
 By default, the function uses `authLevel: 'anonymous'` for easy access. For production, consider enabling function keys:

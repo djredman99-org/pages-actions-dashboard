@@ -242,6 +242,8 @@ Before you begin, ensure you have:
 
 ## Step 7: Configure GitHub Pages Deployment
 
+### Add Repository Secret
+
 1. Add Azure Function URL as a repository secret:
    - Go to your repository → Settings → Secrets and variables → Actions
    - Click "New repository secret"
@@ -254,7 +256,16 @@ Before you begin, ensure you have:
    
    The frontend code will automatically append the `/api/get-workflow-statuses` endpoint path.
 
-2. The deployment workflow will automatically inject this URL into the Pages site
+### Configure GitHub Pages
+
+2. Set up GitHub Pages to use GitHub Actions for deployment:
+   - Go to your repository → Settings → Pages
+   - Under **"Build and deployment"** → **"Source"**, select **"GitHub Actions"**
+   - Do NOT select "Deploy from a branch"
+   
+   📖 **Why GitHub Actions?** We use a custom workflow that injects the Azure Function URL during build. See [PAGES_SETUP.md](PAGES_SETUP.md) for complete Pages setup guide including authentication benefits and troubleshooting.
+
+### Deploy
 
 3. Push changes to trigger deployment:
    ```bash
@@ -262,6 +273,11 @@ Before you begin, ensure you have:
    git commit -m "Configure Azure Function backend"
    git push
    ```
+
+4. Monitor the deployment:
+   - Go to **Actions** tab
+   - Watch **"Deploy Dashboard to GitHub Pages"** workflow
+   - Once complete, access your dashboard at `https://{owner}.github.io/{repo}/`
 
 ## Step 8: Verify End-to-End Flow
 
