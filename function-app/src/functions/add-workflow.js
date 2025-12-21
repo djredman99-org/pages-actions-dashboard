@@ -133,17 +133,31 @@ app.http('add-workflow', {
             );
 
             // Handle legacy format (array) and migrate to new format (object with dashboardId)
+            let needsMigration = false;
             if (Array.isArray(config)) {
                 context.log('Migrating legacy array format to object format with dashboardId');
                 config = {
                     dashboardId: crypto.randomUUID(),
                     workflows: config
                 };
+                needsMigration = true;
             }
 
             // Ensure dashboardId exists
             if (!config.dashboardId) {
+                context.log('Adding dashboardId to configuration');
                 config.dashboardId = crypto.randomUUID();
+                needsMigration = true;
+            }
+
+            // Save migration if needed before proceeding
+            if (needsMigration) {
+                context.log('Saving migrated configuration');
+                await saveWorkflowConfigurations(
+                    storageAccountUrl,
+                    workflowConfigContainer,
+                    config
+                );
             }
 
             const workflows = config.workflows || [];
