@@ -149,25 +149,30 @@ The function uses these environment variables (set automatically by Bicep deploy
 Workflows are stored in Azure Storage as `workflows.json`:
 
 ```json
-[
-  {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "owner": "your-org",
-    "repo": "your-repo",
-    "workflow": "ci.yml",
-    "label": "CI Build"
-  }
-]
+{
+  "dashboardId": "550e8400-e29b-41d4-a716-446655440000",
+  "workflows": [
+    {
+      "owner": "your-org",
+      "repo": "your-repo",
+      "workflow": "ci.yml",
+      "label": "CI Build"
+    }
+  ]
+}
 ```
 
-**Fields:**
-- `id` (string, required): GUID identifying the workflow. Auto-generated if missing.
+**Structure:**
+- `dashboardId` (string, required): GUID identifying the dashboard. Auto-generated on first run if missing.
+- `workflows` (array, required): Array of workflow configurations
+
+**Workflow Fields:**
 - `owner` (string, required): GitHub repository owner (org or user)
 - `repo` (string, required): GitHub repository name
 - `workflow` (string, required): Workflow filename (e.g., "ci.yml")
 - `label` (string, required): Display label for the dashboard
 
-**Note:** The `id` field is automatically generated for existing workflows without one when the `get-workflow-statuses` function runs.
+**Note:** The configuration automatically migrates from legacy array format to the new object format with `dashboardId` when any function runs.
 
 Upload using Azure CLI:
 ```bash
@@ -188,9 +193,9 @@ Returns workflow statuses for all configured workflows.
 **Response:**
 ```json
 {
+  "dashboardId": "550e8400-e29b-41d4-a716-446655440000",
   "workflows": [
     {
-      "id": "550e8400-e29b-41d4-a716-446655440000",
       "owner": "your-org",
       "repo": "your-repo",
       "workflow": "ci.yml",
@@ -224,8 +229,8 @@ Adds a new workflow to the dashboard configuration.
 {
   "success": true,
   "message": "Workflow added successfully",
+  "dashboardId": "550e8400-e29b-41d4-a716-446655440000",
   "workflow": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
     "owner": "owner",
     "repo": "repo",
     "workflow": "workflow-file.yml",
@@ -256,8 +261,8 @@ Removes a workflow from the dashboard configuration.
 {
   "success": true,
   "message": "Workflow removed successfully",
+  "dashboardId": "550e8400-e29b-41d4-a716-446655440000",
   "workflow": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
     "owner": "owner",
     "repo": "repo",
     "workflow": "workflow-file.yml",

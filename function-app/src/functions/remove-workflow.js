@@ -3,6 +3,7 @@
 
 const { app } = require('@azure/functions');
 const { getWorkflowConfigurations, saveWorkflowConfigurations } = require('../storage-client');
+const crypto = require('crypto');
 
 /**
  * Validate remove workflow input
@@ -113,12 +114,28 @@ app.http('remove-workflow', {
             const [owner, repo] = requestBody.repo.split('/');
             const workflowFile = requestBody.workflow;
 
-            // Get existing workflows from Azure Storage
-            context.log('Retrieving existing workflows from Storage');
-            const workflows = await getWorkflowConfigurations(
+            // Get existing workflow configuration from Azure Storage
+            context.log('Retrieving workflow configuration from Storage');
+            let config = await getWorkflowConfigurations(
                 storageAccountUrl,
                 workflowConfigContainer
             );
+
+            // Handle legacy format (array) and migrate to new format (object with dashboardId)
+            if (Array.isArray(config)) {
+                context.log('Migrating legacy array format to object format with dashboardId');
+                config = {
+                    dashboardId: crypto.randomUUID(),
+                    workflows: config
+                };
+            }
+
+            // Ensure dashboardId exists
+            if (!config.dashboardId) {
+                config.dashboardId = crypto.randomUUID();
+            }
+
+            const workflows = config.workflows || [];
 
             // Find the workflow to remove
             const workflowIndex = findWorkflowIndex(workflows, owner, repo, workflowFile);
@@ -137,13 +154,14 @@ app.http('remove-workflow', {
             // Remove the workflow
             const removedWorkflow = workflows[workflowIndex];
             workflows.splice(workflowIndex, 1);
+            config.workflows = workflows;
 
-            // Save updated workflows back to Storage
-            context.log('Saving updated workflows to Storage');
+            // Save updated configuration back to Storage
+            context.log('Saving updated workflow configuration to Storage');
             await saveWorkflowConfigurations(
                 storageAccountUrl,
                 workflowConfigContainer,
-                workflows
+                config
             );
 
             context.log(`Successfully removed workflow: ${owner}/${repo}/${workflowFile}`);
@@ -156,6 +174,7 @@ app.http('remove-workflow', {
                 jsonBody: {
                     success: true,
                     message: 'Workflow removed successfully',
+                    dashboardId: config.dashboardId,
                     workflow: removedWorkflow
                 }
             };

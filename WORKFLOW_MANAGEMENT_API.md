@@ -66,8 +66,8 @@ Content-Type: application/json
 {
   "success": true,
   "message": "Workflow added successfully",
+  "dashboardId": "550e8400-e29b-41d4-a716-446655440000",
   "workflow": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
     "owner": "microsoft",
     "repo": "vscode",
     "workflow": "ci.yml",
@@ -174,8 +174,8 @@ Content-Type: application/json
 {
   "success": true,
   "message": "Workflow removed successfully",
+  "dashboardId": "550e8400-e29b-41d4-a716-446655440000",
   "workflow": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
     "owner": "microsoft",
     "repo": "vscode",
     "workflow": "ci.yml",
@@ -235,21 +235,54 @@ const response = await fetch('https://your-function-app.azurewebsites.net/api/re
 });
 ```
 
-## Workflow IDs (GUIDs)
+## Dashboard GUID
 
-Each workflow is assigned a unique GUID (Globally Unique Identifier) when added to the dashboard. This ID:
+The dashboard configuration includes a unique GUID (Globally Unique Identifier) that identifies the dashboard itself. This ID:
 
 - Is automatically generated using `crypto.randomUUID()`
 - Follows the standard UUID v4 format (e.g., `550e8400-e29b-41d4-a716-446655440000`)
+- Stored at the top level of the `workflows.json` file as `dashboardId`
 - Prepares the system for future multi-dashboard support
-- Is automatically added to existing workflows that don't have one
+- Is automatically added on first run if missing
 
-### Migration of Existing Workflows
+### Configuration Format
 
-When the `get-workflow-statuses` function runs, it automatically:
-1. Checks if workflows have an `id` field
-2. Generates GUIDs for workflows without IDs
-3. Saves the updated configuration back to Azure Storage
+The `workflows.json` file in Azure Storage uses this structure:
+
+```json
+{
+  "dashboardId": "550e8400-e29b-41d4-a716-446655440000",
+  "workflows": [
+    {
+      "owner": "microsoft",
+      "repo": "vscode",
+      "workflow": "ci.yml",
+      "label": "VS Code CI"
+    }
+  ]
+}
+```
+
+### Migration from Legacy Format
+
+If you have an existing `workflows.json` file in the legacy array format:
+
+```json
+[
+  {
+    "owner": "microsoft",
+    "repo": "vscode",
+    "workflow": "ci.yml",
+    "label": "VS Code CI"
+  }
+]
+```
+
+The system automatically migrates it to the new format with a `dashboardId` when any function runs:
+
+1. Detects the legacy array format
+2. Wraps it in an object with a new `dashboardId`
+3. Saves the migrated configuration back to Azure Storage
 
 This migration happens seamlessly without any manual intervention.
 

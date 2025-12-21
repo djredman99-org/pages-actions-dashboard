@@ -68,28 +68,6 @@ function findInstallationForRepo(installations, owner, repo) {
 }
 
 /**
- * Ensure all workflows have GUIDs, generating them if needed
- * @param {Array} workflows - Array of workflow configurations
- * @returns {Object} Result with workflows array and needsSave boolean
- */
-function ensureWorkflowGuids(workflows) {
-    let needsSave = false;
-    
-    const updatedWorkflows = workflows.map(workflow => {
-        if (!workflow.id || (typeof workflow.id === 'string' && workflow.id.trim() === '')) {
-            needsSave = true;
-            return {
-                id: crypto.randomUUID(),
-                ...workflow
-            };
-        }
-        return workflow;
-    });
-    
-    return { workflows: updatedWorkflows, needsSave };
-}
-
-/**
  * HTTP trigger function to get workflow statuses
  * 
  * Security Note: authLevel is 'anonymous' to allow direct access from GitHub Pages.
@@ -128,28 +106,45 @@ app.http('get-workflow-statuses', {
                 getSecret(keyVaultUrl, 'github-app-private-key')
             ]);
 
-            // Get workflow configurations from Azure Storage
-            context.log('Retrieving workflow configurations from Storage');
-            const rawWorkflows = await getWorkflowConfigurations(
+            // Get workflow configuration from Azure Storage
+            context.log('Retrieving workflow configuration from Storage');
+            let config = await getWorkflowConfigurations(
                 storageAccountUrl,
                 workflowConfigContainer
             );
 
-            // Ensure all workflows have GUIDs (migration for existing workflows)
-            const { workflows: workflowsWithGuids, needsSave } = ensureWorkflowGuids(rawWorkflows);
-            
-            // Save back to storage if GUIDs were added
+            // Handle legacy format (array) and migrate to new format (object with dashboardId)
+            let needsSave = false;
+            if (Array.isArray(config)) {
+                context.log('Migrating legacy array format to object format with dashboardId');
+                config = {
+                    dashboardId: crypto.randomUUID(),
+                    workflows: config
+                };
+                needsSave = true;
+            }
+
+            // Ensure dashboardId exists
+            if (!config.dashboardId) {
+                context.log('Adding dashboardId to configuration');
+                config.dashboardId = crypto.randomUUID();
+                needsSave = true;
+            }
+
+            // Save back to storage if migration occurred
             if (needsSave) {
-                context.log('Migrating workflows to include GUIDs');
+                context.log('Saving migrated configuration with dashboardId');
                 await saveWorkflowConfigurations(
                     storageAccountUrl,
                     workflowConfigContainer,
-                    workflowsWithGuids
+                    config
                 );
             }
 
+            const workflows = config.workflows || [];
+
             // Validate workflow structure
-            const workflows = workflowsWithGuids.filter(workflow => {
+            const validWorkflows = workflows.filter(workflow => {
                 if (!workflow || typeof workflow !== 'object') {
                     context.log('Invalid workflow object:', workflow);
                     return false;
@@ -169,7 +164,7 @@ app.http('get-workflow-statuses', {
                 return true;
             });
 
-            if (!workflows || workflows.length === 0) {
+            if (!validWorkflows || validWorkflows.length === 0) {
                 context.log('No workflows configured');
                 return {
                     status: 200,
@@ -189,7 +184,7 @@ app.http('get-workflow-statuses', {
 
             // Group workflows by installation
             const workflowsByInstallation = {};
-            for (const workflow of workflows) {
+            for (const workflow of validWorkflows) {
                 const installationId = findInstallationForRepo(
                     installations,
                     workflow.owner,
@@ -244,7 +239,6 @@ app.http('get-workflow-statuses', {
                         };
 
                     results.push({
-                        id: workflow.id,
                         owner: workflow.owner,
                         repo: workflow.repo,
                         workflow: workflow.workflow,
@@ -264,6 +258,7 @@ app.http('get-workflow-statuses', {
                     'Cache-Control': 'public, max-age=60'
                 },
                 jsonBody: {
+                    dashboardId: config.dashboardId,
                     workflows: results,
                     timestamp: new Date().toISOString(),
                     count: results.length

@@ -125,12 +125,28 @@ app.http('add-workflow', {
             const workflowFile = requestBody.workflow;
             const label = requestBody.label;
 
-            // Get existing workflows from Azure Storage
-            context.log('Retrieving existing workflows from Storage');
-            const workflows = await getWorkflowConfigurations(
+            // Get existing workflow configuration from Azure Storage
+            context.log('Retrieving workflow configuration from Storage');
+            let config = await getWorkflowConfigurations(
                 storageAccountUrl,
                 workflowConfigContainer
             );
+
+            // Handle legacy format (array) and migrate to new format (object with dashboardId)
+            if (Array.isArray(config)) {
+                context.log('Migrating legacy array format to object format with dashboardId');
+                config = {
+                    dashboardId: crypto.randomUUID(),
+                    workflows: config
+                };
+            }
+
+            // Ensure dashboardId exists
+            if (!config.dashboardId) {
+                config.dashboardId = crypto.randomUUID();
+            }
+
+            const workflows = config.workflows || [];
 
             // Check if workflow already exists
             if (workflowExists(workflows, owner, repo, workflowFile)) {
@@ -144,12 +160,8 @@ app.http('add-workflow', {
                 };
             }
 
-            // Generate GUID for the new workflow
-            const guid = crypto.randomUUID();
-
-            // Create new workflow entry
+            // Create new workflow entry (no id field per workflow)
             const newWorkflow = {
-                id: guid,
                 owner,
                 repo,
                 workflow: workflowFile,
@@ -158,13 +170,14 @@ app.http('add-workflow', {
 
             // Add to workflows array
             workflows.push(newWorkflow);
+            config.workflows = workflows;
 
-            // Save updated workflows back to Storage
-            context.log('Saving updated workflows to Storage');
+            // Save updated configuration back to Storage
+            context.log('Saving updated workflow configuration to Storage');
             await saveWorkflowConfigurations(
                 storageAccountUrl,
                 workflowConfigContainer,
-                workflows
+                config
             );
 
             context.log(`Successfully added workflow: ${owner}/${repo}/${workflowFile}`);
@@ -177,6 +190,7 @@ app.http('add-workflow', {
                 jsonBody: {
                     success: true,
                     message: 'Workflow added successfully',
+                    dashboardId: config.dashboardId,
                     workflow: newWorkflow
                 }
             };
