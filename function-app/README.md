@@ -7,6 +7,8 @@ This Azure Function App provides a secure backend API for the GitHub Actions Das
 ### Functions
 
 - **get-workflow-statuses**: HTTP-triggered function that returns workflow statuses for all configured workflows
+- **add-workflow**: HTTP-triggered function that adds a new workflow to the dashboard configuration
+- **remove-workflow**: HTTP-triggered function that removes a workflow from the dashboard configuration
 
 ### Modules
 
@@ -149,6 +151,7 @@ Workflows are stored in Azure Storage as `workflows.json`:
 ```json
 [
   {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
     "owner": "your-org",
     "repo": "your-repo",
     "workflow": "ci.yml",
@@ -156,6 +159,15 @@ Workflows are stored in Azure Storage as `workflows.json`:
   }
 ]
 ```
+
+**Fields:**
+- `id` (string, required): GUID identifying the workflow. Auto-generated if missing.
+- `owner` (string, required): GitHub repository owner (org or user)
+- `repo` (string, required): GitHub repository name
+- `workflow` (string, required): Workflow filename (e.g., "ci.yml")
+- `label` (string, required): Display label for the dashboard
+
+**Note:** The `id` field is automatically generated for existing workflows without one when the `get-workflow-statuses` function runs.
 
 Upload using Azure CLI:
 ```bash
@@ -166,6 +178,98 @@ az storage blob upload \
   --file workflows.json \
   --auth-mode login
 ```
+
+### API Endpoints
+
+#### GET/POST `/api/get-workflow-statuses`
+
+Returns workflow statuses for all configured workflows.
+
+**Response:**
+```json
+{
+  "workflows": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "owner": "your-org",
+      "repo": "your-repo",
+      "workflow": "ci.yml",
+      "label": "CI Build",
+      "conclusion": "success",
+      "status": "completed",
+      "url": "https://github.com/your-org/your-repo/actions/runs/123456",
+      "updatedAt": "2025-12-21T20:00:00Z"
+    }
+  ],
+  "timestamp": "2025-12-21T20:17:31.942Z",
+  "count": 1
+}
+```
+
+#### POST `/api/add-workflow`
+
+Adds a new workflow to the dashboard configuration.
+
+**Request Body:**
+```json
+{
+  "repo": "owner/repo",
+  "workflow": "workflow-file.yml",
+  "label": "Workflow Label"
+}
+```
+
+**Success Response (201):**
+```json
+{
+  "success": true,
+  "message": "Workflow added successfully",
+  "workflow": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "owner": "owner",
+    "repo": "repo",
+    "workflow": "workflow-file.yml",
+    "label": "Workflow Label"
+  }
+}
+```
+
+**Error Responses:**
+- `400 Bad Request`: Invalid request body or validation error
+- `409 Conflict`: Workflow already exists
+- `500 Internal Server Error`: Server error
+
+#### POST/DELETE `/api/remove-workflow`
+
+Removes a workflow from the dashboard configuration.
+
+**Request Body:**
+```json
+{
+  "repo": "owner/repo",
+  "workflow": "workflow-file.yml"
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Workflow removed successfully",
+  "workflow": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "owner": "owner",
+    "repo": "repo",
+    "workflow": "workflow-file.yml",
+    "label": "Workflow Label"
+  }
+}
+```
+
+**Error Responses:**
+- `400 Bad Request`: Invalid request body or validation error
+- `404 Not Found`: Workflow not found
+- `500 Internal Server Error`: Server error
 
 ## Monitoring
 
