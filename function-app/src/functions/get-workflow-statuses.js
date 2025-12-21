@@ -4,7 +4,7 @@
 const crypto = require('crypto');
 const { app } = require('@azure/functions');
 const { getSecret } = require('../keyvault-client');
-const { getWorkflowConfigurations } = require('../storage-client');
+const { getWorkflowConfigurations, saveWorkflowConfigurations } = require('../storage-client');
 const { createInstallationClient, getAppInstallations } = require('../github-auth');
 
 /**
@@ -68,6 +68,28 @@ function findInstallationForRepo(installations, owner, repo) {
 }
 
 /**
+ * Ensure all workflows have GUIDs, generating them if needed
+ * @param {Array} workflows - Array of workflow configurations
+ * @returns {Object} Result with workflows array and needsSave boolean
+ */
+function ensureWorkflowGuids(workflows) {
+    let needsSave = false;
+    
+    const updatedWorkflows = workflows.map(workflow => {
+        if (!workflow.id) {
+            needsSave = true;
+            return {
+                id: crypto.randomUUID(),
+                ...workflow
+            };
+        }
+        return workflow;
+    });
+    
+    return { workflows: updatedWorkflows, needsSave };
+}
+
+/**
  * HTTP trigger function to get workflow statuses
  * 
  * Security Note: authLevel is 'anonymous' to allow direct access from GitHub Pages.
@@ -113,8 +135,21 @@ app.http('get-workflow-statuses', {
                 workflowConfigContainer
             );
 
+            // Ensure all workflows have GUIDs (migration for existing workflows)
+            const { workflows: workflowsWithGuids, needsSave } = ensureWorkflowGuids(rawWorkflows);
+            
+            // Save back to storage if GUIDs were added
+            if (needsSave) {
+                context.log('Migrating workflows to include GUIDs');
+                await saveWorkflowConfigurations(
+                    storageAccountUrl,
+                    workflowConfigContainer,
+                    workflowsWithGuids
+                );
+            }
+
             // Validate workflow structure
-            const workflows = rawWorkflows.filter(workflow => {
+            const workflows = workflowsWithGuids.filter(workflow => {
                 if (!workflow || typeof workflow !== 'object') {
                     context.log('Invalid workflow object:', workflow);
                     return false;
@@ -209,6 +244,7 @@ app.http('get-workflow-statuses', {
                         };
 
                     results.push({
+                        id: workflow.id,
                         owner: workflow.owner,
                         repo: workflow.repo,
                         workflow: workflow.workflow,
