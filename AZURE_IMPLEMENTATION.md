@@ -278,6 +278,8 @@ func azure functionapp publish <FUNCTION_APP_NAME>
 
 **Secret Required**: `AZURE_FUNCTION_URL` (Function App URL from infrastructure deployment)
 
+📖 **Setup Guide**: See [PAGES_SETUP.md](PAGES_SETUP.md) for complete Pages configuration instructions, including authentication benefits and source selection.
+
 ## Monitoring and Observability
 
 ### Application Insights
