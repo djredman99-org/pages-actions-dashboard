@@ -3,6 +3,8 @@
 
 const { app } = require('@azure/functions');
 const { getWorkflowConfigurations, saveWorkflowConfigurations } = require('../storage-client');
+const { getSecret } = require('../keyvault-client');
+const { createInstallationClient, getAppInstallations } = require('../github-auth');
 const crypto = require('crypto');
 
 /**
@@ -45,6 +47,70 @@ function validateWorkflow(workflow) {
 }
 
 /**
+ * Verify that the workflow exists in GitHub and the app has access
+ * @param {string} appId - GitHub App ID
+ * @param {string} privateKey - GitHub App private key
+ * @param {string} owner - Repository owner
+ * @param {string} repo - Repository name
+ * @param {string} workflowFile - Workflow file name
+ * @returns {Promise<Object>} Verification result with success and error
+ */
+async function verifyWorkflowAccess(appId, privateKey, owner, repo, workflowFile) {
+    try {
+        // Get all installations to find the one for this repo
+        const installations = await getAppInstallations(appId, privateKey);
+        
+        // Find installation for the repository owner
+        const installation = installations.find(
+            inst => inst.account.login.toLowerCase() === owner.toLowerCase()
+        );
+        
+        if (!installation) {
+            return {
+                success: false,
+                error: 'GitHub App is not installed on the specified organization or user account'
+            };
+        }
+        
+        // Create installation-specific client
+        const octokit = await createInstallationClient(appId, privateKey, installation.id);
+        
+        // Try to get the workflow file to verify it exists and we have access
+        try {
+            await octokit.rest.actions.getWorkflow({
+                owner,
+                repo,
+                workflow_id: workflowFile
+            });
+            
+            return { success: true };
+        } catch (error) {
+            if (error.status === 404) {
+                return {
+                    success: false,
+                    error: `Workflow '${workflowFile}' not found in repository ${owner}/${repo}`
+                };
+            } else if (error.status === 403) {
+                return {
+                    success: false,
+                    error: 'GitHub App does not have permission to access this repository or workflow'
+                };
+            } else {
+                return {
+                    success: false,
+                    error: `Failed to verify workflow: ${error.message}`
+                };
+            }
+        }
+    } catch (error) {
+        return {
+            success: false,
+            error: `Failed to verify workflow access: ${error.message}`
+        };
+    }
+}
+
+/**
  * Check if workflow already exists
  * @param {Array} workflows - Existing workflows
  * @param {string} owner - Repository owner
@@ -78,10 +144,11 @@ app.http('add-workflow', {
 
         try {
             // Get configuration from environment variables
+            const keyVaultUrl = process.env.KEY_VAULT_URL;
             const storageAccountUrl = process.env.STORAGE_ACCOUNT_URL;
             const workflowConfigContainer = process.env.WORKFLOW_CONFIG_CONTAINER;
 
-            if (!storageAccountUrl || !workflowConfigContainer) {
+            if (!keyVaultUrl || !storageAccountUrl || !workflowConfigContainer) {
                 context.log('Missing required environment variables');
                 return {
                     status: 500,
@@ -125,6 +192,27 @@ app.http('add-workflow', {
             const workflowFile = requestBody.workflow;
             const label = requestBody.label;
 
+            // Get GitHub App credentials from Key Vault
+            context.log('Retrieving GitHub App credentials from Key Vault');
+            const [appId, privateKey] = await Promise.all([
+                getSecret(keyVaultUrl, 'github-app-id'),
+                getSecret(keyVaultUrl, 'github-app-private-key')
+            ]);
+
+            // Verify workflow exists and app has access
+            context.log(`Verifying workflow access for ${owner}/${repo}/${workflowFile}`);
+            const verification = await verifyWorkflowAccess(appId, privateKey, owner, repo, workflowFile);
+            if (!verification.success) {
+                context.log(`Workflow verification failed: ${verification.error}`);
+                return {
+                    status: 404,
+                    jsonBody: {
+                        error: 'Workflow not accessible',
+                        message: verification.error
+                    }
+                };
+            }
+
             // Get existing workflow configuration from Azure Storage
             context.log('Retrieving workflow configuration from Storage');
             let config = await getWorkflowConfigurations(
@@ -132,27 +220,27 @@ app.http('add-workflow', {
                 workflowConfigContainer
             );
 
-            // Handle legacy format (array) and migrate to new format (object with dashboardId)
-            let needsMigration = false;
+            // Ensure configuration is in correct format and has dashboardId
+            let needsSave = false;
             if (Array.isArray(config)) {
-                context.log('Migrating legacy array format to object format with dashboardId');
+                context.log('Converting array format to object format');
                 config = {
                     dashboardId: crypto.randomUUID(),
                     workflows: config
                 };
-                needsMigration = true;
+                needsSave = true;
             }
 
-            // Ensure dashboardId exists
+            // Generate dashboardId if it doesn't exist
             if (!config.dashboardId) {
-                context.log('Adding dashboardId to configuration');
+                context.log('Generating dashboardId');
                 config.dashboardId = crypto.randomUUID();
-                needsMigration = true;
+                needsSave = true;
             }
 
-            // Save migration if needed before proceeding
-            if (needsMigration) {
-                context.log('Saving migrated configuration');
+            // Save configuration if GUID was generated
+            if (needsSave) {
+                context.log('Saving configuration with generated dashboardId');
                 await saveWorkflowConfigurations(
                     storageAccountUrl,
                     workflowConfigContainer,

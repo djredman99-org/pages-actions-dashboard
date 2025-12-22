@@ -113,10 +113,10 @@ app.http('get-workflow-statuses', {
                 workflowConfigContainer
             );
 
-            // Handle legacy format (array) and migrate to new format (object with dashboardId)
+            // Ensure configuration is in correct format and has dashboardId
             let needsSave = false;
             if (Array.isArray(config)) {
-                context.log('Migrating legacy array format to object format with dashboardId');
+                context.log('Converting array format to object format');
                 config = {
                     dashboardId: crypto.randomUUID(),
                     workflows: config
@@ -124,16 +124,16 @@ app.http('get-workflow-statuses', {
                 needsSave = true;
             }
 
-            // Ensure dashboardId exists
+            // Generate dashboardId if it doesn't exist
             if (!config.dashboardId) {
-                context.log('Adding dashboardId to configuration');
+                context.log('Generating dashboardId');
                 config.dashboardId = crypto.randomUUID();
                 needsSave = true;
             }
 
-            // Save back to storage if migration occurred
+            // Save configuration if GUID was generated
             if (needsSave) {
-                context.log('Saving migrated configuration with dashboardId');
+                context.log('Saving configuration with generated dashboardId');
                 await saveWorkflowConfigurations(
                     storageAccountUrl,
                     workflowConfigContainer,
