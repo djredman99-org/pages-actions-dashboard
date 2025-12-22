@@ -4,7 +4,7 @@
 const crypto = require('crypto');
 const { app } = require('@azure/functions');
 const { getSecret } = require('../keyvault-client');
-const { getWorkflowConfigurations } = require('../storage-client');
+const { getWorkflowConfigurations, saveWorkflowConfigurations } = require('../storage-client');
 const { createInstallationClient, getAppInstallations } = require('../github-auth');
 
 /**
@@ -106,15 +106,45 @@ app.http('get-workflow-statuses', {
                 getSecret(keyVaultUrl, 'github-app-private-key')
             ]);
 
-            // Get workflow configurations from Azure Storage
-            context.log('Retrieving workflow configurations from Storage');
-            const rawWorkflows = await getWorkflowConfigurations(
+            // Get workflow configuration from Azure Storage
+            context.log('Retrieving workflow configuration from Storage');
+            let config = await getWorkflowConfigurations(
                 storageAccountUrl,
                 workflowConfigContainer
             );
 
+            // Ensure configuration is in correct format and has dashboardId
+            let needsSave = false;
+            if (Array.isArray(config)) {
+                context.log('Converting array format to object format');
+                config = {
+                    dashboardId: crypto.randomUUID(),
+                    workflows: config
+                };
+                needsSave = true;
+            }
+
+            // Generate dashboardId if it doesn't exist
+            if (!config.dashboardId) {
+                context.log('Generating dashboardId');
+                config.dashboardId = crypto.randomUUID();
+                needsSave = true;
+            }
+
+            // Save configuration if GUID was generated
+            if (needsSave) {
+                context.log('Saving configuration with generated dashboardId');
+                await saveWorkflowConfigurations(
+                    storageAccountUrl,
+                    workflowConfigContainer,
+                    config
+                );
+            }
+
+            const workflows = config.workflows || [];
+
             // Validate workflow structure
-            const workflows = rawWorkflows.filter(workflow => {
+            const validWorkflows = workflows.filter(workflow => {
                 if (!workflow || typeof workflow !== 'object') {
                     context.log('Invalid workflow object:', workflow);
                     return false;
@@ -134,7 +164,7 @@ app.http('get-workflow-statuses', {
                 return true;
             });
 
-            if (!workflows || workflows.length === 0) {
+            if (!validWorkflows || validWorkflows.length === 0) {
                 context.log('No workflows configured');
                 return {
                     status: 200,
@@ -154,7 +184,7 @@ app.http('get-workflow-statuses', {
 
             // Group workflows by installation
             const workflowsByInstallation = {};
-            for (const workflow of workflows) {
+            for (const workflow of validWorkflows) {
                 const installationId = findInstallationForRepo(
                     installations,
                     workflow.owner,
@@ -228,6 +258,7 @@ app.http('get-workflow-statuses', {
                     'Cache-Control': 'public, max-age=60'
                 },
                 jsonBody: {
+                    dashboardId: config.dashboardId,
                     workflows: results,
                     timestamp: new Date().toISOString(),
                     count: results.length
