@@ -53,7 +53,7 @@ function validateWorkflow(workflow) {
  * @param {string} owner - Repository owner
  * @param {string} repo - Repository name
  * @param {string} workflowFile - Workflow file name
- * @returns {Promise<Object>} Verification result with success and error
+ * @returns {Promise<Object>} Verification result with success, error, and statusCode
  */
 async function verifyWorkflowAccess(appId, privateKey, owner, repo, workflowFile) {
     try {
@@ -68,6 +68,7 @@ async function verifyWorkflowAccess(appId, privateKey, owner, repo, workflowFile
         if (!installation) {
             return {
                 success: false,
+                statusCode: 404,
                 error: 'GitHub App is not installed on the specified organization or user account'
             };
         }
@@ -88,24 +89,28 @@ async function verifyWorkflowAccess(appId, privateKey, owner, repo, workflowFile
             if (error.status === 404) {
                 return {
                     success: false,
+                    statusCode: 404,
                     error: `Workflow '${workflowFile}' not found in repository ${owner}/${repo}`
                 };
             } else if (error.status === 403) {
                 return {
                     success: false,
+                    statusCode: 403,
                     error: 'GitHub App does not have permission to access this repository or workflow'
                 };
             } else {
                 return {
                     success: false,
-                    error: `Failed to verify workflow: ${error.message}`
+                    statusCode: 502,
+                    error: 'Failed to verify workflow with GitHub API'
                 };
             }
         }
     } catch (error) {
         return {
             success: false,
-            error: `Failed to verify workflow access: ${error.message}`
+            statusCode: 502,
+            error: 'Failed to communicate with GitHub API'
         };
     }
 }
@@ -194,10 +199,22 @@ app.http('add-workflow', {
 
             // Get GitHub App credentials from Key Vault
             context.log('Retrieving GitHub App credentials from Key Vault');
-            const [appId, privateKey] = await Promise.all([
-                getSecret(keyVaultUrl, 'github-app-id'),
-                getSecret(keyVaultUrl, 'github-app-private-key')
-            ]);
+            let appId, privateKey;
+            try {
+                [appId, privateKey] = await Promise.all([
+                    getSecret(keyVaultUrl, 'github-app-id'),
+                    getSecret(keyVaultUrl, 'github-app-private-key')
+                ]);
+            } catch (error) {
+                context.log('Failed to retrieve GitHub App credentials:', error);
+                return {
+                    status: 500,
+                    jsonBody: {
+                        error: 'Server configuration error',
+                        message: 'Failed to retrieve GitHub App credentials'
+                    }
+                };
+            }
 
             // Verify workflow exists and app has access
             context.log(`Verifying workflow access for ${owner}/${repo}/${workflowFile}`);
@@ -205,7 +222,7 @@ app.http('add-workflow', {
             if (!verification.success) {
                 context.log(`Workflow verification failed: ${verification.error}`);
                 return {
-                    status: 404,
+                    status: verification.statusCode,
                     jsonBody: {
                         error: 'Workflow not accessible',
                         message: verification.error
