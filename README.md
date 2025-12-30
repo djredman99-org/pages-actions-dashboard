@@ -5,8 +5,9 @@ A GitHub Pages site that serves as a centralized dashboard for monitoring GitHub
 ## Features
 
 - **Multi-Repository Support**: Monitor workflows from any GitHub repository (public, private, or internal)
+- **Dynamic Workflow Management**: Add and remove workflows via API without redeployment
 - **Azure Function Backend**: Secure serverless backend handles GitHub API calls
-- **Centralized Configuration**: Workflow configurations stored in Azure Storage
+- **Centralized Configuration**: Workflow configurations stored in Azure Storage with dashboard-level GUID identifier
 - **Dynamic Status Indicators**: Real-time workflow status with color-coded badges
 - **GitHub App Authentication**: Secure authentication using GitHub Apps (no exposed tokens)
 - **Responsive Design**: Adapts to different screen sizes with multiple themes
@@ -48,9 +49,16 @@ Your dashboard will be available at `https://{your-username}.github.io/pages-act
 
 ### Managing Workflows
 
-Workflows are stored in Azure Storage (`workflows.json`). Each workflow specifies owner, repo, workflow file, and display label.
+Workflows are stored in Azure Storage (`workflows.json`) with a dashboard-level GUID identifier. Each workflow specifies owner, repo, workflow file, and display label.
 
-📖 **Configuration Guide**: See [AZURE_SETUP.md](AZURE_SETUP.md#step-6-upload-workflow-configuration) for workflow configuration format and upload instructions.
+You can manage workflows in three ways:
+1. **Manually**: Upload `workflows.json` to Azure Storage
+2. **API (New)**: Use the `add-workflow` and `remove-workflow` Azure Functions for dynamic management
+3. **Automated**: Integrate workflow management into your own tools
+
+📖 **Manual Configuration**: See [AZURE_SETUP.md](AZURE_SETUP.md#step-6-upload-workflow-configuration) for workflow configuration format and upload instructions.
+
+📖 **API Usage**: See [WORKFLOW_MANAGEMENT_API.md](WORKFLOW_MANAGEMENT_API.md) for complete API documentation with examples.
 
 ### Themes
 
@@ -78,6 +86,7 @@ Dashboard refreshes every 5 minutes by default. To change the interval, edit `pa
 
 ### Technical Details
 - **[AZURE_IMPLEMENTATION.md](AZURE_IMPLEMENTATION.md)** - Detailed architecture and technical implementation
+- **[WORKFLOW_MANAGEMENT_API.md](WORKFLOW_MANAGEMENT_API.md)** - Dynamic workflow management API documentation
 - **[function-app/README.md](function-app/README.md)** - Function App development and deployment guide
 - **[infrastructure/README.md](infrastructure/README.md)** - Infrastructure as Code details
 
