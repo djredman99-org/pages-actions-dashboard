@@ -155,7 +155,7 @@ app.http('remove-workflow', {
             const workflowIndex = findWorkflowIndex(workflows, owner, repo, workflowFile);
 
             if (workflowIndex === -1) {
-                context.log(`Workflow not found: ${owner}/${repo}/${workflowFile}`);
+                context.log('Workflow not found in configuration');
                 return {
                     status: 404,
                     jsonBody: {
@@ -178,7 +178,7 @@ app.http('remove-workflow', {
                 config
             );
 
-            context.log(`Successfully removed workflow: ${owner}/${repo}/${workflowFile}`);
+            context.log('Successfully removed workflow from configuration');
 
             return {
                 status: 200,

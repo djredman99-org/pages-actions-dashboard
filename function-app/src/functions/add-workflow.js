@@ -90,7 +90,7 @@ async function verifyWorkflowAccess(appId, privateKey, owner, repo, workflowFile
                 return {
                     success: false,
                     statusCode: 404,
-                    error: `Workflow '${workflowFile}' not found in repository ${owner}/${repo}`
+                    error: 'Workflow not found in the specified repository'
                 };
             } else if (error.status === 403) {
                 return {
@@ -217,10 +217,10 @@ app.http('add-workflow', {
             }
 
             // Verify workflow exists and app has access
-            context.log(`Verifying workflow access for ${owner}/${repo}/${workflowFile}`);
+            context.log('Verifying workflow access');
             const verification = await verifyWorkflowAccess(appId, privateKey, owner, repo, workflowFile);
             if (!verification.success) {
-                context.log(`Workflow verification failed: ${verification.error}`);
+                context.log('Workflow verification failed');
                 return {
                     status: verification.statusCode,
                     jsonBody: {
@@ -269,7 +269,7 @@ app.http('add-workflow', {
 
             // Check if workflow already exists
             if (workflowExists(workflows, owner, repo, workflowFile)) {
-                context.log(`Workflow already exists: ${owner}/${repo}/${workflowFile}`);
+                context.log('Workflow already exists in configuration');
                 return {
                     status: 409,
                     jsonBody: {
@@ -299,7 +299,7 @@ app.http('add-workflow', {
                 config
             );
 
-            context.log(`Successfully added workflow: ${owner}/${repo}/${workflowFile}`);
+            context.log('Successfully added workflow to configuration');
 
             return {
                 status: 201,

@@ -41,7 +41,7 @@ async function getLatestWorkflowRun(octokit, owner, repo, workflowFile) {
             url: `https://github.com/${owner}/${repo}/actions/workflows/${workflowFile}`
         };
     } catch (error) {
-        console.error(`Failed to get workflow runs for ${owner}/${repo}/${workflowFile}:`, error);
+        console.error('Failed to get workflow runs:', error);
         return {
             conclusion: 'error',
             status: 'error',
@@ -192,7 +192,7 @@ app.http('get-workflow-statuses', {
                 );
 
                 if (!installationId) {
-                    context.log(`No installation found for ${workflow.owner}/${workflow.repo}`);
+                    context.log('No installation found for repository');
                     continue;
                 }
 
