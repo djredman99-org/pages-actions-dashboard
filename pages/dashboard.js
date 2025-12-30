@@ -569,6 +569,7 @@ class DashboardLoader {
      */
     async handleRemoveWorkflow(workflow) {
         // Confirm removal
+        // TODO: Replace with custom modal for better UX consistency
         const confirmed = confirm(`Are you sure you want to remove "${workflow.label}"?`);
         if (!confirmed) return;
 
@@ -582,6 +583,7 @@ class DashboardLoader {
             console.log(`Successfully removed workflow: ${workflow.owner}/${workflow.repo}/${workflow.workflow}`);
         } catch (error) {
             console.error('Failed to remove workflow:', error);
+            // TODO: Replace with toast notification or error modal for better UX
             alert(`Failed to remove workflow: ${error.message}`);
         }
     }
@@ -611,7 +613,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Expose dashboard instance globally for console access
         window.dashboardInstance = dashboard;
-        dashboardInstance = dashboard;
 
         // Set up add workflow button and modal (always available)
         dashboard.setupAddWorkflowButton();
