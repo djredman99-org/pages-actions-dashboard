@@ -77,27 +77,15 @@ app.http('remove-workflow', {
             const storageAccountUrl = process.env.STORAGE_ACCOUNT_URL;
             const workflowConfigContainer = process.env.WORKFLOW_CONFIG_CONTAINER;
 
-            // Validate environment variables are set and non-empty
-            if (!storageAccountUrl || !workflowConfigContainer) {
-                context.log('Missing required environment variables');
+            // Validate all environment variables are set, are strings, and are non-empty
+            if (!storageAccountUrl || typeof storageAccountUrl !== 'string' || storageAccountUrl.trim().length === 0 ||
+                !workflowConfigContainer || typeof workflowConfigContainer !== 'string' || workflowConfigContainer.trim().length === 0) {
+                context.log('Missing or invalid required environment variables');
                 return {
                     status: 500,
                     jsonBody: {
                         error: 'Server configuration error',
-                        message: 'Required environment variables are not set'
-                    }
-                };
-            }
-
-            // Additional validation to ensure environment variables are proper strings
-            if (typeof storageAccountUrl !== 'string' || storageAccountUrl.trim().length === 0 ||
-                typeof workflowConfigContainer !== 'string' || workflowConfigContainer.trim().length === 0) {
-                context.log('Invalid environment variable values');
-                return {
-                    status: 500,
-                    jsonBody: {
-                        error: 'Server configuration error',
-                        message: 'Invalid environment variable configuration'
+                        message: 'Required environment variables are not properly configured'
                     }
                 };
             }
