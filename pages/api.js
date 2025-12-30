@@ -104,6 +104,84 @@ class GitHubActionsAPI {
             };
         }
     }
+
+    /**
+     * Add a workflow to the dashboard via Azure Function
+     * @param {string} owner - Repository owner
+     * @param {string} repo - Repository name
+     * @param {string} workflow - Workflow file name
+     * @param {string} label - Display label for the workflow
+     * @returns {Promise<Object>} - Response object with success status
+     */
+    async addWorkflow(owner, repo, workflow, label) {
+        try {
+            const response = await fetch(`${this.functionUrl}/api/add-workflow`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    repo: `${owner}/${repo}`,
+                    workflow: workflow,
+                    label: label
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Failed to add workflow: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (this.debug) {
+                console.log('Workflow added successfully:', data);
+            }
+
+            return data;
+        } catch (error) {
+            console.error('Failed to add workflow:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Remove a workflow from the dashboard via Azure Function
+     * @param {string} owner - Repository owner
+     * @param {string} repo - Repository name
+     * @param {string} workflow - Workflow file name
+     * @returns {Promise<Object>} - Response object with success status
+     */
+    async removeWorkflow(owner, repo, workflow) {
+        try {
+            const response = await fetch(`${this.functionUrl}/api/remove-workflow`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    repo: `${owner}/${repo}`,
+                    workflow: workflow
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Failed to remove workflow: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (this.debug) {
+                console.log('Workflow removed successfully:', data);
+            }
+
+            return data;
+        } catch (error) {
+            console.error('Failed to remove workflow:', error);
+            throw error;
+        }
+    }
 }
 
 /**

@@ -193,3 +193,74 @@ h1 {
 .theme-label {
     color: #e6edf3;
 }
+
+.add-workflow-button {
+    background: #238636;
+    color: #ffffff;
+    box-shadow: 0 1px 0 rgba(27, 31, 35, 0.1);
+}
+
+.add-workflow-button:hover {
+    background: #2ea043;
+    box-shadow: 0 1px 0 rgba(27, 31, 35, 0.1), 0 0 0 3px rgba(35, 134, 54, 0.4);
+}
+
+.add-workflow-button:focus-visible {
+    outline: 2px solid #1f6feb;
+}
+
+/* Dark theme form styles */
+.modal-description {
+    color: #7d8590;
+}
+
+.modal-description code {
+    background: #161b22;
+    color: #e6edf3;
+}
+
+.form-group label {
+    color: #e6edf3;
+}
+
+.form-group input[type="text"] {
+    background: #0d1117;
+    border-color: #30363d;
+    color: #e6edf3;
+}
+
+.form-group input[type="text"]:focus {
+    border-color: #1f6feb;
+}
+
+.form-group input[type="text"]::placeholder {
+    color: #7d8590;
+}
+
+.form-help {
+    color: #7d8590;
+}
+
+.form-error {
+    background: #6e460020;
+    border-color: #9e6a03;
+    color: #d29922;
+}
+
+.modal-button-secondary {
+    background: #21262d;
+    color: #e6edf3;
+}
+
+.modal-button-secondary:hover {
+    background: #30363d;
+}
+
+.modal-button-primary {
+    background: #1f6feb;
+    color: #ffffff;
+}
+
+.modal-button-primary:hover {
+    background: #1a5fd9;
+}

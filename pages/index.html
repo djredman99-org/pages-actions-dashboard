@@ -45,6 +45,47 @@
         </div>
     </div>
 
+    <!-- Add Workflow Modal -->
+    <div id="add-workflow-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Workflow</h2>
+                <button class="close-button" aria-label="Close add workflow dialog">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-section">
+                    <p class="modal-description">Enter the workflow details in the format: <code>owner/repo/workflow-file.yml</code></p>
+                    <p class="modal-description">Example: <code>microsoft/vscode/ci.yml</code></p>
+                    <div class="form-group">
+                        <label for="workflow-input">Workflow Path</label>
+                        <input 
+                            type="text" 
+                            id="workflow-input" 
+                            placeholder="owner/repo/workflow.yml"
+                            aria-describedby="workflow-input-help"
+                        >
+                        <small id="workflow-input-help" class="form-help">Format: owner/repo/workflow-file.yml</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="workflow-label-input">Display Label</label>
+                        <input 
+                            type="text" 
+                            id="workflow-label-input" 
+                            placeholder="My Workflow"
+                            aria-describedby="workflow-label-help"
+                        >
+                        <small id="workflow-label-help" class="form-help">Friendly name to display on the dashboard</small>
+                    </div>
+                    <div id="add-workflow-error" class="form-error" style="display: none;"></div>
+                    <div class="modal-actions">
+                        <button id="add-workflow-cancel" class="modal-button modal-button-secondary">Cancel</button>
+                        <button id="add-workflow-apply" class="modal-button modal-button-primary">Add Workflow</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <h1>🚀 GitHub Actions Dashboard</h1>
         <p class="subtitle">Monitoring workflow statuses across repositories</p>
@@ -74,6 +115,15 @@
                 </svg>
             </span>
             <span class="refresh-status-text"></span>
+        </div>
+
+        <div class="workflow-controls">
+            <button id="add-workflow-button" class="add-workflow-button" aria-label="Add new workflow">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>Add Workflow</span>
+            </button>
         </div>
 
         <div class="workflow-grids-container">
