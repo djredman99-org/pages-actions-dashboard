@@ -10,7 +10,7 @@ const crypto = require('crypto');
 /**
  * Validate workflow input
  * @param {Object} workflow - Workflow object to validate
- * @returns {Object} Validation result with isValid and error
+ * @returns {Object} Validation result with isValid, error, and parsed values
  */
 function validateWorkflow(workflow) {
     if (!workflow || typeof workflow !== 'object') {
@@ -43,7 +43,14 @@ function validateWorkflow(workflow) {
         return { isValid: false, error: 'label field is required and must be a string' };
     }
 
-    return { isValid: true };
+    // Return validated and parsed values
+    return { 
+        isValid: true,
+        owner: repoParts[0],
+        repo: repoParts[1],
+        workflow: workflow.workflow,
+        label: workflow.label
+    };
 }
 
 /**
@@ -153,6 +160,7 @@ app.http('add-workflow', {
             const storageAccountUrl = process.env.STORAGE_ACCOUNT_URL;
             const workflowConfigContainer = process.env.WORKFLOW_CONFIG_CONTAINER;
 
+            // Validate environment variables are set and non-empty
             if (!keyVaultUrl || !storageAccountUrl || !workflowConfigContainer) {
                 context.log('Missing required environment variables');
                 return {
@@ -160,6 +168,20 @@ app.http('add-workflow', {
                     jsonBody: {
                         error: 'Server configuration error',
                         message: 'Required environment variables are not set'
+                    }
+                };
+            }
+
+            // Additional validation to ensure environment variables are proper strings
+            if (typeof keyVaultUrl !== 'string' || keyVaultUrl.trim().length === 0 ||
+                typeof storageAccountUrl !== 'string' || storageAccountUrl.trim().length === 0 ||
+                typeof workflowConfigContainer !== 'string' || workflowConfigContainer.trim().length === 0) {
+                context.log('Invalid environment variable values');
+                return {
+                    status: 500,
+                    jsonBody: {
+                        error: 'Server configuration error',
+                        message: 'Invalid environment variable configuration'
                     }
                 };
             }
@@ -192,10 +214,11 @@ app.http('add-workflow', {
                 };
             }
 
-            // Parse repo into owner and repo
-            const [owner, repo] = requestBody.repo.split('/');
-            const workflowFile = requestBody.workflow;
-            const label = requestBody.label;
+            // Use validated and parsed values from validation
+            const owner = validation.owner;
+            const repo = validation.repo;
+            const workflowFile = validation.workflow;
+            const label = validation.label;
 
             // Get GitHub App credentials from Key Vault
             context.log('Retrieving GitHub App credentials from Key Vault');

@@ -88,6 +88,7 @@ app.http('get-workflow-statuses', {
             const storageAccountUrl = process.env.STORAGE_ACCOUNT_URL;
             const workflowConfigContainer = process.env.WORKFLOW_CONFIG_CONTAINER;
 
+            // Validate environment variables are set and non-empty
             if (!keyVaultUrl || !storageAccountUrl || !workflowConfigContainer) {
                 context.log('Missing required environment variables');
                 return {
@@ -95,6 +96,20 @@ app.http('get-workflow-statuses', {
                     jsonBody: {
                         error: 'Server configuration error',
                         message: 'Required environment variables are not set'
+                    }
+                };
+            }
+
+            // Additional validation to ensure environment variables are proper strings
+            if (typeof keyVaultUrl !== 'string' || keyVaultUrl.trim().length === 0 ||
+                typeof storageAccountUrl !== 'string' || storageAccountUrl.trim().length === 0 ||
+                typeof workflowConfigContainer !== 'string' || workflowConfigContainer.trim().length === 0) {
+                context.log('Invalid environment variable values');
+                return {
+                    status: 500,
+                    jsonBody: {
+                        error: 'Server configuration error',
+                        message: 'Invalid environment variable configuration'
                     }
                 };
             }

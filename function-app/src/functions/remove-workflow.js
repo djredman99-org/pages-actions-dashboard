@@ -8,7 +8,7 @@ const crypto = require('crypto');
 /**
  * Validate remove workflow input
  * @param {Object} request - Request object to validate
- * @returns {Object} Validation result with isValid and error
+ * @returns {Object} Validation result with isValid, error, and parsed values
  */
 function validateRemoveRequest(request) {
     if (!request || typeof request !== 'object') {
@@ -31,7 +31,13 @@ function validateRemoveRequest(request) {
         return { isValid: false, error: 'workflow field is required and must be a string' };
     }
 
-    return { isValid: true };
+    // Return validated and parsed values
+    return { 
+        isValid: true,
+        owner: repoParts[0],
+        repo: repoParts[1],
+        workflow: request.workflow
+    };
 }
 
 /**
@@ -71,6 +77,7 @@ app.http('remove-workflow', {
             const storageAccountUrl = process.env.STORAGE_ACCOUNT_URL;
             const workflowConfigContainer = process.env.WORKFLOW_CONFIG_CONTAINER;
 
+            // Validate environment variables are set and non-empty
             if (!storageAccountUrl || !workflowConfigContainer) {
                 context.log('Missing required environment variables');
                 return {
@@ -78,6 +85,19 @@ app.http('remove-workflow', {
                     jsonBody: {
                         error: 'Server configuration error',
                         message: 'Required environment variables are not set'
+                    }
+                };
+            }
+
+            // Additional validation to ensure environment variables are proper strings
+            if (typeof storageAccountUrl !== 'string' || storageAccountUrl.trim().length === 0 ||
+                typeof workflowConfigContainer !== 'string' || workflowConfigContainer.trim().length === 0) {
+                context.log('Invalid environment variable values');
+                return {
+                    status: 500,
+                    jsonBody: {
+                        error: 'Server configuration error',
+                        message: 'Invalid environment variable configuration'
                     }
                 };
             }
@@ -110,9 +130,10 @@ app.http('remove-workflow', {
                 };
             }
 
-            // Parse repo into owner and repo
-            const [owner, repo] = requestBody.repo.split('/');
-            const workflowFile = requestBody.workflow;
+            // Use validated and parsed values from validation
+            const owner = validation.owner;
+            const repo = validation.repo;
+            const workflowFile = validation.workflow;
 
             // Get existing workflow configuration from Azure Storage
             context.log('Retrieving workflow configuration from Storage');
