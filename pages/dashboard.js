@@ -593,6 +593,29 @@ let dashboardInstance = null;
 // Initialize dashboard when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
     try {
+        // Initialize API client with Azure Function URL (even if not configured yet)
+        const apiClient = new GitHubActionsAPI(
+            DASHBOARD_CONFIG.azureFunction.url || '__AZURE_FUNCTION_URL__'
+        );
+        
+        // Enable debug mode if configured
+        if (DASHBOARD_CONFIG.azureFunction.debug) {
+            apiClient.debug = true;
+        }
+
+        // Initialize workflow manager with config workflows (for backward compatibility)
+        const workflowManager = new WorkflowManager(DASHBOARD_CONFIG.workflows);
+
+        // Initialize dashboard loader
+        const dashboard = new DashboardLoader(DASHBOARD_CONFIG, apiClient, workflowManager);
+        
+        // Expose dashboard instance globally for console access
+        window.dashboardInstance = dashboard;
+        dashboardInstance = dashboard;
+
+        // Set up add workflow button and modal (always available)
+        dashboard.setupAddWorkflowButton();
+
         // Check if Azure Function URL is configured
         if (!DASHBOARD_CONFIG.azureFunction.url || DASHBOARD_CONFIG.azureFunction.url === '__AZURE_FUNCTION_URL__') {
             console.error('Azure Function URL not configured. Dashboard cannot load.');
@@ -614,33 +637,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Initialize API client with Azure Function URL
-        const apiClient = new GitHubActionsAPI(DASHBOARD_CONFIG.azureFunction.url);
-        
-        // Enable debug mode if configured
-        if (DASHBOARD_CONFIG.azureFunction.debug) {
-            apiClient.debug = true;
-        }
-
-        // Initialize workflow manager with config workflows (for backward compatibility)
-        // In the new architecture, workflows come from Azure Storage via the Function
-        const workflowManager = new WorkflowManager(DASHBOARD_CONFIG.workflows);
-
-        // Initialize dashboard loader
-        const dashboard = new DashboardLoader(DASHBOARD_CONFIG, apiClient, workflowManager);
-        
-        // Expose dashboard instance globally for console access
-        window.dashboardInstance = dashboard;
-        dashboardInstance = dashboard;
-
         // Load workflows
         await dashboard.loadWorkflows();
 
         // Set up manual refresh button
         dashboard.setupRefreshButton();
-
-        // Set up add workflow button and modal
-        dashboard.setupAddWorkflowButton();
 
         // Set up auto-refresh every 5 minutes
         dashboard.setupAutoRefresh(5);
