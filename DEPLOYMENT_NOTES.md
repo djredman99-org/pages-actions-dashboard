@@ -63,7 +63,12 @@ Before deploying this solution, ensure you have:
    - Stores GitHub App credentials in Key Vault
    - Outputs Function App URL
 
-2. **Deploy Function App Code** (func azure functionapp publish)
+2. **Deploy Function App Code** (automated via GitHub Actions or manual)
+   - **Automated**: Use the "Deploy Azure Function" workflow (`.github/workflows/deploy-azure-function.yml`)
+     - Automatically triggers on changes to `function-app/**` directory
+     - Can be manually triggered via workflow_dispatch
+     - Requires `FUNCTION_APP_NAME` and `AZURE_CREDENTIALS` secrets
+   - **Manual**: Run `func azure functionapp publish <FUNCTION_APP_NAME> --javascript`
    - Deploys Node.js code to Function App
    - Installs npm dependencies on Azure
 
