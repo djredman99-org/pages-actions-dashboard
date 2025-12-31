@@ -209,6 +209,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Export outputs for next steps
+          echo "RESOURCE_GROUP_NAME=$RESOURCE_GROUP_NAME" >> $GITHUB_ENV
           echo "KEY_VAULT_NAME=$KEY_VAULT_NAME" >> $GITHUB_ENV
           echo "FUNCTION_APP_NAME=$FUNCTION_APP_NAME" >> $GITHUB_ENV
           echo "FUNCTION_APP_URL=$FUNCTION_APP_URL" >> $GITHUB_ENV
@@ -259,7 +260,7 @@ jobs:
           # Check Function App status
           FUNCTION_STATE=$(az functionapp show \
             --name "$FUNCTION_APP_NAME" \
-            --resource-group ghactionsdash-rg \
+            --resource-group "$RESOURCE_GROUP_NAME" \
             --query state -o tsv)
           
           if [ "$FUNCTION_STATE" != "Running" ]; then
@@ -325,14 +326,14 @@ jobs:
             echo "   - Go to Settings → Secrets and variables → Actions" >> $GITHUB_STEP_SUMMARY
             echo "   - Add secret \`AZURE_FUNCTION_URL\` with value: \`$FUNCTION_APP_URL\`" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "📖 For more details, see [AZURE_SETUP.md](../AZURE_SETUP.md)" >> $GITHUB_STEP_SUMMARY
+            echo "📖 For more details, see [AZURE_SETUP.md](AZURE_SETUP.md)" >> $GITHUB_STEP_SUMMARY
           else
             echo "## ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "The deployment encountered errors. Please review the logs above for details." >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**Troubleshooting Resources:**" >> $GITHUB_STEP_SUMMARY
-            echo "- [Azure Setup Guide](../AZURE_SETUP.md#troubleshooting)" >> $GITHUB_STEP_SUMMARY
-            echo "- [Infrastructure README](../infrastructure/README.md#troubleshooting)" >> $GITHUB_STEP_SUMMARY
-            echo "- [Deployment Notes](../DEPLOYMENT_NOTES.md)" >> $GITHUB_STEP_SUMMARY
+            echo "- [Azure Setup Guide](AZURE_SETUP.md#troubleshooting)" >> $GITHUB_STEP_SUMMARY
+            echo "- [Infrastructure README](infrastructure/README.md#troubleshooting)" >> $GITHUB_STEP_SUMMARY
+            echo "- [Deployment Notes](DEPLOYMENT_NOTES.md)" >> $GITHUB_STEP_SUMMARY
           fi
