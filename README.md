@@ -52,12 +52,10 @@ Your dashboard will be available at `https://{your-username}.github.io/pages-act
 Workflows are stored in Azure Storage (`workflows.json`) with a dashboard-level GUID identifier. Each workflow specifies owner, repo, workflow file, and display label.
 
 You can manage workflows in four ways:
-1. **Dashboard UI**: Use the "Add Workflow" button and remove buttons (X) directly in the dashboard interface
+1. **Dashboard UI**: Click the "Add Workflow" button to add workflows, and click the X button on workflow cards to remove them
 2. **Manually**: Upload `workflows.json` to Azure Storage
 3. **API**: Use the `add-workflow` and `remove-workflow` Azure Functions for dynamic management
 4. **Automated**: Integrate workflow management into your own tools
-
-📖 **Dashboard UI**: Click the "Add Workflow" button in the dashboard to add workflows, and click the X button on any workflow card to remove it.
 
 📖 **Manual Configuration**: See [AZURE_SETUP.md](AZURE_SETUP.md#step-6-upload-workflow-configuration) for workflow configuration format and upload instructions.
 

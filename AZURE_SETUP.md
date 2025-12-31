@@ -246,7 +246,7 @@ You need to create an initial workflow configuration. You can either upload it m
 
 **Option 2: Add Workflows via Dashboard UI (After deployment)**
 
-After completing the setup and deploying your dashboard, you can add workflows using the dashboard's UI:
+After completing the setup and deploying your dashboard, you can add workflows using the dashboard UI:
 1. Navigate to your dashboard
 2. Click the "Add Workflow" button
 3. Enter workflow details and click "Add Workflow"
