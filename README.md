@@ -5,7 +5,7 @@ A GitHub Pages site that serves as a centralized dashboard for monitoring GitHub
 ## Features
 
 - **Multi-Repository Support**: Monitor workflows from any GitHub repository (public, private, or internal)
-- **Dynamic Workflow Management**: Add and remove workflows via API without redeployment
+- **Dynamic Workflow Management**: Add and remove workflows via dashboard UI or API without redeployment
 - **Azure Function Backend**: Secure serverless backend handles GitHub API calls
 - **Centralized Configuration**: Workflow configurations stored in Azure Storage with dashboard-level GUID identifier
 - **Dynamic Status Indicators**: Real-time workflow status with color-coded badges
@@ -51,10 +51,11 @@ Your dashboard will be available at `https://{your-username}.github.io/pages-act
 
 Workflows are stored in Azure Storage (`workflows.json`) with a dashboard-level GUID identifier. Each workflow specifies owner, repo, workflow file, and display label.
 
-You can manage workflows in three ways:
-1. **Manually**: Upload `workflows.json` to Azure Storage
-2. **API (New)**: Use the `add-workflow` and `remove-workflow` Azure Functions for dynamic management
-3. **Automated**: Integrate workflow management into your own tools
+You can manage workflows in four ways:
+1. **Dashboard UI**: Click the "Add Workflow" button to add workflows, and click the X button on workflow cards to remove them
+2. **Manually**: Upload `workflows.json` to Azure Storage
+3. **API**: Use the `add-workflow` and `remove-workflow` Azure Functions for dynamic management
+4. **Automated**: Integrate workflow management into your own tools
 
 📖 **Manual Configuration**: See [AZURE_SETUP.md](AZURE_SETUP.md#step-6-upload-workflow-configuration) for workflow configuration format and upload instructions.
 

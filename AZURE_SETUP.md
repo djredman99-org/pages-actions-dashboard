@@ -210,6 +210,10 @@ Before you begin, ensure you have:
 
 ## Step 6: Upload Workflow Configuration
 
+You need to create an initial workflow configuration. You can either upload it manually now or add workflows later using the dashboard UI.
+
+**Option 1: Upload Initial Configuration (Recommended for first-time setup)**
+
 1. Edit `function-app/workflows.json` with your workflows:
    ```json
    [
@@ -239,6 +243,15 @@ Before you begin, ensure you have:
      --container-name workflow-configs \
      --auth-mode login
    ```
+
+**Option 2: Add Workflows via Dashboard UI (After deployment)**
+
+After completing the setup and deploying your dashboard, you can add workflows using the dashboard UI:
+1. Navigate to your dashboard
+2. Click the "Add Workflow" button
+3. Enter workflow details and click "Add Workflow"
+
+See the [Managing Workflows](#managing-workflows) section for more options.
 
 ## Step 7: Configure GitHub Pages Deployment
 
@@ -320,6 +333,16 @@ If workflows don't load:
 
 ### Add/Update Workflows
 
+You can manage workflows in multiple ways:
+
+**Option 1: Dashboard UI (Easiest)**
+1. Navigate to your dashboard
+2. Click the "Add Workflow" button
+3. Enter the workflow details in the format: `owner/repo/workflow.yml`
+4. Click "Add Workflow"
+5. To remove a workflow, click the X button on the workflow card
+
+**Option 2: Azure CLI (Manual)**
 1. Edit `workflows.json` locally
 2. Upload to Azure Storage:
    ```bash
@@ -331,6 +354,9 @@ If workflows don't load:
      --auth-mode login \
      --overwrite
    ```
+
+**Option 3: API (Programmatic)**
+See [WORKFLOW_MANAGEMENT_API.md](WORKFLOW_MANAGEMENT_API.md) for API documentation.
 
 ### View Current Workflows
 

@@ -1,6 +1,14 @@
 # Dynamic Workflow Management Architecture (DEPRECATED)
 
-**NOTE** The content in this document is no longer relevant at this time.  We are preserving it for guidance on a new implementation of this coming soon.
+**NOTE:** This document is deprecated. The local storage-based workflow management described here has been superseded by the Azure Storage-backed implementation with full UI support (implemented in v2.1.0).
+
+**Current implementation:**
+- Workflows are stored in Azure Storage (`workflows.json`)
+- Dashboard includes UI controls for adding/removing workflows
+- See [WORKFLOW_MANAGEMENT_API.md](WORKFLOW_MANAGEMENT_API.md) for API documentation
+- See [README.md](README.md#managing-workflows) for usage instructions
+
+This document is preserved for historical reference only.
 
 ## Overview
 
