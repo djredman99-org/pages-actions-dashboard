@@ -25,7 +25,8 @@ function-app/dist/
 function-app/.funcignore
 
 # Azure Infrastructure files
-infrastructure/parameters.json
+# Note: parameters.json is tracked in git - DO NOT add secrets to this file
+# GitHub App Private Key should be stored in GitHub secrets and uploaded via workflow
 infrastructure/deployment-output.json
 infrastructure/deployment-outputs.env
 
