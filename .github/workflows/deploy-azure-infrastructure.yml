@@ -12,11 +12,6 @@ on:
           - dev
           - staging
           - prod
-  push:
-    branches: [ main ]
-    paths:
-      - 'infrastructure/**'
-      - '.github/workflows/deploy-azure-infrastructure.yml'
 
 permissions:
   contents: read
