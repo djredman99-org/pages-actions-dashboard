@@ -121,6 +121,7 @@ jobs:
           echo "✅ GitHub App ID successfully injected into parameters.json" >> $GITHUB_STEP_SUMMARY
 
       - name: Login to Azure
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
