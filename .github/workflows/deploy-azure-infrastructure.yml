@@ -300,14 +300,20 @@ jobs:
             echo "Your Azure infrastructure has been deployed successfully." >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**Next Steps:**" >> $GITHUB_STEP_SUMMARY
-            echo "1. Deploy the Function App code:" >> $GITHUB_STEP_SUMMARY
-            echo "   \`\`\`bash" >> $GITHUB_STEP_SUMMARY
-            echo "   cd function-app" >> $GITHUB_STEP_SUMMARY
-            echo "   npm install" >> $GITHUB_STEP_SUMMARY
-            echo "   func azure functionapp publish $FUNCTION_APP_NAME" >> $GITHUB_STEP_SUMMARY
-            echo "   \`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "1. Add \`FUNCTION_APP_NAME\` secret to your repository:" >> $GITHUB_STEP_SUMMARY
+            echo "   - Go to Settings → Secrets and variables → Actions" >> $GITHUB_STEP_SUMMARY
+            echo "   - Add secret \`FUNCTION_APP_NAME\` with value: \`$FUNCTION_APP_NAME\`" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "2. Upload workflow configuration to Azure Storage:" >> $GITHUB_STEP_SUMMARY
+            echo "2. Deploy the Function App code:" >> $GITHUB_STEP_SUMMARY
+            echo "   - **Automated**: Run the \"Deploy Azure Function\" workflow from the Actions tab" >> $GITHUB_STEP_SUMMARY
+            echo "   - **Manual**: Run the following commands:" >> $GITHUB_STEP_SUMMARY
+            echo "     \`\`\`bash" >> $GITHUB_STEP_SUMMARY
+            echo "     cd function-app" >> $GITHUB_STEP_SUMMARY
+            echo "     npm install" >> $GITHUB_STEP_SUMMARY
+            echo "     func azure functionapp publish $FUNCTION_APP_NAME" >> $GITHUB_STEP_SUMMARY
+            echo "     \`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "3. Upload workflow configuration to Azure Storage:" >> $GITHUB_STEP_SUMMARY
             echo "   \`\`\`bash" >> $GITHUB_STEP_SUMMARY
             echo "   az storage blob upload \\" >> $GITHUB_STEP_SUMMARY
             echo "     --account-name $STORAGE_ACCOUNT_NAME \\" >> $GITHUB_STEP_SUMMARY
@@ -317,7 +323,7 @@ jobs:
             echo "     --auth-mode login" >> $GITHUB_STEP_SUMMARY
             echo "   \`\`\`" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "3. Add \`AZURE_FUNCTION_URL\` secret to your repository:" >> $GITHUB_STEP_SUMMARY
+            echo "4. Add \`AZURE_FUNCTION_URL\` secret to your repository:" >> $GITHUB_STEP_SUMMARY
             echo "   - Go to Settings → Secrets and variables → Actions" >> $GITHUB_STEP_SUMMARY
             echo "   - Add secret \`AZURE_FUNCTION_URL\` with value: \`$FUNCTION_APP_URL\`" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
