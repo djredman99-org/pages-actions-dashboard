@@ -1,0 +1,338 @@
+name: Deploy Azure Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy (dev, staging, prod)'
+        required: false
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+  push:
+    branches: [ main ]
+    paths:
+      - 'infrastructure/**'
+      - '.github/workflows/deploy-azure-infrastructure.yml'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate required secrets
+        run: |
+          echo "### 🔍 Validating Required Secrets" >> $GITHUB_STEP_SUMMARY
+          
+          MISSING_SECRETS=()
+          
+          if [ -z "${{ secrets.GH_APP_ID }}" ]; then
+            MISSING_SECRETS+=("GH_APP_ID")
+          fi
+          
+          if [ -z "${{ secrets.GH_APP_PRIVATE_KEY }}" ]; then
+            MISSING_SECRETS+=("GH_APP_PRIVATE_KEY")
+          fi
+          
+          if [ -z "${{ secrets.AZURE_CREDENTIALS }}" ]; then
+            MISSING_SECRETS+=("AZURE_CREDENTIALS")
+          fi
+          
+          if [ ${#MISSING_SECRETS[@]} -gt 0 ]; then
+            echo "❌ **Missing required secrets:**" >> $GITHUB_STEP_SUMMARY
+            for secret in "${MISSING_SECRETS[@]}"; do
+              echo "  - \`$secret\`" >> $GITHUB_STEP_SUMMARY
+            done
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Please add these secrets in repository Settings → Secrets and variables → Actions" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          
+          echo "✅ All required secrets are present" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check for Azure CLI
+        run: |
+          echo "### 🔧 Checking Required Tools" >> $GITHUB_STEP_SUMMARY
+          
+          if ! command -v az &> /dev/null; then
+            echo "❌ Azure CLI is not installed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Azure CLI is required for deployment but was not found on the runner." >> $GITHUB_STEP_SUMMARY
+            echo "This should not happen on ubuntu-latest runners. Please check the runner configuration." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          
+          AZ_VERSION=$(az version --output tsv --query '"azure-cli"' 2>/dev/null || echo "unknown")
+          echo "✅ Azure CLI is installed (version: $AZ_VERSION)" >> $GITHUB_STEP_SUMMARY
+          
+          if ! command -v jq &> /dev/null; then
+            echo "❌ jq is not installed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "jq is required for parsing deployment outputs but was not found on the runner." >> $GITHUB_STEP_SUMMARY
+            echo "This should not happen on ubuntu-latest runners. Please check the runner configuration." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          
+          echo "✅ jq is installed" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check for parameters.json
+        run: |
+          echo "### 📋 Validating Configuration Files" >> $GITHUB_STEP_SUMMARY
+          
+          if [ ! -f "infrastructure/parameters.json" ]; then
+            echo "❌ **parameters.json file not found**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The deployment requires a \`parameters.json\` file in the \`infrastructure/\` directory." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**To fix this:**" >> $GITHUB_STEP_SUMMARY
+            echo "1. Copy \`infrastructure/parameters.example.json\` to \`infrastructure/parameters.json\`" >> $GITHUB_STEP_SUMMARY
+            echo "2. Update the values in \`parameters.json\`" >> $GITHUB_STEP_SUMMARY
+            echo "3. **Important:** Set \`githubAppId\` to a placeholder (e.g., \"PLACEHOLDER\") - it will be replaced by the workflow" >> $GITHUB_STEP_SUMMARY
+            echo "4. **Never** add secrets like the GitHub App Private Key to \`parameters.json\`" >> $GITHUB_STEP_SUMMARY
+            echo "5. Commit and push the file to the repository" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          
+          echo "✅ parameters.json file found" >> $GITHUB_STEP_SUMMARY
+
+      - name: Inject GitHub App ID into parameters.json
+        run: |
+          echo "### 🔐 Injecting GitHub App ID" >> $GITHUB_STEP_SUMMARY
+          
+          cd infrastructure
+          
+          # Create a temporary parameters file with the GitHub App ID injected
+          jq --arg appId "${{ secrets.GH_APP_ID }}" \
+            '.parameters.githubAppId.value = $appId' \
+            parameters.json > parameters.tmp.json
+          
+          # Verify the injection worked
+          INJECTED_ID=$(jq -r '.parameters.githubAppId.value' parameters.tmp.json)
+          if [ "$INJECTED_ID" != "${{ secrets.GH_APP_ID }}" ]; then
+            echo "❌ Failed to inject GitHub App ID into parameters.json" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          
+          mv parameters.tmp.json parameters.json
+          echo "✅ GitHub App ID successfully injected into parameters.json" >> $GITHUB_STEP_SUMMARY
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy Azure Infrastructure
+        id: deploy
+        run: |
+          echo "### 🚀 Deploying Azure Infrastructure" >> $GITHUB_STEP_SUMMARY
+          
+          cd infrastructure
+          
+          # Set variables
+          RESOURCE_GROUP_NAME="${RESOURCE_GROUP_NAME:-ghactionsdash-rg}"
+          LOCATION="${LOCATION:-eastus}"
+          DEPLOYMENT_NAME="ghactionsdash-deployment-$(date +%Y%m%d-%H%M%S)"
+          
+          echo "**Deployment Configuration:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Resource Group: \`$RESOURCE_GROUP_NAME\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Location: \`$LOCATION\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Deployment Name: \`$DEPLOYMENT_NAME\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Create resource group if it doesn't exist
+          echo "Creating resource group..." >> $GITHUB_STEP_SUMMARY
+          az group create \
+            --name "$RESOURCE_GROUP_NAME" \
+            --location "$LOCATION" \
+            --output none
+          
+          echo "✅ Resource group created/verified" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Deploy infrastructure
+          echo "Deploying resources (this may take several minutes)..." >> $GITHUB_STEP_SUMMARY
+          
+          set +e  # Don't exit on error, we want to capture the error
+          DEPLOY_OUTPUT=$(az deployment group create \
+            --name "$DEPLOYMENT_NAME" \
+            --resource-group "$RESOURCE_GROUP_NAME" \
+            --template-file main.bicep \
+            --parameters @parameters.json \
+            --output json 2>&1)
+          DEPLOY_EXIT_CODE=$?
+          set -e
+          
+          if [ $DEPLOY_EXIT_CODE -ne 0 ]; then
+            echo "❌ **Deployment Failed**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Error Details:**" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "$DEPLOY_OUTPUT" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Common Issues:**" >> $GITHUB_STEP_SUMMARY
+            echo "- Resource provider not registered (run \`az provider register --namespace <provider>\`)" >> $GITHUB_STEP_SUMMARY
+            echo "- Quota exceeded (request increase in Azure Portal)" >> $GITHUB_STEP_SUMMARY
+            echo "- Resource name already in use (change baseName in parameters.json)" >> $GITHUB_STEP_SUMMARY
+            echo "- Insufficient permissions (ensure AZURE_CREDENTIALS has proper roles)" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          
+          # Save deployment output
+          echo "$DEPLOY_OUTPUT" > deployment-output.json
+          
+          echo "✅ **Deployment Completed Successfully**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Extract outputs
+          FUNCTION_APP_NAME=$(echo "$DEPLOY_OUTPUT" | jq -r '.properties.outputs.functionAppName.value')
+          FUNCTION_APP_URL=$(echo "$DEPLOY_OUTPUT" | jq -r '.properties.outputs.functionAppUrl.value')
+          KEY_VAULT_NAME=$(echo "$DEPLOY_OUTPUT" | jq -r '.properties.outputs.keyVaultName.value')
+          STORAGE_ACCOUNT_NAME=$(echo "$DEPLOY_OUTPUT" | jq -r '.properties.outputs.storageAccountName.value')
+          STORAGE_CONTAINER_NAME=$(echo "$DEPLOY_OUTPUT" | jq -r '.properties.outputs.storageContainerName.value')
+          
+          echo "**Deployed Resources:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Function App: \`$FUNCTION_APP_NAME\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Function URL: \`$FUNCTION_APP_URL\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Key Vault: \`$KEY_VAULT_NAME\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Storage Account: \`$STORAGE_ACCOUNT_NAME\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Workflow Container: \`$STORAGE_CONTAINER_NAME\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Export outputs for next steps
+          echo "KEY_VAULT_NAME=$KEY_VAULT_NAME" >> $GITHUB_ENV
+          echo "FUNCTION_APP_NAME=$FUNCTION_APP_NAME" >> $GITHUB_ENV
+          echo "FUNCTION_APP_URL=$FUNCTION_APP_URL" >> $GITHUB_ENV
+          echo "STORAGE_ACCOUNT_NAME=$STORAGE_ACCOUNT_NAME" >> $GITHUB_ENV
+          echo "STORAGE_CONTAINER_NAME=$STORAGE_CONTAINER_NAME" >> $GITHUB_ENV
+
+      - name: Upload GitHub App Private Key to Key Vault
+        run: |
+          echo "### 🔑 Uploading GitHub App Private Key" >> $GITHUB_STEP_SUMMARY
+          
+          # Create temporary file for private key
+          echo "${{ secrets.GH_APP_PRIVATE_KEY }}" > /tmp/github-app-private-key.pem
+          
+          # Upload to Key Vault
+          set +e
+          UPLOAD_OUTPUT=$(az keyvault secret set \
+            --vault-name "$KEY_VAULT_NAME" \
+            --name github-app-private-key \
+            --file /tmp/github-app-private-key.pem \
+            --output json 2>&1)
+          UPLOAD_EXIT_CODE=$?
+          set -e
+          
+          # Clean up temporary file
+          rm -f /tmp/github-app-private-key.pem
+          
+          if [ $UPLOAD_EXIT_CODE -ne 0 ]; then
+            echo "❌ **Failed to upload GitHub App Private Key**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Error Details:**" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "$UPLOAD_OUTPUT" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Common Issues:**" >> $GITHUB_STEP_SUMMARY
+            echo "- Insufficient permissions (service principal needs 'Key Vault Secrets Officer' role)" >> $GITHUB_STEP_SUMMARY
+            echo "- Key Vault access policy not configured correctly" >> $GITHUB_STEP_SUMMARY
+            echo "- RBAC permissions not yet propagated (wait a few minutes and retry)" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          
+          echo "✅ GitHub App Private Key uploaded successfully to Key Vault" >> $GITHUB_STEP_SUMMARY
+
+      - name: Validate Deployment
+        run: |
+          echo "### ✅ Validating Deployment" >> $GITHUB_STEP_SUMMARY
+          
+          # Check Function App status
+          FUNCTION_STATE=$(az functionapp show \
+            --name "$FUNCTION_APP_NAME" \
+            --resource-group ghactionsdash-rg \
+            --query state -o tsv)
+          
+          if [ "$FUNCTION_STATE" != "Running" ]; then
+            echo "⚠️ Warning: Function App state is '$FUNCTION_STATE' (expected 'Running')" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ Function App is running" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Verify Key Vault secrets
+          GITHUB_APP_ID_EXISTS=$(az keyvault secret show \
+            --vault-name "$KEY_VAULT_NAME" \
+            --name github-app-id \
+            --query name -o tsv 2>/dev/null || echo "")
+          
+          GITHUB_APP_KEY_EXISTS=$(az keyvault secret show \
+            --vault-name "$KEY_VAULT_NAME" \
+            --name github-app-private-key \
+            --query name -o tsv 2>/dev/null || echo "")
+          
+          if [ -n "$GITHUB_APP_ID_EXISTS" ]; then
+            echo "✅ GitHub App ID stored in Key Vault" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ GitHub App ID not found in Key Vault" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ -n "$GITHUB_APP_KEY_EXISTS" ]; then
+            echo "✅ GitHub App Private Key stored in Key Vault" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ GitHub App Private Key not found in Key Vault" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Deployment Summary
+        if: always()
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "## 🎉 Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Your Azure infrastructure has been deployed successfully." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Next Steps:**" >> $GITHUB_STEP_SUMMARY
+            echo "1. Deploy the Function App code:" >> $GITHUB_STEP_SUMMARY
+            echo "   \`\`\`bash" >> $GITHUB_STEP_SUMMARY
+            echo "   cd function-app" >> $GITHUB_STEP_SUMMARY
+            echo "   npm install" >> $GITHUB_STEP_SUMMARY
+            echo "   func azure functionapp publish $FUNCTION_APP_NAME" >> $GITHUB_STEP_SUMMARY
+            echo "   \`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "2. Upload workflow configuration to Azure Storage:" >> $GITHUB_STEP_SUMMARY
+            echo "   \`\`\`bash" >> $GITHUB_STEP_SUMMARY
+            echo "   az storage blob upload \\" >> $GITHUB_STEP_SUMMARY
+            echo "     --account-name $STORAGE_ACCOUNT_NAME \\" >> $GITHUB_STEP_SUMMARY
+            echo "     --container-name $STORAGE_CONTAINER_NAME \\" >> $GITHUB_STEP_SUMMARY
+            echo "     --name workflows.json \\" >> $GITHUB_STEP_SUMMARY
+            echo "     --file function-app/workflows.json \\" >> $GITHUB_STEP_SUMMARY
+            echo "     --auth-mode login" >> $GITHUB_STEP_SUMMARY
+            echo "   \`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "3. Add \`AZURE_FUNCTION_URL\` secret to your repository:" >> $GITHUB_STEP_SUMMARY
+            echo "   - Go to Settings → Secrets and variables → Actions" >> $GITHUB_STEP_SUMMARY
+            echo "   - Add secret \`AZURE_FUNCTION_URL\` with value: \`$FUNCTION_APP_URL\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "📖 For more details, see [AZURE_SETUP.md](../AZURE_SETUP.md)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The deployment encountered errors. Please review the logs above for details." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Troubleshooting Resources:**" >> $GITHUB_STEP_SUMMARY
+            echo "- [Azure Setup Guide](../AZURE_SETUP.md#troubleshooting)" >> $GITHUB_STEP_SUMMARY
+            echo "- [Infrastructure README](../infrastructure/README.md#troubleshooting)" >> $GITHUB_STEP_SUMMARY
+            echo "- [Deployment Notes](../DEPLOYMENT_NOTES.md)" >> $GITHUB_STEP_SUMMARY
+          fi
