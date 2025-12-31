@@ -66,7 +66,7 @@ jobs:
           echo "✅ Dependencies installed successfully" >> $GITHUB_STEP_SUMMARY
 
       - name: Login to Azure
-        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5
+        uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
@@ -82,10 +82,11 @@ jobs:
             echo "Installing Azure Functions Core Tools..." >> $GITHUB_STEP_SUMMARY
             
             # Install using Microsoft's official method
+            UBUNTU_VERSION=$(lsb_release -cs)
             curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
             sudo mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft.gpg
             
-            sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-$(lsb_release -cs)-prod $(lsb_release -cs) main" > /etc/apt/sources.list.d/dotnetdev.list'
+            sudo sh -c "echo 'deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-${UBUNTU_VERSION}-prod ${UBUNTU_VERSION} main' > /etc/apt/sources.list.d/dotnetdev.list"
             
             sudo apt-get update
             sudo apt-get install -y azure-functions-core-tools-4
@@ -144,15 +145,18 @@ jobs:
         run: |
           echo "### ✅ Verifying Deployment" >> $GITHUB_STEP_SUMMARY
           
+          # Get resource group once
+          RESOURCE_GROUP=$(az functionapp list --query "[?name=='$FUNCTION_APP_NAME'].resourceGroup" -o tsv)
+          
           # Get Function App details
           FUNCTION_STATE=$(az functionapp show \
             --name "$FUNCTION_APP_NAME" \
-            --resource-group $(az functionapp list --query "[?name=='$FUNCTION_APP_NAME'].resourceGroup" -o tsv) \
+            --resource-group "$RESOURCE_GROUP" \
             --query state -o tsv)
           
           FUNCTION_URL=$(az functionapp show \
             --name "$FUNCTION_APP_NAME" \
-            --resource-group $(az functionapp list --query "[?name=='$FUNCTION_APP_NAME'].resourceGroup" -o tsv) \
+            --resource-group "$RESOURCE_GROUP" \
             --query defaultHostName -o tsv)
           
           if [ "$FUNCTION_STATE" != "Running" ]; then
