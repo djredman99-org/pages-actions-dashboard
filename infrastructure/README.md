@@ -47,8 +47,8 @@ The Bicep template creates the following Azure resources:
 
 - **main.bicep**: Main Bicep template defining all resources
 - **parameters.example.json**: Example parameter file (template)
-- **parameters.json**: Actual parameters (git-ignored, contains secrets)
-- **deploy.sh**: Deployment script
+- **parameters.json**: Deployment parameters (tracked in git, NO SECRETS - GitHub App ID is injected by workflow)
+- **deploy.sh**: Manual deployment script
 - **README.md**: This file
 
 ## Prerequisites
@@ -71,9 +71,23 @@ The Bicep template creates the following Azure resources:
 
 ## Deployment
 
-### 1. Prepare Parameters
+### Automated Deployment (Recommended)
 
-Copy the example parameters file:
+Use the GitHub Actions workflow for automated deployment. See [CI/CD Deployment](#cicd-deployment) section below.
+
+### Manual Deployment
+
+#### 1. Prepare Parameters
+
+The `parameters.json` file is already in the repository with default values. For manual deployment, you can either:
+
+**Option A: Edit the existing parameters.json**
+```bash
+cd infrastructure
+# Edit parameters.json with your values
+```
+
+**Option B: Copy from example**
 ```bash
 cp parameters.example.json parameters.json
 ```
@@ -101,11 +115,12 @@ Edit `parameters.json` with your values:
 ```
 
 **Important**: 
-- Only the GitHub App ID is included in parameters.json
+- For manual deployment, you must update `githubAppId` with your actual GitHub App ID
+- For CI/CD deployment, the GitHub App ID is automatically injected from secrets
 - The private key will be uploaded separately using `az keyvault secret set` (see step 3 below)
-- Keep `parameters.json` secure and never commit it to version control (it's in .gitignore)
+- **Never** commit actual secrets to `parameters.json` - use placeholders for CI/CD workflows
 
-### 2. Run Deployment
+#### 2. Run Deployment
 
 ```bash
 ./deploy.sh
@@ -118,7 +133,7 @@ The script will:
 4. Output deployment details
 5. Save outputs to `deployment-outputs.env`
 
-### 3. Upload GitHub App Private Key
+#### 3. Upload GitHub App Private Key
 
 **Security Note**: The private key is uploaded directly to Key Vault and never included in deployment parameters. This prevents the private key from being exposed in Azure deployment logs.
 
@@ -132,7 +147,7 @@ az keyvault secret set \
 
 Replace `<KEY_VAULT_NAME>` with the Key Vault name from the deployment outputs.
 
-### 4. Verify Deployment
+#### 4. Verify Deployment
 
 Check that all resources were created:
 ```bash
@@ -147,7 +162,7 @@ az keyvault secret show \
   --query "name"
 ```
 
-### 5. Save Outputs
+#### 5. Save Outputs
 
 The deployment outputs are saved to `deployment-outputs.env`. Source this file for subsequent operations:
 ```bash
@@ -387,47 +402,29 @@ To deploy multiple environments (dev, staging, prod):
 
 ## CI/CD Deployment
 
-For automated infrastructure deployment, use GitHub Actions:
+For automated infrastructure deployment, this repository includes a GitHub Actions workflow at `.github/workflows/deploy-azure-infrastructure.yml`.
 
-```yaml
-name: Deploy Infrastructure
+### Setup
 
-on:
-  push:
-    branches: [main]
-    paths:
-      - 'infrastructure/**'
+1. **Add Required Secrets** to your repository (Settings → Secrets and variables → Actions):
+   - `GH_APP_ID`: Your GitHub App ID
+   - `GH_APP_PRIVATE_KEY`: Your GitHub App Private Key (.pem file contents)
+   - `AZURE_CREDENTIALS`: Azure service principal credentials (JSON format)
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Login to Azure
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-      
-      - name: Deploy Infrastructure
-        run: |
-          cd infrastructure
-          az deployment group create \
-            --name github-actions-deployment \
-            --resource-group ${{ secrets.RESOURCE_GROUP_NAME }} \
-            --template-file main.bicep \
-            --parameters githubAppId=${{ secrets.GITHUB_APP_ID }}
-      
-      - name: Upload GitHub App Private Key
-        run: |
-          # Upload private key to Key Vault
-          echo "${{ secrets.GITHUB_APP_PRIVATE_KEY }}" > /tmp/private-key.pem
-          az keyvault secret set \
-            --vault-name ${{ secrets.KEY_VAULT_NAME }} \
-            --name github-app-private-key \
-            --file /tmp/private-key.pem
-          rm /tmp/private-key.pem
-```
+2. **Configure parameters.json**: Update `infrastructure/parameters.json` with your deployment values (location, baseName, environment). The GitHub App ID is automatically injected from secrets during deployment.
+
+3. **Trigger Deployment**:
+   - Manually: Go to Actions → Deploy Azure Infrastructure → Run workflow
+   - Automatically: Push changes to `infrastructure/` directory on main branch
+
+The workflow automatically:
+- ✅ Validates required secrets and tools
+- ✅ Checks for parameters.json file
+- ✅ Injects GitHub App ID securely
+- ✅ Deploys Azure infrastructure
+- ✅ Uploads GitHub App Private Key to Key Vault
+- ✅ Validates deployment
+- ✅ Provides detailed job summaries with next steps
 
 ## Support
 
