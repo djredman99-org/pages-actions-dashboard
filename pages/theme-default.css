@@ -161,3 +161,18 @@ h1 {
 .theme-label {
     color: #34495e;
 }
+
+.add-workflow-button {
+    background: #667eea;
+    color: white;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.add-workflow-button:hover {
+    background: #5568d3;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.add-workflow-button:focus-visible {
+    outline: 2px solid #667eea;
+}

@@ -38,6 +38,22 @@ class DashboardLoader {
         link.appendChild(statusBadge);
         workflowItem.appendChild(link);
 
+        // Add remove button for workflows (will always show for now, API handles permissions)
+        const removeButton = document.createElement('button');
+        removeButton.className = 'workflow-remove-button';
+        removeButton.setAttribute('aria-label', `Remove ${workflow.label} workflow`);
+        removeButton.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        `;
+        removeButton.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.handleRemoveWorkflow(workflow);
+        };
+        workflowItem.appendChild(removeButton);
+
         return workflowItem;
     }
 
@@ -416,6 +432,161 @@ class DashboardLoader {
             });
         }
     }
+
+    /**
+     * Set up add workflow button and modal
+     */
+    setupAddWorkflowButton() {
+        const addButton = document.getElementById('add-workflow-button');
+        const modal = document.getElementById('add-workflow-modal');
+        const closeButton = modal?.querySelector('.close-button');
+        const cancelButton = document.getElementById('add-workflow-cancel');
+        const applyButton = document.getElementById('add-workflow-apply');
+        const workflowInput = document.getElementById('workflow-input');
+        const labelInput = document.getElementById('workflow-label-input');
+        const errorDiv = document.getElementById('add-workflow-error');
+
+        if (!addButton || !modal) return;
+
+        // Open modal
+        addButton.addEventListener('click', () => {
+            modal.style.display = 'block';
+            workflowInput.value = '';
+            labelInput.value = '';
+            errorDiv.style.display = 'none';
+            errorDiv.textContent = '';
+            workflowInput.focus();
+        });
+
+        // Close modal
+        const closeModal = () => {
+            modal.style.display = 'none';
+        };
+
+        closeButton?.addEventListener('click', closeModal);
+        cancelButton?.addEventListener('click', closeModal);
+
+        // Close on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        // Handle apply button
+        applyButton?.addEventListener('click', async () => {
+            await this.handleAddWorkflow(workflowInput.value, labelInput.value, errorDiv, applyButton, closeModal);
+        });
+
+        // Handle Enter key in inputs
+        const handleEnter = async (e) => {
+            if (e.key === 'Enter') {
+                await this.handleAddWorkflow(workflowInput.value, labelInput.value, errorDiv, applyButton, closeModal);
+            }
+        };
+        workflowInput?.addEventListener('keypress', handleEnter);
+        labelInput?.addEventListener('keypress', handleEnter);
+    }
+
+    /**
+     * Handle adding a workflow
+     * @param {string} workflowPath - Workflow path in format owner/repo/workflow.yml
+     * @param {string} label - Display label for workflow
+     * @param {HTMLElement} errorDiv - Error message container
+     * @param {HTMLElement} applyButton - Apply button element
+     * @param {Function} closeModal - Function to close the modal
+     */
+    async handleAddWorkflow(workflowPath, label, errorDiv, applyButton, closeModal) {
+        // Clear previous error
+        errorDiv.style.display = 'none';
+        errorDiv.textContent = '';
+
+        // Validate input
+        if (!workflowPath || !workflowPath.trim()) {
+            errorDiv.textContent = 'Please enter a workflow path';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        if (!label || !label.trim()) {
+            errorDiv.textContent = 'Please enter a display label';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        // Parse workflow path (owner/repo/workflow.yml)
+        const parts = workflowPath.trim().split('/');
+        if (parts.length !== 3) {
+            errorDiv.textContent = 'Invalid format. Expected: owner/repo/workflow.yml';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        const [owner, repo, workflow] = parts;
+
+        if (!owner || !repo || !workflow) {
+            errorDiv.textContent = 'All parts (owner, repo, workflow) are required';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        // Validate workflow file extension
+        if (!workflow.endsWith('.yml') && !workflow.endsWith('.yaml')) {
+            errorDiv.textContent = 'Workflow file must end with .yml or .yaml';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        // Disable button during API call
+        applyButton.disabled = true;
+        applyButton.textContent = 'Adding...';
+
+        try {
+            // Call API to add workflow
+            await this.api.addWorkflow(owner, repo, workflow, label.trim());
+
+            // Close modal
+            closeModal();
+
+            // Reload workflows to show the new one
+            await this.loadWorkflows();
+
+            console.log(`Successfully added workflow: ${owner}/${repo}/${workflow}`);
+        } catch (error) {
+            console.error('Failed to add workflow:', error);
+            errorDiv.textContent = error.message || 'Failed to add workflow. Please try again.';
+            errorDiv.style.display = 'block';
+        } finally {
+            // Re-enable button
+            applyButton.disabled = false;
+            applyButton.textContent = 'Add Workflow';
+        }
+    }
+
+    /**
+     * Handle removing a workflow
+     * @param {Object} workflow - Workflow object with owner, repo, workflow properties
+     */
+    async handleRemoveWorkflow(workflow) {
+        // Confirm removal
+        // TODO: Replace with custom modal for better UX consistency
+        const confirmed = confirm(`Are you sure you want to remove "${workflow.label}"?`);
+        if (!confirmed) return;
+
+        try {
+            // Call API to remove workflow
+            await this.api.removeWorkflow(workflow.owner, workflow.repo, workflow.workflow);
+
+            // Reload workflows to update the display
+            await this.loadWorkflows();
+
+            console.log(`Successfully removed workflow: ${workflow.owner}/${workflow.repo}/${workflow.workflow}`);
+        } catch (error) {
+            console.error('Failed to remove workflow:', error);
+            // TODO: Replace with toast notification or error modal for better UX
+            alert(`Failed to remove workflow: ${error.message}`);
+        }
+    }
 }
 
 // Global dashboard instance for console access and testing
@@ -424,6 +595,28 @@ let dashboardInstance = null;
 // Initialize dashboard when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
     try {
+        // Initialize API client with Azure Function URL (even if not configured yet)
+        const apiClient = new GitHubActionsAPI(
+            DASHBOARD_CONFIG.azureFunction.url || '__AZURE_FUNCTION_URL__'
+        );
+        
+        // Enable debug mode if configured
+        if (DASHBOARD_CONFIG.azureFunction.debug) {
+            apiClient.debug = true;
+        }
+
+        // Initialize workflow manager with config workflows (for backward compatibility)
+        const workflowManager = new WorkflowManager(DASHBOARD_CONFIG.workflows);
+
+        // Initialize dashboard loader
+        const dashboard = new DashboardLoader(DASHBOARD_CONFIG, apiClient, workflowManager);
+        
+        // Expose dashboard instance globally for console access
+        window.dashboardInstance = dashboard;
+
+        // Set up add workflow button and modal (always available)
+        dashboard.setupAddWorkflowButton();
+
         // Check if Azure Function URL is configured
         if (!DASHBOARD_CONFIG.azureFunction.url || DASHBOARD_CONFIG.azureFunction.url === '__AZURE_FUNCTION_URL__') {
             console.error('Azure Function URL not configured. Dashboard cannot load.');
@@ -444,25 +637,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             return;
         }
-
-        // Initialize API client with Azure Function URL
-        const apiClient = new GitHubActionsAPI(DASHBOARD_CONFIG.azureFunction.url);
-        
-        // Enable debug mode if configured
-        if (DASHBOARD_CONFIG.azureFunction.debug) {
-            apiClient.debug = true;
-        }
-
-        // Initialize workflow manager with config workflows (for backward compatibility)
-        // In the new architecture, workflows come from Azure Storage via the Function
-        const workflowManager = new WorkflowManager(DASHBOARD_CONFIG.workflows);
-
-        // Initialize dashboard loader
-        const dashboard = new DashboardLoader(DASHBOARD_CONFIG, apiClient, workflowManager);
-        
-        // Expose dashboard instance globally for console access
-        window.dashboardInstance = dashboard;
-        dashboardInstance = dashboard;
 
         // Load workflows
         await dashboard.loadWorkflows();
