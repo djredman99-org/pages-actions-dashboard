@@ -181,6 +181,47 @@ body {
     cursor: pointer;
 }
 
+/* Navigation */
+.page-nav {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 30px;
+    padding: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.nav-link {
+    padding: 10px 24px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95em;
+    transition: all 0.2s ease;
+    color: inherit;
+    opacity: 0.7;
+}
+
+.nav-link:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.nav-link-active {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.nav-link:focus-visible {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+}
+
 .container {
     max-width: 1400px;
     margin: 0 auto;
@@ -643,6 +684,47 @@ h1 {
 }
 
 .instructions a:hover {
+    text-decoration: underline;
+}
+
+/* About page styles */
+.about-content {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.about-section {
+    margin-bottom: 40px;
+    padding: 30px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.about-section h2 {
+    font-size: 1.5em;
+    margin-bottom: 16px;
+}
+
+.about-section p {
+    line-height: 1.7;
+    margin-bottom: 12px;
+}
+
+.about-section ul {
+    margin: 16px 0 16px 20px;
+    line-height: 1.8;
+}
+
+.about-section li {
+    margin-bottom: 8px;
+}
+
+.about-section a {
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.about-section a:hover {
     text-decoration: underline;
 }
 
