@@ -1,0 +1,223 @@
+name: Deploy Azure Function
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'function-app/**'
+  workflow_dispatch:
+    inputs:
+      function_app_name:
+        description: 'Function App Name (optional - will use from deployment outputs if not provided)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'function-app/package.json'
+
+      - name: Validate required secrets
+        run: |
+          echo "### 🔍 Validating Required Secrets" >> $GITHUB_STEP_SUMMARY
+          
+          MISSING_SECRETS=()
+          
+          if [ -z "${{ secrets.AZURE_CREDENTIALS }}" ]; then
+            MISSING_SECRETS+=("AZURE_CREDENTIALS")
+          fi
+          
+          if [ -z "${{ secrets.FUNCTION_APP_NAME }}" ] && [ -z "${{ inputs.function_app_name }}" ]; then
+            MISSING_SECRETS+=("FUNCTION_APP_NAME (or provide as workflow input)")
+          fi
+          
+          if [ ${#MISSING_SECRETS[@]} -gt 0 ]; then
+            echo "❌ **Missing required secrets:**" >> $GITHUB_STEP_SUMMARY
+            for secret in "${MISSING_SECRETS[@]}"; do
+              echo "  - \`$secret\`" >> $GITHUB_STEP_SUMMARY
+            done
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Please add these secrets in repository Settings → Secrets and variables → Actions" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Note**: \`FUNCTION_APP_NAME\` is typically set after running the infrastructure deployment workflow." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          
+          echo "✅ All required secrets are present" >> $GITHUB_STEP_SUMMARY
+
+      - name: Install dependencies
+        run: |
+          echo "### 📦 Installing Dependencies" >> $GITHUB_STEP_SUMMARY
+          cd function-app
+          npm ci
+          echo "✅ Dependencies installed successfully" >> $GITHUB_STEP_SUMMARY
+
+      - name: Login to Azure
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Install Azure Functions Core Tools
+        run: |
+          echo "### 🔧 Installing Azure Functions Core Tools" >> $GITHUB_STEP_SUMMARY
+          
+          # Check if func is already available
+          if command -v func &> /dev/null; then
+            FUNC_VERSION=$(func --version)
+            echo "✅ Azure Functions Core Tools already installed (version: $FUNC_VERSION)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Installing Azure Functions Core Tools..." >> $GITHUB_STEP_SUMMARY
+            
+            # Install using Microsoft's official method
+            curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
+            sudo mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft.gpg
+            
+            sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-$(lsb_release -cs)-prod $(lsb_release -cs) main" > /etc/apt/sources.list.d/dotnetdev.list'
+            
+            sudo apt-get update
+            sudo apt-get install -y azure-functions-core-tools-4
+            
+            FUNC_VERSION=$(func --version)
+            echo "✅ Azure Functions Core Tools installed (version: $FUNC_VERSION)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Deploy to Azure Function App
+        env:
+          FUNCTION_APP_NAME: ${{ inputs.function_app_name || secrets.FUNCTION_APP_NAME }}
+        run: |
+          echo "### 🚀 Deploying Function App" >> $GITHUB_STEP_SUMMARY
+          
+          cd function-app
+          
+          echo "**Deployment Configuration:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Function App Name: \`$FUNCTION_APP_NAME\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Node.js Version: 18" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "Deploying function code (this may take a few minutes)..." >> $GITHUB_STEP_SUMMARY
+          
+          # Deploy using func CLI
+          set +e
+          DEPLOY_OUTPUT=$(func azure functionapp publish "$FUNCTION_APP_NAME" --javascript 2>&1)
+          DEPLOY_EXIT_CODE=$?
+          set -e
+          
+          if [ $DEPLOY_EXIT_CODE -ne 0 ]; then
+            echo "❌ **Deployment Failed**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Error Details:**" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "$DEPLOY_OUTPUT" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Common Issues:**" >> $GITHUB_STEP_SUMMARY
+            echo "- Function App name is incorrect or doesn't exist" >> $GITHUB_STEP_SUMMARY
+            echo "- Insufficient permissions (ensure AZURE_CREDENTIALS has proper roles)" >> $GITHUB_STEP_SUMMARY
+            echo "- Function App is not in a running state" >> $GITHUB_STEP_SUMMARY
+            echo "- Network connectivity issues" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          
+          echo "✅ **Deployment Completed Successfully**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployed Functions:**" >> $GITHUB_STEP_SUMMARY
+          echo "- \`get-workflow-statuses\`: HTTP endpoint to retrieve workflow statuses" >> $GITHUB_STEP_SUMMARY
+          echo "- \`add-workflow\`: HTTP endpoint to add workflows to configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- \`remove-workflow\`: HTTP endpoint to remove workflows from configuration" >> $GITHUB_STEP_SUMMARY
+
+      - name: Verify Deployment
+        env:
+          FUNCTION_APP_NAME: ${{ inputs.function_app_name || secrets.FUNCTION_APP_NAME }}
+        run: |
+          echo "### ✅ Verifying Deployment" >> $GITHUB_STEP_SUMMARY
+          
+          # Get Function App details
+          FUNCTION_STATE=$(az functionapp show \
+            --name "$FUNCTION_APP_NAME" \
+            --resource-group $(az functionapp list --query "[?name=='$FUNCTION_APP_NAME'].resourceGroup" -o tsv) \
+            --query state -o tsv)
+          
+          FUNCTION_URL=$(az functionapp show \
+            --name "$FUNCTION_APP_NAME" \
+            --resource-group $(az functionapp list --query "[?name=='$FUNCTION_APP_NAME'].resourceGroup" -o tsv) \
+            --query defaultHostName -o tsv)
+          
+          if [ "$FUNCTION_STATE" != "Running" ]; then
+            echo "⚠️ Warning: Function App state is '$FUNCTION_STATE' (expected 'Running')" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ Function App is running" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Function App URL**: \`https://$FUNCTION_URL\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Test the endpoint
+          echo "Testing endpoint..." >> $GITHUB_STEP_SUMMARY
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://$FUNCTION_URL/api/get-workflow-statuses" || echo "000")
+          
+          if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "204" ]; then
+            echo "✅ Function endpoint is responding (HTTP $HTTP_STATUS)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Function endpoint returned HTTP $HTTP_STATUS" >> $GITHUB_STEP_SUMMARY
+            echo "   This may be expected if workflows are not yet configured" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Deployment Summary
+        if: always()
+        env:
+          FUNCTION_APP_NAME: ${{ inputs.function_app_name || secrets.FUNCTION_APP_NAME }}
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "## 🎉 Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Your Azure Function App has been deployed successfully." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Next Steps:**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "1. **Upload workflow configuration** (if not already done):" >> $GITHUB_STEP_SUMMARY
+            echo "   \`\`\`bash" >> $GITHUB_STEP_SUMMARY
+            echo "   az storage blob upload \\" >> $GITHUB_STEP_SUMMARY
+            echo "     --account-name <STORAGE_ACCOUNT_NAME> \\" >> $GITHUB_STEP_SUMMARY
+            echo "     --container-name workflow-configs \\" >> $GITHUB_STEP_SUMMARY
+            echo "     --name workflows.json \\" >> $GITHUB_STEP_SUMMARY
+            echo "     --file function-app/workflows.json \\" >> $GITHUB_STEP_SUMMARY
+            echo "     --auth-mode login \\" >> $GITHUB_STEP_SUMMARY
+            echo "     --overwrite" >> $GITHUB_STEP_SUMMARY
+            echo "   \`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "2. **Verify the dashboard** at: \`https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "3. **Monitor function logs**:" >> $GITHUB_STEP_SUMMARY
+            echo "   \`\`\`bash" >> $GITHUB_STEP_SUMMARY
+            echo "   az functionapp log tail --name $FUNCTION_APP_NAME --resource-group <RESOURCE_GROUP_NAME>" >> $GITHUB_STEP_SUMMARY
+            echo "   \`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "📖 For more details, see [function-app/README.md](../blob/main/function-app/README.md)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The deployment encountered errors. Please review the logs above for details." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Troubleshooting Resources:**" >> $GITHUB_STEP_SUMMARY
+            echo "- [Function App README](../blob/main/function-app/README.md#troubleshooting)" >> $GITHUB_STEP_SUMMARY
+            echo "- [Azure Setup Guide](../blob/main/AZURE_SETUP.md#troubleshooting)" >> $GITHUB_STEP_SUMMARY
+            echo "- [Deployment Notes](../blob/main/DEPLOYMENT_NOTES.md)" >> $GITHUB_STEP_SUMMARY
+          fi
