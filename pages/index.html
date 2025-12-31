@@ -87,23 +87,14 @@
     </div>
 
     <div class="container">
+        <!-- Navigation -->
+        <nav class="page-nav" aria-label="Main navigation">
+            <a href="index.html" class="nav-link nav-link-active" aria-current="page">Dashboard</a>
+            <a href="about.html" class="nav-link">About</a>
+        </nav>
+
         <h1>🚀 GitHub Actions Dashboard</h1>
         <p class="subtitle">Monitoring workflow statuses across repositories</p>
-
-        <div class="instructions">
-            <h2>Dashboard Features</h2>
-            <p>This dashboard provides real-time monitoring of GitHub Actions workflow statuses across multiple repositories with enterprise-grade security.</p>
-            <p><strong>Key Features:</strong></p>
-            <ul>
-                <li>Azure Function backend for secure API calls</li>
-                <li>GitHub App authentication with credentials stored in Azure Key Vault</li>
-                <li>Workflow configurations managed in Azure Storage</li>
-                <li>Manual refresh for instant updates</li>
-                <li>Auto-refresh every 5 minutes</li>
-                <li>Support for public, private, and internal repositories</li>
-            </ul>
-            <p>See the <a href="https://github.com/djredman99-org/pages-actions-dashboard#readme" target="_blank" rel="noopener noreferrer">README</a> for setup and configuration instructions.</p>
-        </div>
 
         <div id="refresh-status" class="refresh-status" style="display: none;">
             <button id="refresh-button" class="refresh-button" aria-label="Refresh workflow statuses">
