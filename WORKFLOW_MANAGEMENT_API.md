@@ -2,13 +2,22 @@
 
 This document describes how to use the Azure Functions API to dynamically add and remove workflows from the GitHub Actions Dashboard.
 
+> **Note**: The dashboard includes a built-in UI for managing workflows. You can use the "Add Workflow" button and remove buttons (X) on workflow cards directly in the dashboard interface. This API documentation is for programmatic access or integration with other tools.
+
 ## Overview
 
-The dashboard now supports runtime workflow management through two Azure Functions:
+The dashboard supports runtime workflow management through two Azure Functions:
 - `add-workflow`: Adds a new workflow to the dashboard
 - `remove-workflow`: Removes an existing workflow from the dashboard
 
 These functions modify the `workflows.json` file stored in Azure Blob Storage, allowing you to manage dashboard workflows without manual file editing or redeployment.
+
+## Usage Options
+
+You can manage workflows in multiple ways:
+1. **Dashboard UI** (Easiest): Use the built-in "Add Workflow" button and remove buttons in the dashboard
+2. **API** (This document): Direct API calls for programmatic management
+3. **Manual**: Upload `workflows.json` to Azure Storage
 
 ## Prerequisites
 
