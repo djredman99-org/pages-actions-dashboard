@@ -176,3 +176,37 @@ h1 {
 .add-workflow-button:focus-visible {
     outline: 2px solid #667eea;
 }
+
+/* About page styles */
+.about-section {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+}
+
+.about-section h2 {
+    color: #2c3e50;
+}
+
+.about-section p {
+    color: #34495e;
+}
+
+.about-section ul {
+    color: #34495e;
+}
+
+.about-section li {
+    color: #34495e;
+}
+
+.about-section strong {
+    color: #2c3e50;
+}
+
+.about-section a {
+    color: #667eea;
+}
+
+.about-section a:hover {
+    color: #5568d3;
+}
