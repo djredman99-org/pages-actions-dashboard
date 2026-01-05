@@ -183,24 +183,15 @@ h1 {
     border: 1px solid #e9ecef;
 }
 
-.about-section h2 {
-    color: #2c3e50;
-}
-
-.about-section p {
-    color: #34495e;
-}
-
-.about-section ul {
-    color: #34495e;
-}
-
-.about-section li {
-    color: #34495e;
-}
-
+.about-section h2,
 .about-section strong {
     color: #2c3e50;
+}
+
+.about-section p,
+.about-section ul,
+.about-section li {
+    color: #34495e;
 }
 
 .about-section a {

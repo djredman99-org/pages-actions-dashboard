@@ -186,22 +186,10 @@ h1 {
     border: 1px solid #d0d7de;
 }
 
-.about-section h2 {
-    color: #1b1f23;
-}
-
-.about-section p {
-    color: #1b1f23;
-}
-
-.about-section ul {
-    color: #1b1f23;
-}
-
-.about-section li {
-    color: #1b1f23;
-}
-
+.about-section h2,
+.about-section p,
+.about-section ul,
+.about-section li,
 .about-section strong {
     color: #1b1f23;
 }
