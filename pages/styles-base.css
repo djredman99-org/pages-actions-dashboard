@@ -759,8 +759,174 @@ h1 {
     }
 }
 
+/* Dashboard Selector */
+.dashboard-selector {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 20px 0;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dashboard-selector label {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.dashboard-selector select {
+    flex: 1;
+    max-width: 300px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+    color: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.dashboard-selector select:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.dashboard-selector select:focus {
+    outline: none;
+    border-color: var(--primary-color, #8b5cf6);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.manage-dashboards-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    color: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.manage-dashboards-button:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+.manage-dashboards-button:active {
+    transform: translateY(0);
+}
+
+.manage-dashboards-button svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Dashboards List in Modal */
+.dashboards-list {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.dashboard-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.dashboard-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.dashboard-item.active {
+    background: rgba(139, 92, 246, 0.1);
+    border-color: rgba(139, 92, 246, 0.3);
+}
+
+.dashboard-item-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.dashboard-item-name {
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.dashboard-item-badge {
+    padding: 2px 8px;
+    background: rgba(139, 92, 246, 0.2);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--primary-color, #8b5cf6);
+}
+
+.dashboard-item-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.dashboard-item-action {
+    padding: 6px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    color: inherit;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dashboard-item-action:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.dashboard-item-action svg {
+    width: 14px;
+    height: 14px;
+}
+
+.dashboard-item-action.danger:hover {
+    background: rgba(220, 38, 38, 0.1);
+    border-color: rgba(220, 38, 38, 0.3);
+    color: #dc2626;
+}
+
 @media (max-width: 480px) {
     .workflow-grid {
         grid-template-columns: 1fr;
+    }
+    
+    .dashboard-selector {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .dashboard-selector select {
+        max-width: none;
     }
 }
