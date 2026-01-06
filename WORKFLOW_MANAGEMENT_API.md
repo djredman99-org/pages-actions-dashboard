@@ -1,23 +1,34 @@
-# Dynamic Workflow Management API
+# Dynamic Workflow and Dashboard Management API
 
-This document describes how to use the Azure Functions API to dynamically add and remove workflows from the GitHub Actions Dashboard.
+This document describes how to use the Azure Functions API to dynamically manage workflows and dashboards in the GitHub Actions Dashboard.
 
-> **Note**: The dashboard includes a built-in UI for managing workflows. You can use the "Add Workflow" button and remove buttons (X) on workflow cards directly in the dashboard interface. This API documentation is for programmatic access or integration with other tools.
+> **Note**: The dashboard includes a built-in UI for managing both workflows and dashboards. You can use the dashboard selector, "Manage" button, "Add Workflow" button, and remove buttons directly in the dashboard interface. This API documentation is for programmatic access or integration with other tools.
 
 ## Overview
 
-The dashboard supports runtime workflow management through two Azure Functions:
-- `add-workflow`: Adds a new workflow to the dashboard
-- `remove-workflow`: Removes an existing workflow from the dashboard
+The dashboard supports runtime management through Azure Functions:
+
+### Workflow Management
+- `add-workflow`: Adds a new workflow to the active dashboard
+- `remove-workflow`: Removes an existing workflow from the active dashboard
+
+### Dashboard Management
+- `get-workflow-statuses`: Gets workflows from the active dashboard along with all dashboard metadata
+- `set-active-dashboard`: Switches the active dashboard
+- `create-dashboard`: Creates a new dashboard
+- `rename-dashboard`: Renames an existing dashboard
+- `delete-dashboard`: Deletes a dashboard
 
 These functions modify the `workflows.json` file stored in Azure Blob Storage, allowing you to manage dashboard workflows without manual file editing or redeployment.
 
 ## Usage Options
 
-You can manage workflows in multiple ways:
-1. **Dashboard UI** (Easiest): Use the built-in "Add Workflow" button and remove buttons in the dashboard
+You can manage workflows and dashboards in multiple ways:
+1. **Dashboard UI** (Easiest): Use the built-in dashboard selector, "Manage" button, "Add Workflow" button, and remove buttons
 2. **API** (This document): Direct API calls for programmatic management
 3. **Manual**: Upload `workflows.json` to Azure Storage
+
+📖 **Multiple Dashboards Guide**: See [MULTIPLE_DASHBOARDS.md](MULTIPLE_DASHBOARDS.md) for detailed information about the multiple dashboards feature.
 
 ## Prerequisites
 
@@ -559,8 +570,176 @@ Planned improvements:
 6. **Authentication**: Add user authentication for write operations
 7. **Audit logging**: Track who added/removed workflows and when
 
+## Dashboard Management Endpoints
+
+The following endpoints allow you to manage multiple dashboards. For complete details on the multiple dashboards feature, see [MULTIPLE_DASHBOARDS.md](MULTIPLE_DASHBOARDS.md).
+
+### Get Workflow Statuses (with Dashboard Metadata)
+
+**Endpoint:** `GET /api/get-workflow-statuses`
+
+Returns workflows from the active dashboard along with all dashboard metadata.
+
+**Response:**
+```json
+{
+  "dashboards": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "Production Workflows"
+    },
+    {
+      "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+      "name": "Development Workflows"
+    }
+  ],
+  "activeDashboardId": "550e8400-e29b-41d4-a716-446655440000",
+  "workflows": [
+    {
+      "owner": "microsoft",
+      "repo": "vscode",
+      "workflow": "ci.yml",
+      "label": "VS Code CI",
+      "conclusion": "success",
+      "status": "completed",
+      "url": "https://github.com/microsoft/vscode/actions/runs/12345",
+      "updatedAt": "2024-01-15T10:30:00Z"
+    }
+  ],
+  "timestamp": "2024-01-15T10:35:00Z",
+  "count": 1
+}
+```
+
+### Set Active Dashboard
+
+**Endpoint:** `POST /api/set-active-dashboard`
+
+Switches the active dashboard. After calling this, subsequent calls to get workflow statuses will return workflows from the newly active dashboard.
+
+**Request:**
+```json
+{
+  "dashboardId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Active dashboard updated successfully",
+  "activeDashboardId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+  "dashboardName": "Development Workflows"
+}
+```
+
+**Error Responses:**
+- `404 Not Found`: Dashboard with the specified ID does not exist
+
+### Create Dashboard
+
+**Endpoint:** `POST /api/create-dashboard`
+
+Creates a new dashboard.
+
+**Request:**
+```json
+{
+  "name": "Staging Workflows",
+  "setAsActive": false
+}
+```
+
+**Field Descriptions:**
+- `name` (required): Name for the new dashboard
+- `setAsActive` (optional): Whether to set this as the active dashboard (default: false)
+
+**Response (201 Created):**
+```json
+{
+  "success": true,
+  "message": "Dashboard created successfully",
+  "dashboard": {
+    "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "name": "Staging Workflows"
+  },
+  "isActive": false
+}
+```
+
+**Error Responses:**
+- `409 Conflict`: A dashboard with this name already exists
+
+### Rename Dashboard
+
+**Endpoint:** `POST /api/rename-dashboard`
+
+Renames an existing dashboard.
+
+**Request:**
+```json
+{
+  "dashboardId": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "Production (Updated)"
+}
+```
+
+**Field Descriptions:**
+- `dashboardId` (required): ID of the dashboard to rename
+- `name` (required): New name for the dashboard
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Dashboard renamed successfully",
+  "dashboard": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Production (Updated)"
+  }
+}
+```
+
+**Error Responses:**
+- `404 Not Found`: Dashboard with the specified ID does not exist
+- `409 Conflict`: A dashboard with the new name already exists
+
+### Delete Dashboard
+
+**Endpoint:** `POST /api/delete-dashboard`
+
+Deletes a dashboard. Cannot delete the last dashboard.
+
+**Request:**
+```json
+{
+  "dashboardId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Dashboard deleted successfully",
+  "deletedDashboard": {
+    "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+    "name": "Development Workflows"
+  },
+  "newActiveDashboardId": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**Error Responses:**
+- `404 Not Found`: Dashboard with the specified ID does not exist
+- `400 Bad Request`: Cannot delete the last dashboard
+
+**Note:** If the deleted dashboard was the active dashboard, the first remaining dashboard will automatically become active.
+
 ## Related Documentation
 
+- [Multiple Dashboards Guide](./MULTIPLE_DASHBOARDS.md) - Complete guide to using multiple dashboards
 - [Function App README](./README.md) - Function development and deployment
 - [Infrastructure README](../infrastructure/README.md) - Infrastructure setup
 - [Azure Implementation](../AZURE_IMPLEMENTATION.md) - Architecture overview
