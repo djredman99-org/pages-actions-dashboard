@@ -105,12 +105,6 @@ class GitHubActionsAPI {
             };
         }
     }
-                status: 'error',
-                url: `https://github.com/${owner}/${repo}/actions/workflows/${workflowFile}`,
-                error: error.message
-            };
-        }
-    }
 
     /**
      * Add a workflow to the dashboard via Azure Function
