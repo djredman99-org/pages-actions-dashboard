@@ -264,3 +264,28 @@ h1 {
 .modal-button-primary:hover {
     background: #1a5fd9;
 }
+
+/* About page styles */
+.about-section {
+    background: rgba(22, 27, 34, 0.6);
+    border: 1px solid #30363d;
+}
+
+.about-section h2,
+.about-section strong {
+    color: #e6edf3;
+}
+
+.about-section p,
+.about-section ul,
+.about-section li {
+    color: #c9d1d9;
+}
+
+.about-section a {
+    color: #58a6ff;
+}
+
+.about-section a:hover {
+    color: #79c0ff;
+}
