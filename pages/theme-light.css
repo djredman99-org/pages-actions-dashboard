@@ -106,7 +106,7 @@ body {
 }
 
 .refresh-status.refreshing {
-    border-color: #bf8700;
+    border-color: #9e6a03;
     background: #fff8c5;
     color: #633c01;
 }
