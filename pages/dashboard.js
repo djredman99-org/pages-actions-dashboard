@@ -603,28 +603,30 @@ class DashboardLoader {
      * Update the dashboard selector UI with available dashboards
      */
     updateDashboardSelector() {
-        const selector = document.getElementById('dashboard-selector');
-        const select = document.getElementById('dashboard-select');
-        
-        if (!selector || !select) return;
-        
-        // Show selector if we have dashboards
-        if (this.dashboards.length > 0) {
-            selector.style.display = 'flex';
+        // Update active dashboard name in header
+        const activeDashboardName = document.getElementById('active-dashboard-name');
+        if (activeDashboardName && this.dashboards.length > 0) {
+            const activeDashboard = this.dashboards.find(d => d.id === this.activeDashboardId);
+            if (activeDashboard) {
+                activeDashboardName.textContent = activeDashboard.name;
+                activeDashboardName.style.display = 'block';
+            } else {
+                activeDashboardName.style.display = 'none';
+            }
+        }
+
+        // Also update the modal dropdown
+        const modalSelect = document.getElementById('dashboard-select-modal');
+        if (modalSelect && this.dashboards.length > 0) {
+            modalSelect.innerHTML = '';
             
-            // Clear existing options
-            select.innerHTML = '';
-            
-            // Add dashboard options
             this.dashboards.forEach(dashboard => {
                 const option = document.createElement('option');
                 option.value = dashboard.id;
                 option.textContent = dashboard.name;
                 option.selected = dashboard.id === this.activeDashboardId;
-                select.appendChild(option);
+                modalSelect.appendChild(option);
             });
-        } else {
-            selector.style.display = 'none';
         }
     }
 
@@ -632,36 +634,120 @@ class DashboardLoader {
      * Set up dashboard selector change handler
      */
     setupDashboardSelector() {
-        const select = document.getElementById('dashboard-select');
-        if (!select) return;
-        
-        select.addEventListener('change', async (e) => {
-            const newDashboardId = e.target.value;
+        // This function is kept for compatibility but the UI now uses the modal
+        // The actual switching logic is in setupChangeDashboardModal
+    }
+
+    /**
+     * Set up change dashboard modal and button
+     */
+    setupChangeDashboardModal() {
+        const button = document.getElementById('change-dashboard-nav-button');
+        const modal = document.getElementById('change-dashboard-modal');
+        const closeButton = modal?.querySelector('.close-button');
+        const cancelButton = document.getElementById('change-dashboard-cancel');
+        const applyButton = document.getElementById('change-dashboard-apply');
+        const selectElement = document.getElementById('dashboard-select-modal');
+        const errorDiv = document.getElementById('change-dashboard-error');
+
+        if (!button || !modal) return;
+
+        // Open modal
+        button.addEventListener('click', () => {
+            modal.style.display = 'block';
+            errorDiv.style.display = 'none';
+            errorDiv.textContent = '';
             
+            // Update dropdown options
+            this.updateDashboardSelector();
+            
+            // Close side nav
+            if (window.themeSwitcher) {
+                window.themeSwitcher.closeSideNav();
+            }
+        });
+
+        // Close modal
+        const closeModal = () => {
+            modal.style.display = 'none';
+        };
+
+        closeButton?.addEventListener('click', closeModal);
+        cancelButton?.addEventListener('click', closeModal);
+
+        // Close on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        // Handle apply button
+        applyButton?.addEventListener('click', async () => {
+            const newDashboardId = selectElement.value;
+
             // Don't do anything if same dashboard selected
             if (newDashboardId === this.activeDashboardId) {
+                closeModal();
                 return;
             }
-            
+
+            applyButton.disabled = true;
+            applyButton.textContent = 'Switching...';
+            errorDiv.style.display = 'none';
+
             try {
                 // Set as active dashboard
                 await this.api.setActiveDashboard(newDashboardId);
-                
+
                 // Clear the container and reload workflows
                 const container = document.querySelector('.workflow-grids-container');
                 if (container) {
                     container.innerHTML = '';
                 }
-                
+
                 // Reload workflows for new dashboard
                 await this.loadWorkflows();
-                
+
                 console.log(`Switched to dashboard: ${newDashboardId}`);
+                closeModal();
             } catch (error) {
                 console.error('Failed to switch dashboard:', error);
-                alert(`Failed to switch dashboard: ${error.message}`);
-                // Revert selection
-                select.value = this.activeDashboardId;
+                errorDiv.textContent = error.message || 'Failed to switch dashboard';
+                errorDiv.style.display = 'block';
+            } finally {
+                applyButton.disabled = false;
+                applyButton.textContent = 'Switch';
+            }
+        });
+    }
+
+    /**
+     * Set up new dashboard button (side nav)
+     */
+    setupNewDashboardButton() {
+        const button = document.getElementById('new-dashboard-nav-button');
+        
+        if (!button) return;
+        
+        button.addEventListener('click', () => {
+            // Open the manage dashboards modal which has create functionality
+            const manageModal = document.getElementById('manage-dashboards-modal');
+            if (manageModal) {
+                manageModal.style.display = 'block';
+                const nameInput = document.getElementById('new-dashboard-input');
+                const errorDiv = document.getElementById('manage-dashboards-error');
+                if (nameInput) nameInput.value = '';
+                if (errorDiv) {
+                    errorDiv.style.display = 'none';
+                    errorDiv.textContent = '';
+                }
+                this.renderDashboardsList();
+            }
+            
+            // Close side nav
+            if (window.themeSwitcher) {
+                window.themeSwitcher.closeSideNav();
             }
         });
     }
@@ -902,8 +988,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Set up add workflow button and modal (always available)
         dashboard.setupAddWorkflowButton();
         
-        // Set up dashboard selector and management
-        dashboard.setupDashboardSelector();
+        // Set up dashboard navigation and management
+        dashboard.setupChangeDashboardModal();
+        dashboard.setupNewDashboardButton();
         dashboard.setupManageDashboardsButton();
 
         // Check if Azure Function URL is configured

@@ -1,203 +1,303 @@
-/* Default Theme - Purple Gradient */
+/* Default Theme - GitHub Dark Dimmed */
+
+:root {
+    --border-default: #444c56;
+    --border-muted: #373e47;
+    --border-hover: #768390;
+    --border-active: #0969da;
+    --focus-shadow: rgba(9, 105, 218, 0.3);
+}
 
 body {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #22272e;
+    color: #adbac7;
 }
 
-.container {
-    background: white;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+/* Header */
+.top-header {
+    background: #2d333b;
+    border-bottom-color: #444c56;
+    color: #adbac7;
 }
 
-h1 {
-    color: #2c3e50;
+.nav-toggle-button {
+    color: #adbac7;
 }
 
-.subtitle {
-    color: #7f8c8d;
+.site-title {
+    color: #adbac7;
 }
 
-.repo-header {
-    color: #2c3e50;
-    border-bottom-color: #e9ecef;
+.active-dashboard-name {
+    color: #adbac7;
 }
 
-.refresh-status {
-    background: #f8f9fa;
-    border-left: 4px solid #667eea;
-    color: #34495e;
+/* Side Navigation */
+.side-nav {
+    background: #2d333b;
+    border-right-color: #444c56;
 }
 
-.refresh-status.refreshing {
-    border-left-color: #dbab09;
-    background: #fff9e6;
+.side-nav-link,
+.side-nav-button {
+    color: #adbac7;
 }
 
-.refresh-button {
-    background: #667eea;
-    color: white;
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+.side-nav-link:hover,
+.side-nav-button:hover {
+    background: #373e47;
 }
 
-.refresh-button:hover:not(:disabled) {
-    background: #5568d3;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+.side-nav-link-active {
+    background: #373e47;
+    border-left: 2px solid #539bf5;
 }
 
-.refresh-button:disabled {
-    background: #9ca3af;
+.side-nav-divider {
+    background: #444c56;
 }
 
-.refresh-button:focus-visible {
-    outline: 2px solid #667eea;
-}
-
-.workflow-item {
-    background: #f8f9fa;
-    border: 2px solid #e9ecef;
-}
-
-.workflow-item:hover {
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    border-color: #667eea;
-}
-
-.workflow-card-link:focus-visible {
-    outline: 2px solid #667eea;
-}
-
-.workflow-label {
-    color: #34495e;
-}
-
-.config-error {
-    background: #fff3cd;
-    border: 2px solid #ffc107;
-    color: #856404;
-}
-
-.config-error h3 {
-    color: #856404;
-}
-
-.config-error code {
-    background: #fff;
-    color: #d73a49;
-}
-
-.footer {
-    border-top: 2px solid #e9ecef;
-    color: #7f8c8d;
-}
-
-.instructions {
-    background: #e3f2fd;
-    border-left: 4px solid #2196f3;
-}
-
-.instructions h2 {
-    color: #1976d2;
-}
-
-.instructions p {
-    color: #34495e;
-}
-
-.instructions code {
-    background: #fff;
-}
-
-.instructions ul {
-    color: #34495e;
-}
-
-.instructions a {
-    color: #1976d2;
-}
-
-/* Theme-specific settings button and modal styles */
-.settings-button {
-    background: rgba(255, 255, 255, 0.95);
-}
-
-.settings-button svg {
-    color: #667eea;
-}
-
+/* Modal */
 .modal-content {
-    background-color: white;
+    background: #2d333b;
+    color: #adbac7;
+    border: 1px solid #444c56;
 }
 
 .modal-header {
-    border-bottom-color: #e9ecef;
+    border-bottom-color: #444c56;
 }
 
 .modal-header h2 {
-    color: #2c3e50;
+    color: #adbac7;
 }
 
 .close-button {
-    color: #7f8c8d;
+    color: #768390;
 }
 
 .close-button:hover {
-    background: #f8f9fa;
-    color: #2c3e50;
-}
-
-.setting-section h3 {
-    color: #2c3e50;
+    background: #373e47;
+    color: #adbac7;
 }
 
 .theme-option {
-    border-color: #e9ecef;
+    border-color: #444c56;
+    background: #22272e;
 }
 
 .theme-option:hover {
-    border-color: #667eea;
-    background: #f8f9fa;
+    border-color: #768390;
+    background: #373e47;
 }
 
 .theme-label {
-    color: #34495e;
+    color: #adbac7;
+}
+
+.container {
+    background: transparent;
+}
+
+.refresh-status {
+    background: #373e47;
+    border-color: #444c56;
+    color: #adbac7;
+}
+
+.refresh-status.refreshing {
+    border-color: #9e6a03;
+    background: #341a03;
+}
+
+.refresh-button {
+    background: #373e47;
+    border-color: #444c56;
+    color: #adbac7;
+}
+
+.refresh-button:hover:not(:disabled) {
+    background: #444c56;
+    border-color: #768390;
+}
+
+.refresh-button:disabled {
+    opacity: 0.6;
+}
+
+.workflow-item {
+    background: #2d333b;
+    border-color: #444c56;
+}
+
+.workflow-item:hover {
+    border-color: #768390;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+}
+
+.workflow-label {
+    color: #adbac7;
+}
+
+.workflow-remove-button {
+    background: #2d333b;
+    border-color: #444c56;
+    color: #adbac7;
+}
+
+.config-error {
+    background: #341a03;
+    border-color: #9e6a03;
+    color: #f69d50;
+}
+
+.config-error h3 {
+    color: #f69d50;
+}
+
+.config-error code {
+    background: #22272e;
+    color: #ff6a69;
+}
+
+.footer {
+    border-top-color: #444c56;
+    color: #768390;
 }
 
 .add-workflow-button {
-    background: #667eea;
-    color: white;
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    background: #347d39;
+    border-color: #347d39;
+    color: #ffffff;
 }
 
 .add-workflow-button:hover {
-    background: #5568d3;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    background: #46954a;
+    border-color: #46954a;
 }
 
-.add-workflow-button:focus-visible {
-    outline: 2px solid #667eea;
+/* Modal form styles */
+.modal-description {
+    color: #768390;
+}
+
+.modal-description code {
+    background: #373e47;
+    color: #f69d50;
+}
+
+.form-group label {
+    color: #adbac7;
+}
+
+.form-group input[type="text"],
+.form-group select {
+    background: #22272e;
+    border-color: #444c56;
+    color: #adbac7;
+}
+
+.form-group input[type="text"]:focus,
+.form-group select:focus {
+    border-color: #539bf5;
+    background: #22272e;
+}
+
+.form-help {
+    color: #768390;
+}
+
+.form-error {
+    background: #341a03;
+    border-color: #9e6a03;
+    color: #f69d50;
+}
+
+.modal-button-secondary {
+    background: #373e47;
+    border-color: #444c56;
+    color: #adbac7;
+}
+
+.modal-button-secondary:hover:not(:disabled) {
+    background: #444c56;
+    border-color: #768390;
+}
+
+.modal-button-primary {
+    background: #347d39;
+    border-color: #347d39;
+    color: #ffffff;
+}
+
+.modal-button-primary:hover:not(:disabled) {
+    background: #46954a;
+    border-color: #46954a;
+}
+
+.repo-header {
+    color: #adbac7;
+    border-bottom-color: #444c56;
 }
 
 /* About page styles */
 .about-section {
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
+    background: #2d333b;
+    border-color: #444c56;
 }
 
 .about-section h2,
 .about-section strong {
-    color: #2c3e50;
+    color: #adbac7;
 }
 
 .about-section p,
 .about-section ul,
 .about-section li {
-    color: #34495e;
+    color: #768390;
 }
 
 .about-section a {
-    color: #667eea;
+    color: #539bf5;
 }
 
 .about-section a:hover {
-    color: #5568d3;
+    color: #6cb6ff;
+}
+
+/* Dashboard management styles */
+.dashboard-item {
+    background: #22272e;
+    border-color: #444c56;
+}
+
+.dashboard-item:hover {
+    background: #2d333b;
+    border-color: #768390;
+}
+
+.dashboard-item.active {
+    background: #1c2128;
+    border-color: #539bf5;
+}
+
+.dashboard-item-name {
+    color: #adbac7;
+}
+
+.dashboard-item-badge {
+    background: #143d79;
+    border-color: #539bf5;
+    color: #539bf5;
+}
+
+.dashboard-item-action {
+    background: transparent;
+    border-color: #444c56;
+    color: #adbac7;
+}
+
+.dashboard-item-action:hover {
+    background: #373e47;
+    border-color: #768390;
 }

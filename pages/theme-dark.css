@@ -1,162 +1,66 @@
-/* GitHub Primer Dark Theme */
+/* Dark Theme - GitHub Dark */
+
+:root {
+    --border-default: #30363d;
+    --border-muted: #21262d;
+    --border-hover: #6e7681;
+    --border-active: #58a6ff;
+    --focus-shadow: rgba(88, 166, 255, 0.3);
+}
 
 body {
-    background: #010409;
+    background: #0d1117;
+    color: #c9d1d9;
 }
 
-.container {
-    background: #010409;
-    border: 1px solid #7d8590;
-    box-shadow: none;
-}
-
-h1 {
-    color: #e6edf3;
-}
-
-.subtitle {
-    color: #7d8590;
-}
-
-.repo-header {
-    color: #e6edf3;
+/* Header */
+.top-header {
+    background: #161b22;
     border-bottom-color: #30363d;
+    color: #c9d1d9;
 }
 
-.refresh-status {
-    background: #0d1117;
-    border: 1px solid #30363d;
-    color: #e6edf3;
+.nav-toggle-button {
+    color: #c9d1d9;
 }
 
-.refresh-status.refreshing {
-    border-color: #30363d;
-    background: #0d1117;
+.site-title {
+    color: #c9d1d9;
 }
 
-.refresh-button {
-    background: #238636;
-    color: #ffffff;
-    box-shadow: 0 1px 0 rgba(27, 31, 35, 0.1);
+.active-dashboard-name {
+    color: #c9d1d9;
 }
 
-.refresh-button:hover:not(:disabled) {
-    background: #2ea043;
-    box-shadow: 0 1px 0 rgba(27, 31, 35, 0.1), 0 0 0 3px rgba(35, 134, 54, 0.4);
+/* Side Navigation */
+.side-nav {
+    background: #161b22;
+    border-right-color: #30363d;
 }
 
-.refresh-button:disabled {
-    background: #0d1117;
-    color: #484f58;
+.side-nav-link,
+.side-nav-button {
+    color: #c9d1d9;
 }
 
-.refresh-button:focus-visible {
-    outline: 2px solid #1f6feb;
+.side-nav-link:hover,
+.side-nav-button:hover {
+    background: #21262d;
 }
 
-.workflow-item {
-    background: #0d1117;
-    border: 1px solid #30363d;
+.side-nav-link-active {
+    background: #21262d;
+    border-left: 2px solid #58a6ff;
 }
 
-.workflow-item:hover {
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 8px 24px rgba(0, 0, 0, 0.12);
-    border-color: #1f6feb;
+.side-nav-divider {
+    background: #30363d;
 }
 
-.workflow-card-link:focus-visible {
-    outline: 2px solid #1f6feb;
-}
-
-.workflow-label {
-    color: #e6edf3;
-}
-
-/* Dark theme status colors - GitHub Primer Dark variants */
-.status-success {
-    background-color: #238636;
-}
-
-.status-failure {
-    background-color: #da3633;
-}
-
-.status-running {
-    background-color: #bf8700;
-}
-
-.status-cancelled,
-.status-skipped,
-.status-unknown,
-.status-loading {
-    background-color: #6e7681;
-}
-
-.status-timeout {
-    background-color: #da3633;
-}
-
-.config-error {
-    background: #6e460008;
-    border: 1px solid #9e6a03;
-    color: #d29922;
-}
-
-.config-error h3 {
-    color: #d29922;
-}
-
-.config-error code {
-    background: #0d1117;
-    color: #ff7b72;
-}
-
-.footer {
-    border-top: 1px solid #30363d;
-    color: #7d8590;
-}
-
-.instructions {
-    background: #1f23281a;
-    border-left: 4px solid #1f6feb;
-}
-
-.instructions h2 {
-    color: #58a6ff;
-}
-
-.instructions p {
-    color: #e6edf3;
-}
-
-.instructions code {
-    background: #0d1117;
-}
-
-.instructions ul {
-    color: #e6edf3;
-}
-
-.instructions a {
-    color: #58a6ff;
-}
-
-/* Theme-specific settings button and modal styles */
-.settings-button {
-    background: rgba(13, 17, 23, 0.95);
-    border: 1px solid #30363d;
-}
-
-.settings-button svg {
-    color: #e6edf3;
-}
-
-.settings-button:hover {
-    border-color: #1f6feb;
-}
-
+/* Modal */
 .modal-content {
-    background-color: #0d1117;
+    background: #161b22;
+    color: #c9d1d9;
     border: 1px solid #30363d;
 }
 
@@ -165,121 +69,192 @@ h1 {
 }
 
 .modal-header h2 {
-    color: #e6edf3;
+    color: #c9d1d9;
 }
 
 .close-button {
-    color: #7d8590;
+    color: #8b949e;
 }
 
 .close-button:hover {
-    background: #161b22;
-    color: #e6edf3;
-}
-
-.setting-section h3 {
-    color: #e6edf3;
+    background: #21262d;
+    color: #c9d1d9;
 }
 
 .theme-option {
     border-color: #30363d;
+    background: #0d1117;
 }
 
 .theme-option:hover {
-    border-color: #1f6feb;
-    background: #161b22;
+    border-color: #6e7681;
+    background: #21262d;
 }
 
 .theme-label {
-    color: #e6edf3;
+    color: #c9d1d9;
+}
+
+.container {
+    background: transparent;
+}
+
+.refresh-status {
+    background: #161b22;
+    border-color: #30363d;
+    color: #c9d1d9;
+}
+
+.refresh-status.refreshing {
+    border-color: #9e6a03;
+    background: #341a03;
+}
+
+.refresh-button {
+    background: #21262d;
+    border-color: #30363d;
+    color: #c9d1d9;
+}
+
+.refresh-button:hover:not(:disabled) {
+    background: #30363d;
+    border-color: #6e7681;
+}
+
+.refresh-button:disabled {
+    opacity: 0.6;
+}
+
+.workflow-item {
+    background: #161b22;
+    border-color: #30363d;
+}
+
+.workflow-item:hover {
+    border-color: #6e7681;
+    box-shadow: 0 3px 8px rgba(1, 4, 9, 0.5);
+}
+
+.workflow-label {
+    color: #c9d1d9;
+}
+
+.workflow-remove-button {
+    background: #161b22;
+    border-color: #30363d;
+    color: #c9d1d9;
+}
+
+.config-error {
+    background: #1c2128;
+    border-color: #9e6a03;
+    color: #e3b341;
+}
+
+.config-error h3 {
+    color: #e3b341;
+}
+
+.config-error code {
+    background: #0d1117;
+    color: #ff7b72;
+}
+
+.footer {
+    border-top-color: #30363d;
+    color: #8b949e;
 }
 
 .add-workflow-button {
     background: #238636;
+    border-color: #238636;
     color: #ffffff;
-    box-shadow: 0 1px 0 rgba(27, 31, 35, 0.1);
 }
 
 .add-workflow-button:hover {
     background: #2ea043;
-    box-shadow: 0 1px 0 rgba(27, 31, 35, 0.1), 0 0 0 3px rgba(35, 134, 54, 0.4);
+    border-color: #2ea043;
 }
 
-.add-workflow-button:focus-visible {
-    outline: 2px solid #1f6feb;
-}
-
-/* Dark theme form styles */
+/* Modal form styles */
 .modal-description {
-    color: #7d8590;
+    color: #8b949e;
 }
 
 .modal-description code {
-    background: #161b22;
-    color: #e6edf3;
+    background: #21262d;
+    color: #e3b341;
 }
 
 .form-group label {
-    color: #e6edf3;
+    color: #c9d1d9;
 }
 
-.form-group input[type="text"] {
+.form-group input[type="text"],
+.form-group select {
     background: #0d1117;
     border-color: #30363d;
-    color: #e6edf3;
+    color: #c9d1d9;
 }
 
-.form-group input[type="text"]:focus {
-    border-color: #1f6feb;
-}
-
-.form-group input[type="text"]::placeholder {
-    color: #7d8590;
+.form-group input[type="text"]:focus,
+.form-group select:focus {
+    border-color: #58a6ff;
+    background: #0d1117;
 }
 
 .form-help {
-    color: #7d8590;
+    color: #8b949e;
 }
 
 .form-error {
-    background: #6e460020;
+    background: #1c2128;
     border-color: #9e6a03;
-    color: #d29922;
+    color: #e3b341;
 }
 
 .modal-button-secondary {
     background: #21262d;
-    color: #e6edf3;
+    border-color: #30363d;
+    color: #c9d1d9;
 }
 
-.modal-button-secondary:hover {
+.modal-button-secondary:hover:not(:disabled) {
     background: #30363d;
+    border-color: #6e7681;
 }
 
 .modal-button-primary {
-    background: #1f6feb;
+    background: #238636;
+    border-color: #238636;
     color: #ffffff;
 }
 
-.modal-button-primary:hover {
-    background: #1a5fd9;
+.modal-button-primary:hover:not(:disabled) {
+    background: #2ea043;
+    border-color: #2ea043;
+}
+
+.repo-header {
+    color: #c9d1d9;
+    border-bottom-color: #30363d;
 }
 
 /* About page styles */
 .about-section {
-    background: rgba(22, 27, 34, 0.6);
-    border: 1px solid #30363d;
+    background: #161b22;
+    border-color: #30363d;
 }
 
 .about-section h2,
 .about-section strong {
-    color: #e6edf3;
+    color: #c9d1d9;
 }
 
 .about-section p,
 .about-section ul,
 .about-section li {
-    color: #c9d1d9;
+    color: #8b949e;
 }
 
 .about-section a {
@@ -288,4 +263,41 @@ h1 {
 
 .about-section a:hover {
     color: #79c0ff;
+}
+
+/* Dashboard management styles */
+.dashboard-item {
+    background: #0d1117;
+    border-color: #30363d;
+}
+
+.dashboard-item:hover {
+    background: #161b22;
+    border-color: #6e7681;
+}
+
+.dashboard-item.active {
+    background: #0c2d6b;
+    border-color: #58a6ff;
+}
+
+.dashboard-item-name {
+    color: #c9d1d9;
+}
+
+.dashboard-item-badge {
+    background: #0c2d6b;
+    border-color: #58a6ff;
+    color: #58a6ff;
+}
+
+.dashboard-item-action {
+    background: transparent;
+    border-color: #30363d;
+    color: #c9d1d9;
+}
+
+.dashboard-item-action:hover {
+    background: #21262d;
+    border-color: #6e7681;
 }

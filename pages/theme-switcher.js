@@ -44,24 +44,27 @@ class ThemeSwitcher {
         // Apply the saved theme
         this.applyTheme(this.currentTheme);
 
-        // Set up settings button click handler
-        const settingsButton = document.getElementById('settings-button');
-        if (settingsButton) {
-            settingsButton.addEventListener('click', () => this.openSettings());
+        // Set up navigation button click handler
+        const themeNavButton = document.getElementById('theme-nav-button');
+        if (themeNavButton) {
+            themeNavButton.addEventListener('click', () => {
+                this.openThemeModal();
+                this.closeSideNav();
+            });
         }
 
         // Set up modal close handlers
-        const modal = document.getElementById('settings-modal');
-        const closeButton = document.querySelector('.close-button');
+        const modal = document.getElementById('theme-modal');
+        const closeButton = modal?.querySelector('.close-button');
         
         if (closeButton) {
-            closeButton.addEventListener('click', () => this.closeSettings());
+            closeButton.addEventListener('click', () => this.closeThemeModal());
         }
 
         if (modal) {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
-                    this.closeSettings();
+                    this.closeThemeModal();
                 }
             });
         }
@@ -78,13 +81,66 @@ class ThemeSwitcher {
 
         // Update the selected radio button
         this.updateSelectedTheme();
+
+        // Set up side nav toggle
+        this.setupSideNav();
     }
 
     /**
-     * Open settings modal
+     * Setup side navigation toggle
      */
-    openSettings() {
-        const modal = document.getElementById('settings-modal');
+    setupSideNav() {
+        const navToggle = document.getElementById('nav-toggle');
+        const sideNav = document.getElementById('side-nav');
+        const overlay = document.getElementById('side-nav-overlay');
+
+        if (navToggle && sideNav && overlay) {
+            navToggle.addEventListener('click', () => {
+                const isOpen = sideNav.classList.contains('open');
+                if (isOpen) {
+                    this.closeSideNav();
+                } else {
+                    this.openSideNav();
+                }
+            });
+
+            overlay.addEventListener('click', () => {
+                this.closeSideNav();
+            });
+        }
+    }
+
+    /**
+     * Open side navigation
+     */
+    openSideNav() {
+        const sideNav = document.getElementById('side-nav');
+        const overlay = document.getElementById('side-nav-overlay');
+        
+        if (sideNav && overlay) {
+            sideNav.classList.add('open');
+            overlay.classList.add('show');
+        }
+    }
+
+    /**
+     * Close side navigation
+     */
+    closeSideNav() {
+        const sideNav = document.getElementById('side-nav');
+        const overlay = document.getElementById('side-nav-overlay');
+        
+        if (sideNav && overlay) {
+            sideNav.classList.remove('open');
+            overlay.classList.remove('show');
+        }
+    }
+
+    /**
+     * Open theme modal
+     */
+    openThemeModal() {
+        const modal = document.getElementById('theme-modal');
         if (modal) {
             modal.style.display = 'block';
             // Update selected theme when opening
@@ -93,10 +149,10 @@ class ThemeSwitcher {
     }
 
     /**
-     * Close settings modal
+     * Close theme modal
      */
-    closeSettings() {
-        const modal = document.getElementById('settings-modal');
+    closeThemeModal() {
+        const modal = document.getElementById('theme-modal');
         if (modal) {
             modal.style.display = 'none';
         }
