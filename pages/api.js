@@ -10,7 +10,7 @@ class GitHubActionsAPI {
 
     /**
      * Get all workflow statuses from Azure Function
-     * @returns {Promise<Array>} - Array of workflow statuses
+     * @returns {Promise<Object>} - Response object with workflows, dashboards, and activeDashboardId
      */
     async getAllWorkflowStatuses() {
         // If there's already a request in flight, return that promise
@@ -51,7 +51,7 @@ class GitHubActionsAPI {
                     console.log('Received workflow statuses from Azure Function:', data);
                 }
 
-                return data.workflows || [];
+                return data;
             } finally {
                 // Clear the in-flight request tracker
                 this.inflightRequest = null;
@@ -70,7 +70,8 @@ class GitHubActionsAPI {
      */
     async getWorkflowStatus(owner, repo, workflowFile) {
         try {
-            const allStatuses = await this.getAllWorkflowStatuses();
+            const data = await this.getAllWorkflowStatuses();
+            const allStatuses = data.workflows || [];
             
             // Find the specific workflow in the results
             const workflow = allStatuses.find(w => 
@@ -179,6 +180,140 @@ class GitHubActionsAPI {
             return data;
         } catch (error) {
             console.error('Failed to remove workflow:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Set the active dashboard
+     * @param {string} dashboardId - Dashboard ID to set as active
+     * @returns {Promise<Object>} - Response object with success status
+     */
+    async setActiveDashboard(dashboardId) {
+        try {
+            const response = await fetch(`${this.functionUrl}/api/set-active-dashboard`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ dashboardId })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Failed to set active dashboard: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (this.debug) {
+                console.log('Active dashboard set successfully:', data);
+            }
+
+            return data;
+        } catch (error) {
+            console.error('Failed to set active dashboard:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Create a new dashboard
+     * @param {string} name - Dashboard name
+     * @param {boolean} setAsActive - Whether to set this as the active dashboard
+     * @returns {Promise<Object>} - Response object with success status and new dashboard info
+     */
+    async createDashboard(name, setAsActive = false) {
+        try {
+            const response = await fetch(`${this.functionUrl}/api/create-dashboard`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name, setAsActive })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Failed to create dashboard: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (this.debug) {
+                console.log('Dashboard created successfully:', data);
+            }
+
+            return data;
+        } catch (error) {
+            console.error('Failed to create dashboard:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Rename a dashboard
+     * @param {string} dashboardId - Dashboard ID to rename
+     * @param {string} name - New dashboard name
+     * @returns {Promise<Object>} - Response object with success status
+     */
+    async renameDashboard(dashboardId, name) {
+        try {
+            const response = await fetch(`${this.functionUrl}/api/rename-dashboard`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ dashboardId, name })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Failed to rename dashboard: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (this.debug) {
+                console.log('Dashboard renamed successfully:', data);
+            }
+
+            return data;
+        } catch (error) {
+            console.error('Failed to rename dashboard:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Delete a dashboard
+     * @param {string} dashboardId - Dashboard ID to delete
+     * @returns {Promise<Object>} - Response object with success status
+     */
+    async deleteDashboard(dashboardId) {
+        try {
+            const response = await fetch(`${this.functionUrl}/api/delete-dashboard`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ dashboardId })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Failed to delete dashboard: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (this.debug) {
+                console.log('Dashboard deleted successfully:', data);
+            }
+
+            return data;
+        } catch (error) {
+            console.error('Failed to delete dashboard:', error);
             throw error;
         }
     }

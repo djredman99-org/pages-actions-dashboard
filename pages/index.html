@@ -86,6 +86,36 @@
         </div>
     </div>
 
+    <!-- Manage Dashboards Modal -->
+    <div id="manage-dashboards-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Manage Dashboards</h2>
+                <button class="close-button" aria-label="Close manage dashboards dialog">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-section">
+                    <div class="form-group">
+                        <label for="new-dashboard-input">Create New Dashboard</label>
+                        <div style="display: flex; gap: 8px;">
+                            <input 
+                                type="text" 
+                                id="new-dashboard-input" 
+                                placeholder="Dashboard Name"
+                                style="flex: 1;"
+                            >
+                            <button id="create-dashboard-button" class="modal-button modal-button-primary">Create</button>
+                        </div>
+                    </div>
+                    <div id="manage-dashboards-list" class="dashboards-list">
+                        <!-- Populated dynamically -->
+                    </div>
+                    <div id="manage-dashboards-error" class="form-error" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <!-- Navigation -->
         <nav class="page-nav" aria-label="Main navigation">
@@ -95,6 +125,20 @@
 
         <h1>🚀 GitHub Actions Dashboard</h1>
         <p class="subtitle">Monitoring workflow statuses across repositories</p>
+
+        <!-- Dashboard Selector -->
+        <div id="dashboard-selector" class="dashboard-selector" style="display: none;">
+            <label for="dashboard-select">Dashboard:</label>
+            <select id="dashboard-select" aria-label="Select dashboard">
+                <!-- Options populated dynamically -->
+            </select>
+            <button id="manage-dashboards-button" class="manage-dashboards-button" aria-label="Manage dashboards">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>Manage</span>
+            </button>
+        </div>
 
         <div id="refresh-status" class="refresh-status" style="display: none;">
             <button id="refresh-button" class="refresh-button" aria-label="Refresh workflow statuses">

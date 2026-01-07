@@ -130,35 +130,22 @@ app.http('remove-workflow', {
                 workflowConfigContainer
             );
 
-            // Ensure configuration is in correct format and has dashboardId
-            let needsSave = false;
-            if (Array.isArray(config)) {
-                context.log('Converting array format to object format');
-                config = {
-                    dashboardId: crypto.randomUUID(),
-                    workflows: config
+            // Configuration is already migrated by storage client
+            // Find the active dashboard
+            const activeDashboard = config.dashboards?.find(d => d.id === config.activeDashboardId);
+
+            if (!activeDashboard) {
+                context.log('No active dashboard found');
+                return {
+                    status: 404,
+                    jsonBody: {
+                        error: 'No active dashboard',
+                        message: 'No active dashboard found.'
+                    }
                 };
-                needsSave = true;
             }
 
-            // Generate dashboardId if it doesn't exist
-            if (!config.dashboardId) {
-                context.log('Generating dashboardId');
-                config.dashboardId = crypto.randomUUID();
-                needsSave = true;
-            }
-
-            // Save configuration if GUID was generated
-            if (needsSave) {
-                context.log('Saving configuration with generated dashboardId');
-                await saveWorkflowConfigurations(
-                    storageAccountUrl,
-                    workflowConfigContainer,
-                    config
-                );
-            }
-
-            const workflows = config.workflows || [];
+            const workflows = activeDashboard.workflows || [];
 
             // Find the workflow to remove
             const workflowIndex = findWorkflowIndex(workflows, owner, repo, workflowFile);
@@ -177,7 +164,7 @@ app.http('remove-workflow', {
             // Remove the workflow
             const removedWorkflow = workflows[workflowIndex];
             workflows.splice(workflowIndex, 1);
-            config.workflows = workflows;
+            activeDashboard.workflows = workflows;
 
             // Save updated configuration back to Storage
             context.log('Saving updated workflow configuration to Storage');
@@ -197,7 +184,8 @@ app.http('remove-workflow', {
                 jsonBody: {
                     success: true,
                     message: 'Workflow removed successfully',
-                    dashboardId: config.dashboardId,
+                    dashboardId: activeDashboard.id,
+                    dashboardName: activeDashboard.name,
                     workflow: removedWorkflow
                 }
             };

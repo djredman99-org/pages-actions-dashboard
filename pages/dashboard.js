@@ -6,6 +6,8 @@ class DashboardLoader {
         this.config = config;
         this.api = apiClient;
         this.workflowManager = workflowManager;
+        this.dashboards = [];
+        this.activeDashboardId = null;
     }
 
     /**
@@ -229,7 +231,16 @@ class DashboardLoader {
         try {
             // Get all workflow statuses from Azure Function
             // The function returns workflows with their statuses already populated
-            const workflowStatuses = await this.api.getAllWorkflowStatuses();
+            const data = await this.api.getAllWorkflowStatuses();
+            
+            // Update dashboards list
+            this.dashboards = data.dashboards || [];
+            this.activeDashboardId = data.activeDashboardId;
+            
+            // Update dashboard selector UI
+            this.updateDashboardSelector();
+            
+            const workflowStatuses = data.workflows || [];
 
             if (!workflowStatuses || workflowStatuses.length === 0) {
                 // Only clear container if there are no workflows (first load scenario)
@@ -587,6 +598,280 @@ class DashboardLoader {
             alert(`Failed to remove workflow: ${error.message}`);
         }
     }
+
+    /**
+     * Update the dashboard selector UI with available dashboards
+     */
+    updateDashboardSelector() {
+        const selector = document.getElementById('dashboard-selector');
+        const select = document.getElementById('dashboard-select');
+        
+        if (!selector || !select) return;
+        
+        // Show selector if we have dashboards
+        if (this.dashboards.length > 0) {
+            selector.style.display = 'flex';
+            
+            // Clear existing options
+            select.innerHTML = '';
+            
+            // Add dashboard options
+            this.dashboards.forEach(dashboard => {
+                const option = document.createElement('option');
+                option.value = dashboard.id;
+                option.textContent = dashboard.name;
+                option.selected = dashboard.id === this.activeDashboardId;
+                select.appendChild(option);
+            });
+        } else {
+            selector.style.display = 'none';
+        }
+    }
+
+    /**
+     * Set up dashboard selector change handler
+     */
+    setupDashboardSelector() {
+        const select = document.getElementById('dashboard-select');
+        if (!select) return;
+        
+        select.addEventListener('change', async (e) => {
+            const newDashboardId = e.target.value;
+            
+            // Don't do anything if same dashboard selected
+            if (newDashboardId === this.activeDashboardId) {
+                return;
+            }
+            
+            try {
+                // Set as active dashboard
+                await this.api.setActiveDashboard(newDashboardId);
+                
+                // Clear the container and reload workflows
+                const container = document.querySelector('.workflow-grids-container');
+                if (container) {
+                    container.innerHTML = '';
+                }
+                
+                // Reload workflows for new dashboard
+                await this.loadWorkflows();
+                
+                console.log(`Switched to dashboard: ${newDashboardId}`);
+            } catch (error) {
+                console.error('Failed to switch dashboard:', error);
+                alert(`Failed to switch dashboard: ${error.message}`);
+                // Revert selection
+                select.value = this.activeDashboardId;
+            }
+        });
+    }
+
+    /**
+     * Set up manage dashboards button and modal
+     */
+    setupManageDashboardsButton() {
+        const button = document.getElementById('manage-dashboards-button');
+        const modal = document.getElementById('manage-dashboards-modal');
+        const closeButton = modal?.querySelector('.close-button');
+        const createButton = document.getElementById('create-dashboard-button');
+        const nameInput = document.getElementById('new-dashboard-input');
+        const errorDiv = document.getElementById('manage-dashboards-error');
+        
+        if (!button || !modal) return;
+        
+        // Open modal
+        button.addEventListener('click', () => {
+            modal.style.display = 'block';
+            nameInput.value = '';
+            errorDiv.style.display = 'none';
+            errorDiv.textContent = '';
+            this.renderDashboardsList();
+        });
+        
+        // Close modal
+        const closeModal = () => {
+            modal.style.display = 'none';
+        };
+        
+        closeButton?.addEventListener('click', closeModal);
+        
+        // Close on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+        
+        // Create dashboard
+        createButton?.addEventListener('click', async () => {
+            await this.handleCreateDashboard(nameInput.value, errorDiv, createButton);
+        });
+        
+        // Handle Enter key in input
+        nameInput?.addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                await this.handleCreateDashboard(nameInput.value, errorDiv, createButton);
+            }
+        });
+    }
+
+    /**
+     * Render the list of dashboards in the manage modal
+     */
+    renderDashboardsList() {
+        const listContainer = document.getElementById('manage-dashboards-list');
+        if (!listContainer) return;
+        
+        listContainer.innerHTML = '';
+        
+        if (this.dashboards.length === 0) {
+            listContainer.innerHTML = '<p>No dashboards available.</p>';
+            return;
+        }
+        
+        this.dashboards.forEach(dashboard => {
+            const item = document.createElement('div');
+            item.className = 'dashboard-item';
+            if (dashboard.id === this.activeDashboardId) {
+                item.classList.add('active');
+            }
+            
+            const info = document.createElement('div');
+            info.className = 'dashboard-item-info';
+            
+            const name = document.createElement('span');
+            name.className = 'dashboard-item-name';
+            name.textContent = dashboard.name;
+            info.appendChild(name);
+            
+            if (dashboard.id === this.activeDashboardId) {
+                const badge = document.createElement('span');
+                badge.className = 'dashboard-item-badge';
+                badge.textContent = 'Active';
+                info.appendChild(badge);
+            }
+            
+            const actions = document.createElement('div');
+            actions.className = 'dashboard-item-actions';
+            
+            // Rename button
+            const renameBtn = document.createElement('button');
+            renameBtn.className = 'dashboard-item-action';
+            renameBtn.title = 'Rename dashboard';
+            renameBtn.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M18.5 2.49998C18.8978 2.10216 19.4374 1.87866 20 1.87866C20.5626 1.87866 21.1022 2.10216 21.5 2.49998C21.8978 2.89781 22.1213 3.43737 22.1213 3.99998C22.1213 4.56259 21.8978 5.10216 21.5 5.49998L12 15L8 16L9 12L18.5 2.49998Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            `;
+            renameBtn.onclick = () => this.handleRenameDashboard(dashboard);
+            actions.appendChild(renameBtn);
+            
+            // Delete button (only if not the last dashboard)
+            if (this.dashboards.length > 1) {
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'dashboard-item-action danger';
+                deleteBtn.title = 'Delete dashboard';
+                deleteBtn.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 6H5H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                `;
+                deleteBtn.onclick = () => this.handleDeleteDashboard(dashboard);
+                actions.appendChild(deleteBtn);
+            }
+            
+            item.appendChild(info);
+            item.appendChild(actions);
+            listContainer.appendChild(item);
+        });
+    }
+
+    /**
+     * Handle creating a new dashboard
+     */
+    async handleCreateDashboard(name, errorDiv, createButton) {
+        errorDiv.style.display = 'none';
+        errorDiv.textContent = '';
+        
+        if (!name || !name.trim()) {
+            errorDiv.textContent = 'Please enter a dashboard name';
+            errorDiv.style.display = 'block';
+            return;
+        }
+        
+        createButton.disabled = true;
+        createButton.textContent = 'Creating...';
+        
+        try {
+            await this.api.createDashboard(name.trim(), false);
+            
+            // Reload to get updated dashboards list
+            await this.loadWorkflows();
+            
+            // Update the dashboards list in modal
+            this.renderDashboardsList();
+            
+            // Clear input
+            document.getElementById('new-dashboard-input').value = '';
+            
+            console.log(`Successfully created dashboard: ${name}`);
+        } catch (error) {
+            console.error('Failed to create dashboard:', error);
+            errorDiv.textContent = error.message || 'Failed to create dashboard';
+            errorDiv.style.display = 'block';
+        } finally {
+            createButton.disabled = false;
+            createButton.textContent = 'Create';
+        }
+    }
+
+    /**
+     * Handle renaming a dashboard
+     */
+    async handleRenameDashboard(dashboard) {
+        const newName = prompt(`Enter new name for "${dashboard.name}":`, dashboard.name);
+        if (!newName || newName.trim() === dashboard.name) return;
+        
+        try {
+            await this.api.renameDashboard(dashboard.id, newName.trim());
+            
+            // Reload to get updated dashboards list
+            await this.loadWorkflows();
+            
+            // Update the dashboards list in modal
+            this.renderDashboardsList();
+            
+            console.log(`Successfully renamed dashboard to: ${newName}`);
+        } catch (error) {
+            console.error('Failed to rename dashboard:', error);
+            alert(`Failed to rename dashboard: ${error.message}`);
+        }
+    }
+
+    /**
+     * Handle deleting a dashboard
+     */
+    async handleDeleteDashboard(dashboard) {
+        const confirmed = confirm(`Are you sure you want to delete "${dashboard.name}"? This will also delete all workflows in this dashboard.`);
+        if (!confirmed) return;
+        
+        try {
+            await this.api.deleteDashboard(dashboard.id);
+            
+            // Reload to get updated dashboards list and possibly new active dashboard
+            await this.loadWorkflows();
+            
+            // Update the dashboards list in modal
+            this.renderDashboardsList();
+            
+            console.log(`Successfully deleted dashboard: ${dashboard.name}`);
+        } catch (error) {
+            console.error('Failed to delete dashboard:', error);
+            alert(`Failed to delete dashboard: ${error.message}`);
+        }
+    }
 }
 
 // Global dashboard instance for console access and testing
@@ -616,6 +901,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Set up add workflow button and modal (always available)
         dashboard.setupAddWorkflowButton();
+        
+        // Set up dashboard selector and management
+        dashboard.setupDashboardSelector();
+        dashboard.setupManageDashboardsButton();
 
         // Check if Azure Function URL is configured
         if (!DASHBOARD_CONFIG.azureFunction.url || DASHBOARD_CONFIG.azureFunction.url === '__AZURE_FUNCTION_URL__') {

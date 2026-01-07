@@ -116,35 +116,28 @@ app.http('get-workflow-statuses', {
                 workflowConfigContainer
             );
 
-            // Ensure configuration is in correct format and has dashboardId
-            let needsSave = false;
-            if (Array.isArray(config)) {
-                context.log('Converting array format to object format');
-                config = {
-                    dashboardId: crypto.randomUUID(),
-                    workflows: config
+            // Configuration is already migrated by storage client
+            // Find the active dashboard
+            const activeDashboard = config.dashboards?.find(d => d.id === config.activeDashboardId) 
+                || config.dashboards?.[0];
+
+            if (!activeDashboard) {
+                context.log('No active dashboard found');
+                return {
+                    status: 200,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    jsonBody: {
+                        dashboards: config.dashboards || [],
+                        activeDashboardId: config.activeDashboardId,
+                        workflows: [],
+                        message: 'No active dashboard'
+                    }
                 };
-                needsSave = true;
             }
 
-            // Generate dashboardId if it doesn't exist
-            if (!config.dashboardId) {
-                context.log('Generating dashboardId');
-                config.dashboardId = crypto.randomUUID();
-                needsSave = true;
-            }
-
-            // Save configuration if GUID was generated
-            if (needsSave) {
-                context.log('Saving configuration with generated dashboardId');
-                await saveWorkflowConfigurations(
-                    storageAccountUrl,
-                    workflowConfigContainer,
-                    config
-                );
-            }
-
-            const workflows = config.workflows || [];
+            const workflows = activeDashboard.workflows || [];
 
             // Validate workflow structure
             const validWorkflows = workflows.filter(workflow => {
@@ -175,6 +168,8 @@ app.http('get-workflow-statuses', {
                         'Content-Type': 'application/json'
                     },
                     jsonBody: {
+                        dashboards: config.dashboards || [],
+                        activeDashboardId: config.activeDashboardId,
                         workflows: [],
                         message: 'No workflows configured'
                     }
@@ -261,7 +256,8 @@ app.http('get-workflow-statuses', {
                     'Cache-Control': 'public, max-age=60'
                 },
                 jsonBody: {
-                    dashboardId: config.dashboardId,
+                    dashboards: config.dashboards.map(d => ({ id: d.id, name: d.name })),
+                    activeDashboardId: config.activeDashboardId,
                     workflows: results,
                     timestamp: new Date().toISOString(),
                     count: results.length
