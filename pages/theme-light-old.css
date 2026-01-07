@@ -1,0 +1,203 @@
+/* GitHub Primer Light Theme */
+
+body {
+    background: #ffffff;
+}
+
+.container {
+    background: #ffffff;
+    border: 1px solid #000000;
+    box-shadow: none;
+}
+
+h1 {
+    color: #1b1f23;
+}
+
+.subtitle {
+    color: #57606a;
+}
+
+.repo-header {
+    color: #1b1f23;
+    border-bottom-color: #d0d7de;
+}
+
+.refresh-status {
+    background: #f6f8fa;
+    border: 1px solid #d0d7de;
+    color: #1b1f23;
+}
+
+.refresh-status.refreshing {
+    border-color: #d0d7de;
+    background: #f6f8fa;
+}
+
+.refresh-button {
+    background: #2ea44f;
+    color: #ffffff;
+    box-shadow: 0 1px 0 rgba(27, 31, 35, 0.1);
+}
+
+.refresh-button:hover:not(:disabled) {
+    background: #2c974b;
+    box-shadow: 0 1px 0 rgba(27, 31, 35, 0.1), 0 0 0 3px rgba(46, 164, 79, 0.4);
+}
+
+.refresh-button:disabled {
+    background: #94d3a2;
+}
+
+.refresh-button:focus-visible {
+    outline: 2px solid #0969da;
+}
+
+.workflow-item {
+    background: #f6f8fa;
+    border: 1px solid #d0d7de;
+}
+
+.workflow-item:hover {
+    box-shadow: 0 1px 3px rgba(27, 31, 35, 0.12), 0 8px 24px rgba(66, 74, 83, 0.12);
+    border-color: #0969da;
+}
+
+.workflow-card-link:focus-visible {
+    outline: 2px solid #0969da;
+}
+
+.workflow-label {
+    color: #1b1f23;
+}
+
+.config-error {
+    background: #fff8c5;
+    border: 1px solid #d4a72c;
+    color: #4d2d00;
+}
+
+.config-error h3 {
+    color: #4d2d00;
+}
+
+.config-error code {
+    background: #ffffff;
+    color: #d73a49;
+}
+
+.footer {
+    border-top: 1px solid #d0d7de;
+    color: #57606a;
+}
+
+.instructions {
+    background: #ddf4ff;
+    border-left: 4px solid #0969da;
+}
+
+.instructions h2 {
+    color: #0969da;
+}
+
+.instructions p {
+    color: #1b1f23;
+}
+
+.instructions code {
+    background: #ffffff;
+}
+
+.instructions ul {
+    color: #1b1f23;
+}
+
+.instructions a {
+    color: #0969da;
+}
+
+/* Theme-specific settings button and modal styles */
+.settings-button {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #d0d7de;
+}
+
+.settings-button svg {
+    color: #1b1f23;
+}
+
+.modal-content {
+    background-color: #ffffff;
+    border: 1px solid #d0d7de;
+}
+
+.modal-header {
+    border-bottom-color: #d0d7de;
+}
+
+.modal-header h2 {
+    color: #1b1f23;
+}
+
+.close-button {
+    color: #57606a;
+}
+
+.close-button:hover {
+    background: #f6f8fa;
+    color: #1b1f23;
+}
+
+.setting-section h3 {
+    color: #1b1f23;
+}
+
+.theme-option {
+    border-color: #d0d7de;
+}
+
+.theme-option:hover {
+    border-color: #0969da;
+    background: #f6f8fa;
+}
+
+.theme-label {
+    color: #1b1f23;
+}
+
+.add-workflow-button {
+    background: #2ea44f;
+    color: #ffffff;
+    box-shadow: 0 1px 0 rgba(27, 31, 35, 0.1);
+}
+
+.add-workflow-button:hover {
+    background: #2c974b;
+    box-shadow: 0 1px 0 rgba(27, 31, 35, 0.1), 0 0 0 3px rgba(46, 164, 79, 0.4);
+}
+
+.add-workflow-button:focus-visible {
+    outline: 2px solid #0969da;
+}
+
+/* About page styles */
+.about-section {
+    background: #f6f8fa;
+    border: 1px solid #d0d7de;
+}
+
+.about-section h2,
+.about-section p,
+.about-section ul,
+.about-section li,
+.about-section strong {
+    color: #1b1f23;
+}
+
+.about-section a {
+    color: #0969da;
+}
+
+.about-section a:hover {
+    color: #0550ae;
+}
