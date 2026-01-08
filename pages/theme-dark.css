@@ -225,14 +225,14 @@ body {
 }
 
 .modal-button-primary {
-    background: #347d39;
-    border-color: #347d39;
+    background: #238636;
+    border-color: #238636;
     color: #ffffff;
 }
 
 .modal-button-primary:hover:not(:disabled) {
-    background: #46954a;
-    border-color: #46954a;
+    background: #2ea043;
+    border-color: #2ea043;
 }
 
 /* Refresh button in header */
