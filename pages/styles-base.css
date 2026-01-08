@@ -806,7 +806,7 @@ body {
     z-index: 1;
 }
 
-.custom-dropdown-input {
+.form-group .custom-dropdown-input {
     width: 100%;
     padding: 5px 12px 5px 36px;
     border: 1px solid;
@@ -816,7 +816,7 @@ body {
     transition: all 0.1s;
 }
 
-.custom-dropdown-input:focus {
+.form-group .custom-dropdown-input:focus {
     outline: none;
     border-color: var(--border-active, #0969da);
     box-shadow: 0 0 0 3px var(--focus-shadow, rgba(9, 105, 218, 0.3));
