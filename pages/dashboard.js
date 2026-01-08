@@ -1301,11 +1301,23 @@ class DashboardLoader {
         const cards = container.querySelectorAll('.workflow-item');
         cards.forEach(card => {
             card.setAttribute('draggable', 'true');
-            card.addEventListener('dragstart', this.handleDragStart.bind(this));
-            card.addEventListener('dragend', this.handleDragEnd.bind(this));
-            card.addEventListener('dragover', this.handleDragOver.bind(this));
-            card.addEventListener('drop', this.handleDrop.bind(this));
-            card.addEventListener('dragleave', this.handleDragLeave.bind(this));
+            
+            // Store bound handlers as data attributes so we can remove them later
+            if (!card._dragHandlers) {
+                card._dragHandlers = {
+                    dragstart: this.handleDragStart.bind(this),
+                    dragend: this.handleDragEnd.bind(this),
+                    dragover: this.handleDragOver.bind(this),
+                    drop: this.handleDrop.bind(this),
+                    dragleave: this.handleDragLeave.bind(this)
+                };
+            }
+            
+            card.addEventListener('dragstart', card._dragHandlers.dragstart);
+            card.addEventListener('dragend', card._dragHandlers.dragend);
+            card.addEventListener('dragover', card._dragHandlers.dragover);
+            card.addEventListener('drop', card._dragHandlers.drop);
+            card.addEventListener('dragleave', card._dragHandlers.dragleave);
         });
     }
 
@@ -1319,11 +1331,15 @@ class DashboardLoader {
         const cards = container.querySelectorAll('.workflow-item');
         cards.forEach(card => {
             card.removeAttribute('draggable');
-            card.removeEventListener('dragstart', this.handleDragStart.bind(this));
-            card.removeEventListener('dragend', this.handleDragEnd.bind(this));
-            card.removeEventListener('dragover', this.handleDragOver.bind(this));
-            card.removeEventListener('drop', this.handleDrop.bind(this));
-            card.removeEventListener('dragleave', this.handleDragLeave.bind(this));
+            
+            // Remove listeners using stored handlers
+            if (card._dragHandlers) {
+                card.removeEventListener('dragstart', card._dragHandlers.dragstart);
+                card.removeEventListener('dragend', card._dragHandlers.dragend);
+                card.removeEventListener('dragover', card._dragHandlers.dragover);
+                card.removeEventListener('drop', card._dragHandlers.drop);
+                card.removeEventListener('dragleave', card._dragHandlers.dragleave);
+            }
         });
     }
 
