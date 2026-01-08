@@ -426,6 +426,11 @@ body {
     transition: all 0.1s;
 }
 
+.edit-mode-button {
+    padding: 5px 8px;
+    gap: 0;
+}
+
 .add-workflow-button svg,
 .edit-mode-button svg {
     width: 16px;
