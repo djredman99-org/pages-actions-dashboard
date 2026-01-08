@@ -716,7 +716,7 @@ class DashboardLoader {
      * @param {string} searchTerm - Search term to filter by
      */
     filterDashboards(searchTerm) {
-        if (!searchTerm || !searchTerm.trim()) {
+        if (!searchTerm?.trim()) {
             // Show all dashboards
             this.renderCustomDropdown(this.dashboards);
             return;
