@@ -6,9 +6,17 @@ This Azure Function App provides a secure backend API for the GitHub Actions Das
 
 ### Functions
 
+#### Workflow Management
 - **get-workflow-statuses**: HTTP-triggered function that returns workflow statuses for all configured workflows
 - **add-workflow**: HTTP-triggered function that adds a new workflow to the dashboard configuration
 - **remove-workflow**: HTTP-triggered function that removes a workflow from the dashboard configuration
+- **reorder-workflows**: HTTP-triggered function that reorders workflows within the active dashboard
+
+#### Dashboard Management
+- **create-dashboard**: HTTP-triggered function that creates a new dashboard
+- **set-active-dashboard**: HTTP-triggered function that switches the active dashboard
+- **rename-dashboard**: HTTP-triggered function that renames an existing dashboard
+- **delete-dashboard**: HTTP-triggered function that deletes a dashboard
 
 ### Modules
 
@@ -275,6 +283,44 @@ Removes a workflow from the dashboard configuration.
 - `400 Bad Request`: Invalid request body or validation error
 - `404 Not Found`: Workflow not found
 - `500 Internal Server Error`: Server error
+
+#### POST `/api/reorder-workflows`
+
+Reorders workflows within the active dashboard.
+
+**Request Body:**
+```json
+{
+  "workflows": [
+    {
+      "owner": "owner",
+      "repo": "repo",
+      "workflow": "first-workflow.yml"
+    },
+    {
+      "owner": "owner",
+      "repo": "repo",
+      "workflow": "second-workflow.yml"
+    }
+  ]
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Reordered 2 workflows",
+  "dashboardId": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**Error Responses:**
+- `400 Bad Request`: Invalid request body, workflow count mismatch, or validation error
+- `404 Not Found`: Dashboard not found
+- `500 Internal Server Error`: Server error
+
+**Note**: The workflows array must contain all existing workflows in the active dashboard in the desired order.
 
 ## Monitoring
 
