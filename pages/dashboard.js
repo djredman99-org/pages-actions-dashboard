@@ -615,19 +615,114 @@ class DashboardLoader {
             }
         }
 
-        // Also update the modal dropdown
-        const modalSelect = document.getElementById('dashboard-select-modal');
-        if (modalSelect && this.dashboards.length > 0) {
-            modalSelect.innerHTML = '';
-            
-            this.dashboards.forEach(dashboard => {
-                const option = document.createElement('option');
-                option.value = dashboard.id;
-                option.textContent = dashboard.name;
-                option.selected = dashboard.id === this.activeDashboardId;
-                modalSelect.appendChild(option);
-            });
+        // Also update the modal custom dropdown
+        const dropdownList = document.getElementById('dashboard-dropdown-list');
+        if (dropdownList && this.dashboards.length > 0) {
+            this.renderCustomDropdown(this.dashboards);
         }
+    }
+
+    /**
+     * Render the custom dropdown items
+     * @param {Array} dashboards - Array of dashboards to display
+     */
+    renderCustomDropdown(dashboards) {
+        const dropdownList = document.getElementById('dashboard-dropdown-list');
+        if (!dropdownList) return;
+
+        dropdownList.innerHTML = '';
+
+        if (dashboards.length === 0) {
+            const emptyDiv = document.createElement('div');
+            emptyDiv.className = 'custom-dropdown-empty';
+            emptyDiv.textContent = 'No dashboards found';
+            dropdownList.appendChild(emptyDiv);
+            return;
+        }
+
+        dashboards.forEach(dashboard => {
+            const item = document.createElement('div');
+            item.className = 'custom-dropdown-item';
+            item.setAttribute('role', 'option');
+            item.setAttribute('data-dashboard-id', dashboard.id);
+            
+            if (dashboard.id === this.activeDashboardId) {
+                item.classList.add('selected');
+                item.setAttribute('aria-selected', 'true');
+            } else {
+                item.setAttribute('aria-selected', 'false');
+            }
+
+            // Add icon
+            const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            icon.classList.add('item-icon');
+            icon.setAttribute('viewBox', '0 0 16 16');
+            icon.setAttribute('fill', 'currentColor');
+            icon.innerHTML = '<path fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z"></path>';
+
+            // Add text
+            const text = document.createElement('span');
+            text.className = 'item-text';
+            text.textContent = dashboard.name;
+
+            // Add checkmark for selected item
+            const checkmark = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            checkmark.classList.add('item-check');
+            checkmark.setAttribute('viewBox', '0 0 16 16');
+            checkmark.setAttribute('fill', 'currentColor');
+            checkmark.innerHTML = '<path fill-rule="evenodd" d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"></path>';
+
+            item.appendChild(icon);
+            item.appendChild(text);
+            item.appendChild(checkmark);
+
+            // Add click handler
+            item.addEventListener('click', () => {
+                this.selectDashboardFromDropdown(dashboard.id);
+            });
+
+            dropdownList.appendChild(item);
+        });
+    }
+
+    /**
+     * Select a dashboard from the custom dropdown
+     * @param {string} dashboardId - ID of the selected dashboard
+     */
+    selectDashboardFromDropdown(dashboardId) {
+        // Update selected state in the UI
+        const items = document.querySelectorAll('.custom-dropdown-item');
+        items.forEach(item => {
+            const itemId = item.getAttribute('data-dashboard-id');
+            if (itemId === dashboardId) {
+                item.classList.add('selected');
+                item.setAttribute('aria-selected', 'true');
+            } else {
+                item.classList.remove('selected');
+                item.setAttribute('aria-selected', 'false');
+            }
+        });
+
+        // Store the selected dashboard ID for later use
+        this.selectedDashboardId = dashboardId;
+    }
+
+    /**
+     * Filter dashboards based on search input
+     * @param {string} searchTerm - Search term to filter by
+     */
+    filterDashboards(searchTerm) {
+        if (!searchTerm || !searchTerm.trim()) {
+            // Show all dashboards
+            this.renderCustomDropdown(this.dashboards);
+            return;
+        }
+
+        const filtered = this.dashboards.filter(dashboard => 
+            dashboard.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+        this.renderCustomDropdown(filtered);
     }
 
     /**
@@ -647,10 +742,13 @@ class DashboardLoader {
         const closeButton = modal?.querySelector('.close-button');
         const cancelButton = document.getElementById('change-dashboard-cancel');
         const applyButton = document.getElementById('change-dashboard-apply');
-        const selectElement = document.getElementById('dashboard-select-modal');
+        const searchInput = document.getElementById('dashboard-search-input');
         const errorDiv = document.getElementById('change-dashboard-error');
 
         if (!button || !modal) return;
+
+        // Initialize selected dashboard ID
+        this.selectedDashboardId = this.activeDashboardId;
 
         // Open modal
         button.addEventListener('click', () => {
@@ -658,8 +756,17 @@ class DashboardLoader {
             errorDiv.style.display = 'none';
             errorDiv.textContent = '';
             
+            // Reset selected dashboard to current active
+            this.selectedDashboardId = this.activeDashboardId;
+            
             // Update dropdown options
             this.updateDashboardSelector();
+            
+            // Clear search input and focus it
+            if (searchInput) {
+                searchInput.value = '';
+                searchInput.focus();
+            }
             
             // Close side nav
             if (window.themeSwitcher) {
@@ -667,9 +774,19 @@ class DashboardLoader {
             }
         });
 
+        // Set up search input
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                this.filterDashboards(e.target.value);
+            });
+        }
+
         // Close modal
         const closeModal = () => {
             modal.style.display = 'none';
+            if (searchInput) {
+                searchInput.value = '';
+            }
         };
 
         closeButton?.addEventListener('click', closeModal);
@@ -684,7 +801,7 @@ class DashboardLoader {
 
         // Handle apply button
         applyButton?.addEventListener('click', async () => {
-            const newDashboardId = selectElement.value;
+            const newDashboardId = this.selectedDashboardId || this.activeDashboardId;
 
             // Don't do anything if same dashboard selected
             if (newDashboardId === this.activeDashboardId) {
