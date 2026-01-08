@@ -307,17 +307,17 @@ body {
     color: #768390;
 }
 
-.form-group .custom-dropdown-input {
+.form-group input[type="text"].custom-dropdown-input {
     background: #22272e;
     border-color: #444c56;
     color: #adbac7;
 }
 
-.form-group .custom-dropdown-input::placeholder {
+.form-group input[type="text"].custom-dropdown-input::placeholder {
     color: #768390;
 }
 
-.form-group .custom-dropdown-input:focus {
+.form-group input[type="text"].custom-dropdown-input:focus {
     border-color: #539bf5;
     background: #22272e;
 }
