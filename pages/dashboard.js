@@ -763,16 +763,18 @@ class DashboardLoader {
         const nameInput = document.getElementById('new-dashboard-input');
         const errorDiv = document.getElementById('manage-dashboards-error');
         
-        if (!button || !modal) return;
+        if (!modal) return;
         
-        // Open modal
-        button.addEventListener('click', () => {
-            modal.style.display = 'block';
-            nameInput.value = '';
-            errorDiv.style.display = 'none';
-            errorDiv.textContent = '';
-            this.renderDashboardsList();
-        });
+        // Open modal (only if button exists)
+        if (button) {
+            button.addEventListener('click', () => {
+                modal.style.display = 'block';
+                nameInput.value = '';
+                errorDiv.style.display = 'none';
+                errorDiv.textContent = '';
+                this.renderDashboardsList();
+            });
+        }
         
         // Close modal
         const closeModal = () => {
