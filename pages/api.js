@@ -317,6 +317,39 @@ class GitHubActionsAPI {
             throw error;
         }
     }
+
+    /**
+     * Reorder workflows in the active dashboard
+     * @param {Array<Object>} workflows - Array of workflow objects in desired order with owner, repo, workflow fields
+     * @returns {Promise<Object>} - Response object with success status
+     */
+    async reorderWorkflows(workflows) {
+        try {
+            const response = await fetch(`${this.functionUrl}/api/reorder-workflows`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ workflows })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Failed to reorder workflows: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (this.debug) {
+                console.log('Workflows reordered successfully:', data);
+            }
+
+            return data;
+        } catch (error) {
+            console.error('Failed to reorder workflows:', error);
+            throw error;
+        }
+    }
 }
 
 /**

@@ -9,6 +9,9 @@ class DashboardLoader {
         this.dashboards = [];
         this.activeDashboardId = null;
         this.selectedDashboardId = null;
+        this.isEditMode = false;
+        this.originalWorkflowOrder = null;
+        this.draggedElement = null;
     }
 
     /**
@@ -1082,6 +1085,368 @@ class DashboardLoader {
             alert(`Failed to delete dashboard: ${error.message}`);
         }
     }
+
+    /**
+     * Set up edit mode button and handlers
+     */
+    setupEditModeButton() {
+        const editModeButton = document.getElementById('edit-mode-button');
+        const cancelButton = document.getElementById('cancel-edit-button');
+        const saveButton = document.getElementById('save-edit-button');
+
+        if (!editModeButton) return;
+
+        editModeButton.addEventListener('click', () => {
+            this.enterEditMode();
+        });
+
+        if (cancelButton) {
+            cancelButton.addEventListener('click', () => {
+                this.cancelEditMode();
+            });
+        }
+
+        if (saveButton) {
+            saveButton.addEventListener('click', async () => {
+                await this.saveEditMode();
+            });
+        }
+    }
+
+    /**
+     * Enter edit mode
+     */
+    enterEditMode() {
+        this.isEditMode = true;
+        
+        // Store original order for cancel functionality
+        this.originalWorkflowOrder = this.captureCurrentOrder();
+        
+        // Show edit mode banner
+        const banner = document.getElementById('edit-mode-banner');
+        if (banner) {
+            banner.style.display = 'flex';
+        }
+        
+        // Add edit mode class to body
+        document.body.classList.add('edit-mode');
+        
+        // Make all workflow cards draggable
+        this.enableDragAndDrop();
+        
+        console.log('Entered edit mode');
+    }
+
+    /**
+     * Cancel edit mode and revert to original order
+     */
+    cancelEditMode() {
+        if (!this.isEditMode) return;
+
+        this.isEditMode = false;
+        
+        // Hide edit mode banner
+        const banner = document.getElementById('edit-mode-banner');
+        if (banner) {
+            banner.style.display = 'none';
+        }
+        
+        // Remove edit mode class from body
+        document.body.classList.remove('edit-mode');
+        
+        // Revert to original order
+        if (this.originalWorkflowOrder) {
+            this.restoreOrder(this.originalWorkflowOrder);
+            this.originalWorkflowOrder = null;
+        }
+        
+        // Disable drag and drop
+        this.disableDragAndDrop();
+        
+        console.log('Cancelled edit mode');
+    }
+
+    /**
+     * Save edit mode and persist the new order
+     */
+    async saveEditMode() {
+        if (!this.isEditMode) return;
+
+        const saveButton = document.getElementById('save-edit-button');
+        if (saveButton) {
+            saveButton.disabled = true;
+            saveButton.textContent = 'Saving...';
+        }
+
+        try {
+            // Get current order from DOM
+            const newOrder = this.captureCurrentOrder();
+            
+            // Build workflows array for API call
+            const workflowsToSave = [];
+            Object.values(newOrder).forEach(repoWorkflows => {
+                workflowsToSave.push(...repoWorkflows);
+            });
+
+            // Call API to save order
+            await this.api.reorderWorkflows(workflowsToSave);
+
+            // Exit edit mode
+            this.isEditMode = false;
+            
+            // Hide edit mode banner
+            const banner = document.getElementById('edit-mode-banner');
+            if (banner) {
+                banner.style.display = 'none';
+            }
+            
+            // Remove edit mode class from body
+            document.body.classList.remove('edit-mode');
+            
+            // Disable drag and drop
+            this.disableDragAndDrop();
+            
+            this.originalWorkflowOrder = null;
+            
+            console.log('Saved workflow order successfully');
+        } catch (error) {
+            console.error('Failed to save workflow order:', error);
+            alert(`Failed to save workflow order: ${error.message}`);
+        } finally {
+            if (saveButton) {
+                saveButton.disabled = false;
+                saveButton.textContent = 'Save Order';
+            }
+        }
+    }
+
+    /**
+     * Capture current workflow order from DOM
+     * @returns {Object} Map of repo keys to ordered workflow arrays
+     */
+    captureCurrentOrder() {
+        const order = {};
+        const container = document.querySelector('.workflow-grids-container');
+        if (!container) return order;
+
+        const sections = container.querySelectorAll('.repo-section');
+        sections.forEach(section => {
+            const repoKey = section.getAttribute('data-repo-key');
+            const grid = section.querySelector('.workflow-grid');
+            if (!grid) return;
+
+            const cards = grid.querySelectorAll('.workflow-item');
+            const workflows = [];
+            
+            cards.forEach(card => {
+                const key = card.getAttribute('data-workflow-key');
+                if (key) {
+                    const [owner, repo, workflow] = key.split('/');
+                    const label = card.querySelector('.workflow-label')?.textContent || '';
+                    workflows.push({ owner, repo, workflow, label });
+                }
+            });
+
+            if (workflows.length > 0) {
+                order[repoKey] = workflows;
+            }
+        });
+
+        return order;
+    }
+
+    /**
+     * Restore workflow order in DOM
+     * @param {Object} order - Map of repo keys to ordered workflow arrays
+     */
+    restoreOrder(order) {
+        const container = document.querySelector('.workflow-grids-container');
+        if (!container) return;
+
+        Object.entries(order).forEach(([repoKey, workflows]) => {
+            const section = container.querySelector(`.repo-section[data-repo-key="${repoKey}"]`);
+            if (!section) return;
+
+            const grid = section.querySelector('.workflow-grid');
+            if (!grid) return;
+
+            // Get all cards
+            const cardsMap = new Map();
+            const cards = grid.querySelectorAll('.workflow-item');
+            cards.forEach(card => {
+                const key = card.getAttribute('data-workflow-key');
+                if (key) {
+                    cardsMap.set(key, card);
+                }
+            });
+
+            // Reorder cards
+            workflows.forEach(workflow => {
+                const key = `${workflow.owner}/${workflow.repo}/${workflow.workflow}`;
+                const card = cardsMap.get(key);
+                if (card) {
+                    grid.appendChild(card);
+                }
+            });
+        });
+    }
+
+    /**
+     * Enable drag and drop for all workflow cards
+     */
+    enableDragAndDrop() {
+        const container = document.querySelector('.workflow-grids-container');
+        if (!container) return;
+
+        const cards = container.querySelectorAll('.workflow-item');
+        cards.forEach(card => {
+            card.setAttribute('draggable', 'true');
+            card.addEventListener('dragstart', this.handleDragStart.bind(this));
+            card.addEventListener('dragend', this.handleDragEnd.bind(this));
+            card.addEventListener('dragover', this.handleDragOver.bind(this));
+            card.addEventListener('drop', this.handleDrop.bind(this));
+            card.addEventListener('dragleave', this.handleDragLeave.bind(this));
+        });
+    }
+
+    /**
+     * Disable drag and drop for all workflow cards
+     */
+    disableDragAndDrop() {
+        const container = document.querySelector('.workflow-grids-container');
+        if (!container) return;
+
+        const cards = container.querySelectorAll('.workflow-item');
+        cards.forEach(card => {
+            card.removeAttribute('draggable');
+            card.removeEventListener('dragstart', this.handleDragStart.bind(this));
+            card.removeEventListener('dragend', this.handleDragEnd.bind(this));
+            card.removeEventListener('dragover', this.handleDragOver.bind(this));
+            card.removeEventListener('drop', this.handleDrop.bind(this));
+            card.removeEventListener('dragleave', this.handleDragLeave.bind(this));
+        });
+    }
+
+    /**
+     * Handle drag start event
+     */
+    handleDragStart(e) {
+        this.draggedElement = e.currentTarget;
+        e.currentTarget.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/html', e.currentTarget.innerHTML);
+    }
+
+    /**
+     * Handle drag end event
+     */
+    handleDragEnd(e) {
+        e.currentTarget.classList.remove('dragging');
+        
+        // Remove drag-over class from all cards
+        const container = document.querySelector('.workflow-grids-container');
+        if (container) {
+            const cards = container.querySelectorAll('.workflow-item');
+            cards.forEach(card => card.classList.remove('drag-over'));
+        }
+        
+        this.draggedElement = null;
+    }
+
+    /**
+     * Handle drag over event
+     */
+    handleDragOver(e) {
+        if (e.preventDefault) {
+            e.preventDefault();
+        }
+        
+        e.dataTransfer.dropEffect = 'move';
+        
+        const targetCard = e.currentTarget;
+        const draggedCard = this.draggedElement;
+        
+        if (!draggedCard || draggedCard === targetCard) {
+            return;
+        }
+        
+        // Check if both cards are in the same repo section
+        const draggedRepoKey = this.getRepoKeyForCard(draggedCard);
+        const targetRepoKey = this.getRepoKeyForCard(targetCard);
+        
+        if (draggedRepoKey !== targetRepoKey) {
+            // Don't allow drop across different repos
+            e.dataTransfer.dropEffect = 'none';
+            return;
+        }
+        
+        targetCard.classList.add('drag-over');
+        
+        return false;
+    }
+
+    /**
+     * Handle drag leave event
+     */
+    handleDragLeave(e) {
+        e.currentTarget.classList.remove('drag-over');
+    }
+
+    /**
+     * Handle drop event
+     */
+    handleDrop(e) {
+        if (e.stopPropagation) {
+            e.stopPropagation();
+        }
+        
+        e.preventDefault();
+        
+        const targetCard = e.currentTarget;
+        const draggedCard = this.draggedElement;
+        
+        if (!draggedCard || draggedCard === targetCard) {
+            return false;
+        }
+        
+        // Check if both cards are in the same repo section
+        const draggedRepoKey = this.getRepoKeyForCard(draggedCard);
+        const targetRepoKey = this.getRepoKeyForCard(targetCard);
+        
+        if (draggedRepoKey !== targetRepoKey) {
+            // Don't allow drop across different repos
+            return false;
+        }
+        
+        // Get the parent grid
+        const grid = targetCard.parentNode;
+        
+        // Determine where to insert the dragged card
+        const targetIndex = Array.from(grid.children).indexOf(targetCard);
+        const draggedIndex = Array.from(grid.children).indexOf(draggedCard);
+        
+        if (draggedIndex < targetIndex) {
+            // Insert after target
+            grid.insertBefore(draggedCard, targetCard.nextSibling);
+        } else {
+            // Insert before target
+            grid.insertBefore(draggedCard, targetCard);
+        }
+        
+        targetCard.classList.remove('drag-over');
+        
+        return false;
+    }
+
+    /**
+     * Get the repo key for a workflow card
+     * @param {HTMLElement} card - Workflow card element
+     * @returns {string} - Repo key (owner/repo)
+     */
+    getRepoKeyForCard(card) {
+        const section = card.closest('.repo-section');
+        return section ? section.getAttribute('data-repo-key') : '';
+    }
 }
 
 // Global dashboard instance for console access and testing
@@ -1111,6 +1476,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Set up add workflow button and modal (always available)
         dashboard.setupAddWorkflowButton();
+        
+        // Set up edit mode button and handlers
+        dashboard.setupEditModeButton();
         
         // Set up dashboard navigation and management
         dashboard.setupChangeDashboardModal();

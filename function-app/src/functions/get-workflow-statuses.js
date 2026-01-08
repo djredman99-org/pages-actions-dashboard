@@ -139,6 +139,13 @@ app.http('get-workflow-statuses', {
 
             const workflows = activeDashboard.workflows || [];
 
+            // Sort workflows by order field (if present)
+            workflows.sort((a, b) => {
+                const orderA = typeof a.order === 'number' ? a.order : Number.MAX_SAFE_INTEGER;
+                const orderB = typeof b.order === 'number' ? b.order : Number.MAX_SAFE_INTEGER;
+                return orderA - orderB;
+            });
+
             // Validate workflow structure
             const validWorkflows = workflows.filter(workflow => {
                 if (!workflow || typeof workflow !== 'object') {
@@ -241,6 +248,7 @@ app.http('get-workflow-statuses', {
                         repo: workflow.repo,
                         workflow: workflow.workflow,
                         label: workflow.label,
+                        order: workflow.order,
                         ...status
                     });
                 });
