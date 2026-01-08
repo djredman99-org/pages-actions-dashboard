@@ -42,6 +42,13 @@ body {
     text-align: center;
 }
 
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-left: auto;
+}
+
 .nav-toggle-button {
     width: 32px;
     height: 32px;
@@ -285,7 +292,6 @@ body {
     align-items: center;
     gap: 8px;
     font-size: 14px;
-    margin-left: auto;
 }
 
 .refresh-button-header {
