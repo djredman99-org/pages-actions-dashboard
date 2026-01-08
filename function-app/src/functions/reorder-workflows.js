@@ -72,8 +72,7 @@ app.http('reorder-workflows', {
             );
 
             // Find the active dashboard
-            const activeDashboard = config.dashboards?.find(d => d.id === config.activeDashboardId) 
-                || config.dashboards?.[0];
+            const activeDashboard = config.dashboards?.find(d => d.id === config.activeDashboardId);
 
             if (!activeDashboard) {
                 return {
@@ -98,7 +97,7 @@ app.http('reorder-workflows', {
                 const existingWorkflow = existingWorkflowsMap.get(key);
                 
                 if (!existingWorkflow) {
-                    throw new Error(`Workflow not found: ${key}`);
+                    throw new Error(`Workflow not found: ${key}. This may indicate the workflow was removed or the client state is outdated.`);
                 }
 
                 // Return workflow with explicit order field

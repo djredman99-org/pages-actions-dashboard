@@ -1339,6 +1339,9 @@ class DashboardLoader {
                 card.removeEventListener('dragover', card._dragHandlers.dragover);
                 card.removeEventListener('drop', card._dragHandlers.drop);
                 card.removeEventListener('dragleave', card._dragHandlers.dragleave);
+                
+                // Clean up handler references to prevent memory leaks
+                delete card._dragHandlers;
             }
         });
     }
