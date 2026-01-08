@@ -375,3 +375,32 @@ body {
 .custom-dropdown-empty {
     color: #59636e;
 }
+
+/* Edit mode banner styles */
+.edit-mode-banner {
+    background: #ddf4ff;
+    border-color: #0969da;
+    color: #1f2328;
+}
+
+.edit-mode-button-secondary {
+    background: #f6f8fa;
+    border-color: #d0d7de;
+    color: #1f2328;
+}
+
+.edit-mode-button-secondary:hover:not(:disabled) {
+    background: #eaeef2;
+    border-color: #818b98;
+}
+
+.edit-mode-button-primary {
+    background: #1a7f37;
+    border-color: #1a7f37;
+    color: #ffffff;
+}
+
+.edit-mode-button-primary:hover:not(:disabled) {
+    background: #2da44e;
+    border-color: #2da44e;
+}
