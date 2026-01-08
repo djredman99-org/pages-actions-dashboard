@@ -374,9 +374,9 @@ class DashboardLoader {
         messageDiv.className = 'config-error';
         messageDiv.innerHTML = `
             <h3>ℹ️ No Workflows Configured</h3>
-            <p>No workflows are currently configured in Azure Storage.</p>
-            <p>To add workflows, upload a workflows.json file to the Azure Storage container.</p>
-            <p>See the README and infrastructure documentation for instructions.</p>
+            <p>No workflows are currently configured for this dashboard.</p>
+            <p>To get started, click the menu button (☰) at the top left, then click "Manage Dashboards" to create and configure your dashboards.</p>
+            <p>See the README and infrastructure documentation for more information.</p>
         `;
         container.appendChild(messageDiv);
     }
