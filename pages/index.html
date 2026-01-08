@@ -152,10 +152,25 @@
             <div class="modal-body">
                 <div class="setting-section">
                     <div class="form-group">
-                        <label for="dashboard-select-modal">Select Dashboard</label>
-                        <select id="dashboard-select-modal" aria-label="Select dashboard">
-                            <!-- Options populated dynamically -->
-                        </select>
+                        <label for="dashboard-search-input">Select Dashboard</label>
+                        <div class="custom-dropdown" id="dashboard-dropdown">
+                            <div class="custom-dropdown-search">
+                                <svg class="search-icon" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill-rule="evenodd" d="M11.5 7a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zm-.82 4.74a6 6 0 111.06-1.06l3.04 3.04a.75.75 0 11-1.06 1.06l-3.04-3.04z"></path>
+                                </svg>
+                                <input 
+                                    type="text" 
+                                    id="dashboard-search-input" 
+                                    class="custom-dropdown-input"
+                                    placeholder="Search dashboards"
+                                    autocomplete="off"
+                                    aria-label="Search dashboards"
+                                >
+                            </div>
+                            <div class="custom-dropdown-list" id="dashboard-dropdown-list" role="listbox">
+                                <!-- Options populated dynamically -->
+                            </div>
+                        </div>
                     </div>
                     <div id="change-dashboard-error" class="form-error" style="display: none;"></div>
                     <div class="modal-actions">
