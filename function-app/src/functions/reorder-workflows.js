@@ -97,7 +97,7 @@ app.http('reorder-workflows', {
                 const existingWorkflow = existingWorkflowsMap.get(key);
                 
                 if (!existingWorkflow) {
-                    throw new Error(`Workflow not found: ${key}. This may indicate the workflow was removed or the client state is outdated.`);
+                    throw new Error(`Workflow configuration has changed. Please refresh and try again.`);
                 }
 
                 // Return workflow with explicit order field

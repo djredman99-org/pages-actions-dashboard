@@ -1134,7 +1134,9 @@ class DashboardLoader {
         // Make all workflow cards draggable
         this.enableDragAndDrop();
         
-        console.log('Entered edit mode');
+        if (this.api.debug) {
+            console.log('Entered edit mode');
+        }
     }
 
     /**
@@ -1163,7 +1165,9 @@ class DashboardLoader {
         // Disable drag and drop
         this.disableDragAndDrop();
         
-        console.log('Cancelled edit mode');
+        if (this.api.debug) {
+            console.log('Cancelled edit mode');
+        }
     }
 
     /**
@@ -1176,6 +1180,7 @@ class DashboardLoader {
         if (saveButton) {
             saveButton.disabled = true;
             saveButton.textContent = 'Saving...';
+            saveButton.setAttribute('aria-label', 'Saving workflow order, please wait');
         }
 
         try {
@@ -1208,7 +1213,9 @@ class DashboardLoader {
             
             this.originalWorkflowOrder = null;
             
-            console.log('Saved workflow order successfully');
+            if (this.api.debug) {
+                console.log('Saved workflow order successfully');
+            }
         } catch (error) {
             console.error('Failed to save workflow order:', error);
             alert(`Failed to save workflow order: ${error.message}`);
@@ -1216,6 +1223,7 @@ class DashboardLoader {
             if (saveButton) {
                 saveButton.disabled = false;
                 saveButton.textContent = 'Save Order';
+                saveButton.setAttribute('aria-label', 'Save workflow order');
             }
         }
     }
