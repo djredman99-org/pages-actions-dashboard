@@ -176,6 +176,17 @@ body {
     border-color: #768390;
 }
 
+.edit-mode-button {
+    background: transparent;
+    border-color: #444c56;
+    color: #adbac7;
+}
+
+.edit-mode-button:hover {
+    background: #373e47;
+    border-color: #768390;
+}
+
 /* Modal form styles */
 .modal-description {
     color: #768390;
