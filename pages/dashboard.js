@@ -8,6 +8,7 @@ class DashboardLoader {
         this.workflowManager = workflowManager;
         this.dashboards = [];
         this.activeDashboardId = null;
+        this.selectedDashboardId = null;
     }
 
     /**
@@ -691,7 +692,10 @@ class DashboardLoader {
      */
     selectDashboardFromDropdown(dashboardId) {
         // Update selected state in the UI
-        const items = document.querySelectorAll('.custom-dropdown-item');
+        const dropdownList = document.getElementById('dashboard-dropdown-list');
+        if (!dropdownList) return;
+        
+        const items = dropdownList.querySelectorAll('.custom-dropdown-item');
         items.forEach(item => {
             const itemId = item.getAttribute('data-dashboard-id');
             if (itemId === dashboardId) {
@@ -718,8 +722,9 @@ class DashboardLoader {
             return;
         }
 
+        const searchLower = searchTerm.toLowerCase();
         const filtered = this.dashboards.filter(dashboard => 
-            dashboard.name.toLowerCase().includes(searchTerm.toLowerCase())
+            dashboard.name.toLowerCase().includes(searchLower)
         );
 
         this.renderCustomDropdown(filtered);
