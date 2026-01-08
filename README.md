@@ -7,6 +7,7 @@ A GitHub Pages site that serves as a centralized dashboard for monitoring GitHub
 - **Multiple Dashboards**: Organize workflows into separate dashboards and switch between them
 - **Multi-Repository Support**: Monitor workflows from any GitHub repository (public, private, or internal)
 - **Dynamic Workflow Management**: Add and remove workflows via dashboard UI or API without redeployment
+- **Workflow Reordering**: Drag-and-drop to reorder workflows within each repository in edit mode
 - **Azure Function Backend**: Secure serverless backend handles GitHub API calls
 - **Centralized Configuration**: Workflow configurations stored in Azure Storage with dashboard-level GUID identifiers
 - **Dynamic Status Indicators**: Real-time workflow status with color-coded badges
@@ -63,8 +64,11 @@ The dashboard now supports multiple dashboards, allowing you to organize workflo
 
 Workflows are stored in Azure Storage (`workflows.json`). Each dashboard has its own set of workflows with owner, repo, workflow file, and display label.
 
-You can manage workflows in four ways:
-1. **Dashboard UI**: Click the "Add Workflow" button to add workflows, and click the X button on workflow cards to remove them
+You can manage workflows in multiple ways:
+1. **Dashboard UI**: 
+   - Click the "Add Workflow" button to add workflows
+   - Click the X button on workflow cards to remove them
+   - Click the "Edit Mode" button to reorder workflows via drag-and-drop
 2. **Manually**: Upload `workflows.json` to Azure Storage
 3. **API**: Use the workflow management Azure Functions for dynamic management
 4. **Automated**: Integrate workflow management into your own tools
