@@ -33,6 +33,7 @@ body {
     display: flex;
     align-items: center;
     gap: 16px;
+    flex: 1;
 }
 
 .header-center {
@@ -279,6 +280,58 @@ body {
     padding: 24px;
 }
 
+/* Refresh status in header */
+.refresh-status-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    margin-left: auto;
+}
+
+.refresh-button-header {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+    padding: 0;
+}
+
+.refresh-button-header:hover:not(:disabled) {
+    background: rgba(175, 184, 193, 0.2);
+}
+
+.refresh-button-header:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.refresh-button-header:focus-visible {
+    outline: 2px solid;
+    outline-offset: 2px;
+}
+
+.refresh-button-header .refresh-icon {
+    width: 20px;
+    height: 20px;
+    display: block;
+}
+
+.refresh-status-header.refreshing .refresh-icon {
+    animation: spin 1s linear infinite;
+}
+
+.refresh-status-header .refresh-status-text {
+    font-size: 14px;
+    white-space: nowrap;
+}
+
 .refresh-status {
     margin-bottom: 16px;
     padding: 12px 16px;
@@ -358,6 +411,7 @@ body {
     align-items: center;
     gap: 4px;
     border: 1px solid;
+    background: transparent;
     padding: 5px 16px;
     border-radius: 6px;
     font-size: 14px;

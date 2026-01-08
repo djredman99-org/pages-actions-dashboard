@@ -166,14 +166,14 @@ body {
 }
 
 .add-workflow-button {
-    background: #347d39;
-    border-color: #347d39;
-    color: #ffffff;
+    background: transparent;
+    border-color: #444c56;
+    color: #adbac7;
 }
 
 .add-workflow-button:hover {
-    background: #46954a;
-    border-color: #46954a;
+    background: #373e47;
+    border-color: #768390;
 }
 
 /* Modal form styles */
@@ -233,6 +233,23 @@ body {
 .modal-button-primary:hover:not(:disabled) {
     background: #46954a;
     border-color: #46954a;
+}
+
+/* Refresh button in header */
+.refresh-button-header {
+    color: #adbac7;
+}
+
+.refresh-button-header:hover:not(:disabled) {
+    background: #373e47;
+}
+
+.refresh-status-header .refresh-status-text {
+    color: #768390;
+}
+
+.refresh-status-header.refreshing .refresh-status-text {
+    color: #adbac7;
 }
 
 .repo-header {

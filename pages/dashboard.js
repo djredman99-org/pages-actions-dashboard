@@ -129,7 +129,7 @@ class DashboardLoader {
         
         if (isRefreshing) {
             refreshStatus.classList.add('refreshing');
-            refreshStatusText.textContent = 'Refreshing workflow statuses...';
+            refreshStatusText.textContent = 'Refreshing...';
             // Disable refresh button during refresh
             if (refreshButton) {
                 refreshButton.disabled = true;
