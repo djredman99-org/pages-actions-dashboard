@@ -379,7 +379,7 @@ class DashboardLoader {
         messageDiv.innerHTML = `
             <h3>ℹ️ No Workflows Configured</h3>
             <p>No workflows are currently configured for this dashboard.</p>
-            <p>To get started, click the + Add Workflows button at the top right to configure your dashboards.</p>
+            <p>To get started, click the (+ Add Workflow) button at the top right to configure your dashboards.</p>
             <p>See the README documentation for more information.</p>
         `;
         container.appendChild(messageDiv);
