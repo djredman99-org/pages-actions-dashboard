@@ -1,0 +1,35 @@
+{
+  "dashboards": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "Main Dashboard",
+      "workflows": [
+        {
+          "owner": "my-org",
+          "repo": "my-repo-1",
+          "workflow": "ci-build.yml",
+          "label": "CI Build"
+        },
+        {
+          "owner": "my-org",
+          "repo": "my-repo-1",
+          "workflow": "unit-tests.yml",
+          "label": "Unit Tests"
+        },
+        {
+          "owner": "my-org",
+          "repo": "my-repo-2",
+          "workflow": "deploy-production.yml",
+          "label": "Deploy Production"
+        },
+        {
+          "owner": "my-org",
+          "repo": "my-repo-2",
+          "workflow": "code-quality.yml",
+          "label": "Code Quality"
+        }
+      ]
+    }
+  ],
+  "activeDashboardId": "550e8400-e29b-41d4-a716-446655440000"
+}
