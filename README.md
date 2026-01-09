@@ -49,7 +49,7 @@ The dashboard uses a secure Azure Function backend:
 1. AZURE_CREDENTIALS - Service Principal credentials in json format to deploy Azure Infrastructure
 2. AZURE_FUNCTION_URL - Used by the Pages application
 3. FUNCTION_APP_NAME - Used to set the name of the Function App during the deployment
-4. GH_APP_ID - The GitHub App's App ID 
+4. GH_APP_ID - The GitHub App's App ID
 5. GH_APP_PRIVATE_KEY - The GitHub App's private key
 
 Your dashboard will be available at `https://{your-username}.github.io/pages-actions-dashboard/`
