@@ -1018,7 +1018,13 @@ class DashboardLoader {
         createButton.textContent = 'Creating...';
         
         try {
-            await this.api.createDashboard(name.trim(), false);
+            await this.api.createDashboard(name.trim(), true);
+            
+            // Clear the container before reloading to ensure clean UI state
+            const container = document.querySelector('.workflow-grids-container');
+            if (container) {
+                container.innerHTML = '';
+            }
             
             // Reload to get updated dashboards list
             await this.loadWorkflows();
