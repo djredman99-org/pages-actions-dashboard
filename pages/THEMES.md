@@ -13,7 +13,7 @@ The dashboard now uses a modular CSS architecture that separates styling from HT
 pages/
 ├── index.html              # Main dashboard with theme switcher
 ├── styles-base.css         # Common styles shared across all themes
-├── theme-default.css       # Default purple gradient theme
+├── theme-default.css       # Default GitHub Dark Dimmed theme
 ├── theme-light.css         # GitHub Primer light theme colors
 ├── theme-dark.css          # GitHub Primer dark theme colors
 └── theme-switcher.js       # Dynamic theme switching logic
@@ -21,10 +21,10 @@ pages/
 
 ## Available Themes
 
-### 1. Default Theme (Purple Gradient)
+### 1. Default Theme (GitHub Dark Dimmed)
 - **File**: `theme-default.css`
-- **Description**: Professional purple gradient background with bright, modern colors
-- **Best for**: Modern, eye-catching dashboards
+- **Description**: Dark theme with muted colors based on GitHub's Dark Dimmed color scheme
+- **Best for**: Reduced eye strain, professional appearance, familiar GitHub aesthetic
 
 ### 2. Light Theme (GitHub Primer)
 - **File**: `theme-light.css`

@@ -5,11 +5,31 @@ This document describes the color schemes available for the dashboard.
 ## Overview
 
 The dashboard includes three themes based on GitHub's official Primer design system:
-1. **Default Theme** - Professional purple gradient background with modern colors
+1. **Default Theme** - GitHub Dark Dimmed theme with muted colors and reduced eye strain
 2. **Light Theme** - Clean, professional light mode
-3. **Dark Theme** - Modern dark mode with reduced eye strain
+3. **Dark Theme** - Modern dark mode with deep background colors
 
-The Light and Dark themes use authentic GitHub Primer colors to provide a familiar, GitHub-native experience. Users can switch between themes using the settings button in the dashboard.
+All three themes use authentic GitHub Primer colors to provide a familiar, GitHub-native experience. Users can switch between themes using the settings button in the dashboard.
+
+## Default Theme
+
+**File:** `pages/theme-default.css`
+
+### Color Palette
+
+| Element | Color | Hex Code | Description |
+|---------|-------|----------|-------------|
+| Background | Dark Gray-Blue | `#22272e` | Muted dark background |
+| Container/Cards | Darker Gray-Blue | `#2d333b` | Workflow cards and containers |
+| Text (Primary) | Light Gray | `#adbac7` | Main text color |
+| Text (Secondary) | Muted Gray | `#768390` | Subtitles and secondary text |
+| Borders (Default) | Gray | `#444c56` | Default borders |
+| Borders (Muted) | Dark Gray | `#373e47` | Subtle borders |
+| Borders (Hover) | Lighter Gray | `#768390` | Interactive hover states |
+| Primary Button | Green | `#347d39` | Primary action button |
+| Button Hover | Lighter Green | `#46954a` | Button hover state |
+| Links | Blue | `#539bf5` | Interactive links |
+| Link Hover | Light Blue | `#6cb6ff` | Link hover state |
 
 ## Light Theme
 

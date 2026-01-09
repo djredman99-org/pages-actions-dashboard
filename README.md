@@ -88,7 +88,7 @@ You can manage workflows in multiple ways:
 
 ### Themes
 
-The dashboard supports three themes: Default (purple gradient), Light (GitHub Primer), and Dark (GitHub Primer). Use the settings button (⚙️) to switch themes.
+The dashboard supports three themes: Default (GitHub Dark Dimmed), Light (GitHub Primer), and Dark (GitHub Primer). Use the settings button (⚙️) to switch themes.
 
 📖 **Theme Details**: See [COLOR_SCHEMES.md](COLOR_SCHEMES.md) for color palettes and [pages/THEMES.md](pages/THEMES.md) for customization.
 
