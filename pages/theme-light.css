@@ -250,10 +250,12 @@ body {
 /* Refresh button in header */
 .refresh-button-header {
     color: #1f2328;
+    border-color: #d0d7de;
 }
 
 .refresh-button-header:hover:not(:disabled) {
     background: #f6f8fa;
+    border-color: #818b98;
 }
 
 .refresh-status-header .refresh-status-text {
