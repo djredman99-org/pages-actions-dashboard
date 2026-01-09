@@ -457,6 +457,7 @@ class DashboardLoader {
         const closeButton = modal?.querySelector('.close-button');
         const cancelButton = document.getElementById('add-workflow-cancel');
         const applyButton = document.getElementById('add-workflow-apply');
+        const repoInput = document.getElementById('repo-input');
         const workflowInput = document.getElementById('workflow-input');
         const labelInput = document.getElementById('workflow-label-input');
         const errorDiv = document.getElementById('add-workflow-error');
@@ -466,11 +467,12 @@ class DashboardLoader {
         // Open modal
         addButton.addEventListener('click', () => {
             modal.style.display = 'block';
+            repoInput.value = '';
             workflowInput.value = '';
             labelInput.value = '';
             errorDiv.style.display = 'none';
             errorDiv.textContent = '';
-            workflowInput.focus();
+            repoInput.focus();
         });
 
         // Close modal
@@ -490,64 +492,80 @@ class DashboardLoader {
 
         // Handle apply button
         applyButton?.addEventListener('click', async () => {
-            await this.handleAddWorkflow(workflowInput.value, labelInput.value, errorDiv, applyButton, closeModal);
+            await this.handleAddWorkflow(repoInput.value, workflowInput.value, labelInput.value, errorDiv, applyButton, closeModal);
         });
 
         // Handle Enter key in inputs
         const handleEnter = async (e) => {
             if (e.key === 'Enter') {
-                await this.handleAddWorkflow(workflowInput.value, labelInput.value, errorDiv, applyButton, closeModal);
+                await this.handleAddWorkflow(repoInput.value, workflowInput.value, labelInput.value, errorDiv, applyButton, closeModal);
             }
         };
+        repoInput?.addEventListener('keypress', handleEnter);
         workflowInput?.addEventListener('keypress', handleEnter);
         labelInput?.addEventListener('keypress', handleEnter);
     }
 
     /**
      * Handle adding a workflow
-     * @param {string} workflowPath - Workflow path in format owner/repo/workflow.yml
+     * @param {string} repoPath - Repository path in format owner/repo
+     * @param {string} workflow - Workflow file name or ID
      * @param {string} label - Display label for workflow
      * @param {HTMLElement} errorDiv - Error message container
      * @param {HTMLElement} applyButton - Apply button element
      * @param {Function} closeModal - Function to close the modal
      */
-    async handleAddWorkflow(workflowPath, label, errorDiv, applyButton, closeModal) {
+    async handleAddWorkflow(repoPath, workflow, label, errorDiv, applyButton, closeModal) {
         // Clear previous error
         errorDiv.style.display = 'none';
         errorDiv.textContent = '';
 
-        // Validate input
-        if (!workflowPath || !workflowPath.trim()) {
-            errorDiv.textContent = 'Please enter a workflow path';
+        // Validate repo input
+        if (!repoPath || !repoPath.trim()) {
+            errorDiv.textContent = 'Please enter a repository';
             errorDiv.style.display = 'block';
             return;
         }
 
+        // Parse repo path (owner/repo)
+        const repoParts = repoPath.trim().split('/');
+        if (repoParts.length !== 2) {
+            errorDiv.textContent = 'Invalid format. Expected: owner/repo';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        const [owner, repo] = repoParts;
+
+        if (!owner || !repo) {
+            errorDiv.textContent = 'Both owner and repo are required';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        // Validate workflow input
+        if (!workflow || !workflow.trim()) {
+            errorDiv.textContent = 'Please enter a workflow file or ID';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        const workflowValue = workflow.trim();
+
+        // Validate workflow: if it looks like a file, check extension
+        // If it's numeric, accept it as an ID
+        const isNumeric = /^\d+$/.test(workflowValue);
+        const hasYamlExtension = workflowValue.endsWith('.yml') || workflowValue.endsWith('.yaml');
+
+        if (!isNumeric && !hasYamlExtension) {
+            errorDiv.textContent = 'Workflow must be a .yml/.yaml file or a numeric ID';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        // Validate label
         if (!label || !label.trim()) {
             errorDiv.textContent = 'Please enter a display label';
-            errorDiv.style.display = 'block';
-            return;
-        }
-
-        // Parse workflow path (owner/repo/workflow.yml)
-        const parts = workflowPath.trim().split('/');
-        if (parts.length !== 3) {
-            errorDiv.textContent = 'Invalid format. Expected: owner/repo/workflow.yml';
-            errorDiv.style.display = 'block';
-            return;
-        }
-
-        const [owner, repo, workflow] = parts;
-
-        if (!owner || !repo || !workflow) {
-            errorDiv.textContent = 'All parts (owner, repo, workflow) are required';
-            errorDiv.style.display = 'block';
-            return;
-        }
-
-        // Validate workflow file extension
-        if (!workflow.endsWith('.yml') && !workflow.endsWith('.yaml')) {
-            errorDiv.textContent = 'Workflow file must end with .yml or .yaml';
             errorDiv.style.display = 'block';
             return;
         }
@@ -558,7 +576,7 @@ class DashboardLoader {
 
         try {
             // Call API to add workflow
-            await this.api.addWorkflow(owner, repo, workflow, label.trim());
+            await this.api.addWorkflow(owner, repo, workflowValue, label.trim());
 
             // Close modal
             closeModal();
@@ -566,7 +584,7 @@ class DashboardLoader {
             // Reload workflows to show the new one
             await this.loadWorkflows();
 
-            console.log(`Successfully added workflow: ${owner}/${repo}/${workflow}`);
+            console.log(`Successfully added workflow: ${owner}/${repo}/${workflowValue}`);
         } catch (error) {
             console.error('Failed to add workflow:', error);
             errorDiv.textContent = error.message || 'Failed to add workflow. Please try again.';

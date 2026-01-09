@@ -33,9 +33,13 @@ function validateWorkflow(workflow) {
         return { isValid: false, error: 'workflow field is required and must be a string' };
     }
 
-    // Validate workflow filename has .yml or .yaml extension
-    if (!workflow.workflow.endsWith('.yml') && !workflow.workflow.endsWith('.yaml')) {
-        return { isValid: false, error: 'workflow must be a .yml or .yaml file' };
+    // Validate workflow: either a file with .yml/.yaml extension or a numeric ID
+    const workflowValue = workflow.workflow.trim();
+    const isNumeric = /^\d+$/.test(workflowValue);
+    const hasYamlExtension = workflowValue.endsWith('.yml') || workflowValue.endsWith('.yaml');
+
+    if (!isNumeric && !hasYamlExtension) {
+        return { isValid: false, error: 'workflow must be a .yml or .yaml file, or a numeric workflow ID' };
     }
 
     // Validate label field
@@ -48,7 +52,7 @@ function validateWorkflow(workflow) {
         isValid: true,
         owner: repoParts[0],
         repo: repoParts[1],
-        workflow: workflow.workflow,
+        workflow: workflowValue,
         label: workflow.label
     };
 }
@@ -59,10 +63,10 @@ function validateWorkflow(workflow) {
  * @param {string} privateKey - GitHub App private key
  * @param {string} owner - Repository owner
  * @param {string} repo - Repository name
- * @param {string} workflowFile - Workflow file name
+ * @param {string} workflowIdOrFile - Workflow file name or ID
  * @returns {Promise<Object>} Verification result with success, error, and statusCode
  */
-async function verifyWorkflowAccess(appId, privateKey, owner, repo, workflowFile) {
+async function verifyWorkflowAccess(appId, privateKey, owner, repo, workflowIdOrFile) {
     try {
         // Get all installations to find the one for this repo
         const installations = await getAppInstallations(appId, privateKey);
@@ -83,12 +87,13 @@ async function verifyWorkflowAccess(appId, privateKey, owner, repo, workflowFile
         // Create installation-specific client
         const octokit = await createInstallationClient(appId, privateKey, installation.id);
         
-        // Try to get the workflow file to verify it exists and we have access
+        // Try to get the workflow to verify it exists and we have access
+        // workflow_id can be either a file name or numeric ID
         try {
             await octokit.rest.actions.getWorkflow({
                 owner,
                 repo,
-                workflow_id: workflowFile
+                workflow_id: workflowIdOrFile
             });
             
             return { success: true };
@@ -97,7 +102,7 @@ async function verifyWorkflowAccess(appId, privateKey, owner, repo, workflowFile
                 return {
                     success: false,
                     statusCode: 404,
-                    error: 'Workflow not found in the specified repository'
+                    error: 'Workflow not found in the specified repository. Please verify the workflow file name or ID.'
                 };
             } else if (error.status === 403) {
                 return {
@@ -127,14 +132,14 @@ async function verifyWorkflowAccess(appId, privateKey, owner, repo, workflowFile
  * @param {Array} workflows - Existing workflows
  * @param {string} owner - Repository owner
  * @param {string} repo - Repository name
- * @param {string} workflowFile - Workflow file name
+ * @param {string} workflowIdOrFile - Workflow file name or ID
  * @returns {boolean} True if workflow exists
  */
-function workflowExists(workflows, owner, repo, workflowFile) {
+function workflowExists(workflows, owner, repo, workflowIdOrFile) {
     return workflows.some(w => 
         w.owner === owner && 
         w.repo === repo && 
-        w.workflow === workflowFile
+        w.workflow === workflowIdOrFile
     );
 }
 
@@ -205,7 +210,7 @@ app.http('add-workflow', {
             // Use validated and parsed values from validation
             const owner = validation.owner;
             const repo = validation.repo;
-            const workflowFile = validation.workflow;
+            const workflowIdOrFile = validation.workflow;
             const label = validation.label;
 
             // Get GitHub App credentials from Key Vault
@@ -229,7 +234,7 @@ app.http('add-workflow', {
 
             // Verify workflow exists and app has access
             context.log('Verifying workflow access');
-            const verification = await verifyWorkflowAccess(appId, privateKey, owner, repo, workflowFile);
+            const verification = await verifyWorkflowAccess(appId, privateKey, owner, repo, workflowIdOrFile);
             if (!verification.success) {
                 context.log('Workflow verification failed');
                 return {
@@ -266,7 +271,7 @@ app.http('add-workflow', {
             const workflows = activeDashboard.workflows || [];
 
             // Check if workflow already exists
-            if (workflowExists(workflows, owner, repo, workflowFile)) {
+            if (workflowExists(workflows, owner, repo, workflowIdOrFile)) {
                 context.log('Workflow already exists in configuration');
                 return {
                     status: 409,
@@ -281,7 +286,7 @@ app.http('add-workflow', {
             const newWorkflow = {
                 owner,
                 repo,
-                workflow: workflowFile,
+                workflow: workflowIdOrFile,
                 label
             };
 

@@ -120,17 +120,27 @@
             </div>
             <div class="modal-body">
                 <div class="setting-section">
-                    <p class="modal-description">Enter the workflow details in the format: <code>owner/repo/workflow-file.yml</code></p>
-                    <p class="modal-description">Example: <code>microsoft/vscode/ci.yml</code></p>
+                    <p class="modal-description">Enter the repository and workflow details</p>
+                    <p class="modal-description">Example: <code>microsoft/vscode</code> with workflow <code>ci.yml</code> or <code>12345</code></p>
                     <div class="form-group">
-                        <label for="workflow-input">Workflow Path</label>
+                        <label for="repo-input">Repository</label>
+                        <input 
+                            type="text" 
+                            id="repo-input" 
+                            placeholder="owner/repo"
+                            aria-describedby="repo-input-help"
+                        >
+                        <small id="repo-input-help" class="form-help">Format: owner/repo (e.g., microsoft/vscode)</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="workflow-input">Workflow File or ID</label>
                         <input 
                             type="text" 
                             id="workflow-input" 
-                            placeholder="owner/repo/workflow.yml"
+                            placeholder="workflow.yml or 12345"
                             aria-describedby="workflow-input-help"
                         >
-                        <small id="workflow-input-help" class="form-help">Format: owner/repo/workflow-file.yml</small>
+                        <small id="workflow-input-help" class="form-help">Workflow file name (e.g., ci.yml) or numeric workflow ID (e.g., 12345)</small>
                     </div>
                     <div class="form-group">
                         <label for="workflow-label-input">Display Label</label>
