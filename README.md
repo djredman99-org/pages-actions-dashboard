@@ -35,13 +35,22 @@ The dashboard uses a secure Azure Function backend:
 - Node.js 18+
 - GitHub App created and installed on your repositories
 
-**Deployment Steps**:
+**Deployment Process**: 
 1. Deploy Azure infrastructure (Function App, Key Vault, Storage)
 2. Upload GitHub App private key to Key Vault
 3. Deploy function app code
 4. Upload workflow configuration to Azure Storage
-5. Configure GitHub Pages with `AZURE_FUNCTION_URL` secret
-6. Push to deploy
+5. Configure the appropriate repository secrets
+6. Configure GitHub Pages
+
+**Note:** There are Actions Workflows that automate the deployment process for you
+
+**Required Repository Secrets**:
+1. AZURE_CREDENTIALS - Service Principal credentials in JSON format to deploy Azure Infrastructure
+2. AZURE_FUNCTION_URL - Used by the Pages application
+3. FUNCTION_APP_NAME - Used to set the name of the Function App during the deployment
+4. GH_APP_ID - The GitHub App's App ID
+5. GH_APP_PRIVATE_KEY - The GitHub App's private key
 
 Your dashboard will be available at `https://{your-username}.github.io/pages-actions-dashboard/`
 
