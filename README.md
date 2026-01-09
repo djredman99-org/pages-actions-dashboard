@@ -46,7 +46,7 @@ The dashboard uses a secure Azure Function backend:
 **Note:** There are Actions Workflows that automate the deployment process for you
 
 **Required Repository Secrets**:
-1. AZURE_CREDENTIALS - Service Principal credentials in json format to deploy Azure Infrastructure
+1. AZURE_CREDENTIALS - Service Principal credentials in JSON format to deploy Azure Infrastructure
 2. AZURE_FUNCTION_URL - Used by the Pages application
 3. FUNCTION_APP_NAME - Used to set the name of the Function App during the deployment
 4. GH_APP_ID - The GitHub App's App ID
