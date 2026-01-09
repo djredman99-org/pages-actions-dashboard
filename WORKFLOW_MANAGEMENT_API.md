@@ -11,6 +11,7 @@ The dashboard supports runtime management through Azure Functions:
 ### Workflow Management
 - `add-workflow`: Adds a new workflow to the active dashboard
 - `remove-workflow`: Removes an existing workflow from the active dashboard
+- `reorder-workflows`: Reorders workflows within the active dashboard
 
 ### Dashboard Management
 - `get-workflow-statuses`: Gets workflows from the active dashboard along with all dashboard metadata
@@ -24,7 +25,7 @@ These functions modify the `workflows.json` file stored in Azure Blob Storage, a
 ## Usage Options
 
 You can manage workflows and dashboards in multiple ways:
-1. **Dashboard UI** (Easiest): Use the built-in dashboard selector, "Manage" button, "Add Workflow" button, and remove buttons
+1. **Dashboard UI** (Easiest): Use the built-in dashboard selector, "Manage" button, "Add Workflow" button, "Edit Mode" button for reordering, and remove buttons
 2. **API** (This document): Direct API calls for programmatic management
 3. **Manual**: Upload `workflows.json` to Azure Storage
 
@@ -254,6 +255,134 @@ const response = await fetch('https://your-function-app.azurewebsites.net/api/re
   })
 });
 ```
+
+## Reordering Workflows
+
+### Endpoint
+
+```
+POST /api/reorder-workflows
+```
+
+### Request
+
+**Headers:**
+```
+Content-Type: application/json
+```
+
+**Body:**
+```json
+{
+  "workflows": [
+    {
+      "owner": "owner",
+      "repo": "repo",
+      "workflow": "first-workflow.yml"
+    },
+    {
+      "owner": "owner",
+      "repo": "repo",
+      "workflow": "second-workflow.yml"
+    }
+  ]
+}
+```
+
+**Field Descriptions:**
+- `workflows` (required): Array of workflow objects in the desired order
+- Each workflow must include `owner`, `repo`, and `workflow` fields
+- The array must contain all existing workflows in the active dashboard (no additions or removals)
+
+### Response
+
+**Success (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Reordered 5 workflows",
+  "dashboardId": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**Error (400 Bad Request):**
+```json
+{
+  "error": "Invalid reorder",
+  "message": "Workflow count mismatch. Reorder should include all existing workflows."
+}
+```
+
+**Error (404 Not Found):**
+```json
+{
+  "error": "Dashboard not found",
+  "message": "No active dashboard found"
+}
+```
+
+### Examples
+
+**Using curl:**
+```bash
+curl -X POST https://your-function-app.azurewebsites.net/api/reorder-workflows \
+  -H "Content-Type: application/json" \
+  -d '{
+    "workflows": [
+      {"owner": "facebook", "repo": "react", "workflow": "runtime_build_and_test.yml"},
+      {"owner": "facebook", "repo": "react", "workflow": "commit_artifacts.yml"}
+    ]
+  }'
+```
+
+**Using JavaScript (fetch):**
+```javascript
+const response = await fetch('https://your-function-app.azurewebsites.net/api/reorder-workflows', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    workflows: [
+      { owner: 'facebook', repo: 'react', workflow: 'runtime_build_and_test.yml' },
+      { owner: 'facebook', repo: 'react', workflow: 'commit_artifacts.yml' }
+    ]
+  })
+});
+
+const result = await response.json();
+console.log(result);
+```
+
+**Using PowerShell:**
+```powershell
+$body = @{
+    workflows = @(
+        @{
+            owner = "facebook"
+            repo = "react"
+            workflow = "runtime_build_and_test.yml"
+        },
+        @{
+            owner = "facebook"
+            repo = "react"
+            workflow = "commit_artifacts.yml"
+        }
+    )
+} | ConvertTo-Json -Depth 3
+
+Invoke-RestMethod -Uri "https://your-function-app.azurewebsites.net/api/reorder-workflows" `
+  -Method POST `
+  -ContentType "application/json" `
+  -Body $body
+```
+
+### Notes
+
+- The reorder operation replaces the entire workflow order for the active dashboard
+- All existing workflows must be included in the request
+- The backend preserves all workflow properties (labels, etc.) and only updates the order
+- Workflows are grouped by repository in the UI, so reordering typically happens within each repository group
 
 ## Dashboard GUID
 
@@ -566,9 +695,8 @@ Planned improvements:
 2. **List workflows API**: GET endpoint to retrieve current configuration
 3. **Update workflow**: Modify existing workflow properties (label, etc.)
 4. **Validation**: Check if GitHub repository and workflow file exist
-5. **Multi-dashboard support**: Use workflow GUIDs to support multiple dashboards
-6. **Authentication**: Add user authentication for write operations
-7. **Audit logging**: Track who added/removed workflows and when
+5. **Authentication**: Add user authentication for write operations
+6. **Audit logging**: Track who added/removed workflows and when
 
 ## Dashboard Management Endpoints
 

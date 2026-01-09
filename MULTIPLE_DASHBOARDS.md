@@ -123,6 +123,32 @@ Click the **"Manage"** button next to the dashboard selector to open the Dashboa
 
 **Note**: You cannot delete the last dashboard. At least one dashboard must exist.
 
+### Reordering Workflows
+
+The dashboard includes an Edit Mode feature that allows you to reorder workflows within each repository using drag-and-drop.
+
+#### Entering Edit Mode
+
+1. Click the **"Edit Mode"** button in the dashboard header
+2. The dashboard will enter edit mode with a banner displayed at the top
+3. All workflow cards become draggable
+
+#### Reordering Workflows
+
+1. In edit mode, click and hold a workflow card
+2. Drag the card to the desired position **within the same repository group**
+3. Release to drop the card in the new position
+4. The new order is shown visually but not yet saved
+
+**Important**: Workflows can only be reordered within their own repository. Cross-repository dragging is prevented to maintain logical grouping.
+
+#### Saving or Canceling Changes
+
+- **Save**: Click the **"Save"** button to persist the new order to Azure Storage
+- **Cancel**: Click the **"Cancel"** button to discard changes and restore the original order
+
+Once saved, the new workflow order will be preserved across browser sessions and devices.
+
 ## API Endpoints
 
 ### Get Workflow Statuses
@@ -324,6 +350,41 @@ Removes a workflow from the **active dashboard**.
   }
 }
 ```
+
+### Reorder Workflows
+
+**Endpoint:** `POST /api/reorder-workflows`
+
+Reorders workflows within the **active dashboard**.
+
+**Request:**
+```json
+{
+  "workflows": [
+    {
+      "owner": "myorg",
+      "repo": "myrepo",
+      "workflow": "deploy.yml"
+    },
+    {
+      "owner": "myorg",
+      "repo": "myrepo",
+      "workflow": "ci.yml"
+    }
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Reordered 2 workflows",
+  "dashboardId": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**Note**: The workflows array must contain all existing workflows in the active dashboard in the desired order. The backend validates that all workflows are present and updates their order accordingly.
 
 ## Migration Process
 

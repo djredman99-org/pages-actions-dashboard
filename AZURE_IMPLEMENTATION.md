@@ -477,11 +477,12 @@ az functionapp log tail \
    - Restrict access to known origins
    - Add rate limiting
 
-4. **Enhanced UI Features** ✅ **Implemented in v2.1.0**
+4. **Enhanced UI Features** ✅ **Implemented in v2.1.0+**
    - ✅ Web interface for adding/removing workflows
    - ✅ No need to use Azure CLI/Portal for basic operations
    - ✅ Updates Storage directly from dashboard
-   - Future: Bulk operations, workflow editing, drag-and-drop reordering
+   - ✅ Drag-and-drop workflow reordering in edit mode
+   - Future: Bulk operations, workflow label editing
 
 5. **Multi-tenancy**
    - Support multiple GitHub organizations
