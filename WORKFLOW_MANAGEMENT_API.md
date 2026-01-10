@@ -77,8 +77,10 @@ Content-Type: application/json
 
 **Field Descriptions:**
 - `repo` (required): GitHub repository in `owner/repo` format (e.g., `microsoft/vscode`)
-- `workflow` (required): Workflow filename with `.yml` or `.yaml` extension (e.g., `ci.yml`)
+- `workflow` (required): Workflow filename with `.yml` or `.yaml` extension (e.g., `ci.yml`) OR numeric workflow ID (e.g., `12345`)
 - `label` (required): Friendly name to display on the dashboard (e.g., `CI Build`)
+
+**Note:** Workflow IDs are useful for GitHub-managed workflows like CodeQL analysis in default mode or Automatic Dependency Submission, which don't have traditional workflow files.
 
 ### Response
 
@@ -156,6 +158,17 @@ Invoke-RestMethod -Uri "https://your-function-app.azurewebsites.net/api/add-work
   -Method POST `
   -ContentType "application/json" `
   -Body $body
+```
+
+**Using Workflow ID (for GitHub-managed workflows like CodeQL):**
+```bash
+curl -X POST https://your-function-app.azurewebsites.net/api/add-workflow \
+  -H "Content-Type: application/json" \
+  -d '{
+    "repo": "microsoft/vscode",
+    "workflow": "12345",
+    "label": "CodeQL Analysis"
+  }'
 ```
 
 ## Removing a Workflow
