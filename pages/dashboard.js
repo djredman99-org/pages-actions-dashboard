@@ -94,6 +94,7 @@ class DashboardLoader {
         this.originalWorkflowOrder = null;
         this.draggedElement = null;
         this.cardDisplaySettings = new CardDisplaySettings();
+        this.attachedListeners = new WeakMap(); // Track attached event listeners
     }
 
     /**
@@ -1042,24 +1043,24 @@ class DashboardLoader {
         if (!modal) return;
         
         // Set up checkbox event listeners (only once)
-        if (showBranchRefCheckbox && !showBranchRefCheckbox._listenerAttached) {
+        if (showBranchRefCheckbox && !this.attachedListeners.has(showBranchRefCheckbox)) {
             showBranchRefCheckbox.checked = this.cardDisplaySettings.showBranchRef;
             showBranchRefCheckbox.addEventListener('change', (e) => {
                 this.cardDisplaySettings.showBranchRef = e.target.checked;
                 // Reload workflows to update cards
                 this.loadWorkflows();
             });
-            showBranchRefCheckbox._listenerAttached = true;
+            this.attachedListeners.set(showBranchRefCheckbox, true);
         }
         
-        if (showTimeSinceCheckbox && !showTimeSinceCheckbox._listenerAttached) {
+        if (showTimeSinceCheckbox && !this.attachedListeners.has(showTimeSinceCheckbox)) {
             showTimeSinceCheckbox.checked = this.cardDisplaySettings.showTimeSince;
             showTimeSinceCheckbox.addEventListener('change', (e) => {
                 this.cardDisplaySettings.showTimeSince = e.target.checked;
                 // Reload workflows to update cards
                 this.loadWorkflows();
             });
-            showTimeSinceCheckbox._listenerAttached = true;
+            this.attachedListeners.set(showTimeSinceCheckbox, true);
         }
         
         // Open modal (only if button exists)
