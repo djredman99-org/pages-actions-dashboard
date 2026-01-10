@@ -12,6 +12,12 @@ function formatTimeSince(updatedAt) {
     const now = new Date();
     const updated = new Date(updatedAt);
     const diffMs = now - updated;
+    
+    // Handle future dates or very recent updates
+    if (diffMs < 0) {
+        return 'Just now';
+    }
+    
     const diffMinutes = Math.floor(diffMs / (1000 * 60));
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
@@ -971,6 +977,22 @@ class DashboardLoader {
     }
 
     /**
+     * Sync checkbox states with settings
+     * @private
+     */
+    _syncCheckboxStates() {
+        const showBranchRefCheckbox = document.getElementById('show-branch-ref-checkbox');
+        const showTimeSinceCheckbox = document.getElementById('show-time-since-checkbox');
+        
+        if (showBranchRefCheckbox) {
+            showBranchRefCheckbox.checked = this.cardDisplaySettings.showBranchRef;
+        }
+        if (showTimeSinceCheckbox) {
+            showTimeSinceCheckbox.checked = this.cardDisplaySettings.showTimeSince;
+        }
+    }
+
+    /**
      * Set up new dashboard button (side nav)
      */
     setupNewDashboardButton() {
@@ -985,8 +1007,6 @@ class DashboardLoader {
                 manageModal.style.display = 'block';
                 const nameInput = document.getElementById('new-dashboard-input');
                 const errorDiv = document.getElementById('manage-dashboards-error');
-                const showBranchRefCheckbox = document.getElementById('show-branch-ref-checkbox');
-                const showTimeSinceCheckbox = document.getElementById('show-time-since-checkbox');
                 
                 if (nameInput) nameInput.value = '';
                 if (errorDiv) {
@@ -996,12 +1016,7 @@ class DashboardLoader {
                 this.renderDashboardsList();
                 
                 // Update checkbox states when opening modal
-                if (showBranchRefCheckbox) {
-                    showBranchRefCheckbox.checked = this.cardDisplaySettings.showBranchRef;
-                }
-                if (showTimeSinceCheckbox) {
-                    showTimeSinceCheckbox.checked = this.cardDisplaySettings.showTimeSince;
-                }
+                this._syncCheckboxStates();
             }
             
             // Close side nav
@@ -1026,23 +1041,25 @@ class DashboardLoader {
         
         if (!modal) return;
         
-        // Initialize checkbox states
-        if (showBranchRefCheckbox) {
+        // Set up checkbox event listeners (only once)
+        if (showBranchRefCheckbox && !showBranchRefCheckbox._listenerAttached) {
             showBranchRefCheckbox.checked = this.cardDisplaySettings.showBranchRef;
             showBranchRefCheckbox.addEventListener('change', (e) => {
                 this.cardDisplaySettings.showBranchRef = e.target.checked;
                 // Reload workflows to update cards
                 this.loadWorkflows();
             });
+            showBranchRefCheckbox._listenerAttached = true;
         }
         
-        if (showTimeSinceCheckbox) {
+        if (showTimeSinceCheckbox && !showTimeSinceCheckbox._listenerAttached) {
             showTimeSinceCheckbox.checked = this.cardDisplaySettings.showTimeSince;
             showTimeSinceCheckbox.addEventListener('change', (e) => {
                 this.cardDisplaySettings.showTimeSince = e.target.checked;
                 // Reload workflows to update cards
                 this.loadWorkflows();
             });
+            showTimeSinceCheckbox._listenerAttached = true;
         }
         
         // Open modal (only if button exists)
@@ -1054,12 +1071,7 @@ class DashboardLoader {
                 errorDiv.textContent = '';
                 this.renderDashboardsList();
                 // Update checkbox states when opening modal
-                if (showBranchRefCheckbox) {
-                    showBranchRefCheckbox.checked = this.cardDisplaySettings.showBranchRef;
-                }
-                if (showTimeSinceCheckbox) {
-                    showTimeSinceCheckbox.checked = this.cardDisplaySettings.showTimeSince;
-                }
+                this._syncCheckboxStates();
             });
         }
         
