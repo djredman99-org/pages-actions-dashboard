@@ -769,8 +769,9 @@ body.edit-mode .add-workflow-button {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    text-align: left;
+    text-align: center;
     padding: 0 8px;
+    align-items: center;
 }
 
 .workflow-detail-item {
