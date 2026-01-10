@@ -1,6 +1,81 @@
 // GitHub Actions Dashboard Loader
 // Loads workflow statuses and renders them dynamically
 
+/**
+ * Format time difference as "X Min Ago", "X HR Ago", or "X Days Ago"
+ * @param {string|Date} updatedAt - ISO timestamp or Date object
+ * @returns {string} - Formatted time string
+ */
+function formatTimeSince(updatedAt) {
+    if (!updatedAt) return '';
+    
+    const now = new Date();
+    const updated = new Date(updatedAt);
+    const diffMs = now - updated;
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffMinutes < 60) {
+        return `${diffMinutes} Min Ago`;
+    } else if (diffHours < 24) {
+        return `${diffHours} HR Ago`;
+    } else {
+        return `${diffDays} Days Ago`;
+    }
+}
+
+/**
+ * Card display settings manager
+ */
+class CardDisplaySettings {
+    constructor() {
+        this.storageKey = 'dashboard_card_display_settings';
+        this.settings = this.load();
+    }
+    
+    load() {
+        try {
+            const stored = localStorage.getItem(this.storageKey);
+            if (stored) {
+                return JSON.parse(stored);
+            }
+        } catch (error) {
+            console.error('Failed to load card display settings:', error);
+        }
+        return {
+            showBranchRef: false,
+            showTimeSince: false
+        };
+    }
+    
+    save() {
+        try {
+            localStorage.setItem(this.storageKey, JSON.stringify(this.settings));
+        } catch (error) {
+            console.error('Failed to save card display settings:', error);
+        }
+    }
+    
+    get showBranchRef() {
+        return this.settings.showBranchRef;
+    }
+    
+    set showBranchRef(value) {
+        this.settings.showBranchRef = value;
+        this.save();
+    }
+    
+    get showTimeSince() {
+        return this.settings.showTimeSince;
+    }
+    
+    set showTimeSince(value) {
+        this.settings.showTimeSince = value;
+        this.save();
+    }
+}
+
 class DashboardLoader {
     constructor(config, apiClient, workflowManager) {
         this.config = config;
@@ -12,6 +87,7 @@ class DashboardLoader {
         this.isEditMode = false;
         this.originalWorkflowOrder = null;
         this.draggedElement = null;
+        this.cardDisplaySettings = new CardDisplaySettings();
     }
 
     /**
@@ -42,6 +118,31 @@ class DashboardLoader {
 
         link.appendChild(label);
         link.appendChild(statusBadge);
+        
+        // Add optional details section if any options are enabled
+        if (this.cardDisplaySettings.showBranchRef || this.cardDisplaySettings.showTimeSince) {
+            const detailsContainer = document.createElement('div');
+            detailsContainer.className = 'workflow-details';
+            
+            // Add branch/ref information
+            if (this.cardDisplaySettings.showBranchRef && status.headBranch) {
+                const branchDiv = document.createElement('div');
+                branchDiv.className = 'workflow-detail-item';
+                branchDiv.textContent = `Branch: ${status.headBranch}`;
+                detailsContainer.appendChild(branchDiv);
+            }
+            
+            // Add time since last run
+            if (this.cardDisplaySettings.showTimeSince && status.updatedAt) {
+                const timeDiv = document.createElement('div');
+                timeDiv.className = 'workflow-detail-item';
+                timeDiv.textContent = formatTimeSince(status.updatedAt);
+                detailsContainer.appendChild(timeDiv);
+            }
+            
+            link.appendChild(detailsContainer);
+        }
+        
         workflowItem.appendChild(link);
 
         // Add remove button for workflows (will always show for now, API handles permissions)
@@ -206,7 +307,9 @@ class DashboardLoader {
                 conclusion: workflow.conclusion,
                 status: workflow.status,
                 url: workflow.url,
-                updatedAt: workflow.updatedAt
+                updatedAt: workflow.updatedAt,
+                headBranch: workflow.headBranch,
+                headSha: workflow.headSha
             });
             card.setAttribute('data-workflow-key', key);
             grid.appendChild(card);
@@ -315,7 +418,9 @@ class DashboardLoader {
                                     conclusion: workflow.conclusion,
                                     status: workflow.status,
                                     url: workflow.url,
-                                    updatedAt: workflow.updatedAt
+                                    updatedAt: workflow.updatedAt,
+                                    headBranch: workflow.headBranch,
+                                    headSha: workflow.headSha
                                 });
                                 newCard.setAttribute('data-workflow-key', key);
                                 
@@ -880,12 +985,23 @@ class DashboardLoader {
                 manageModal.style.display = 'block';
                 const nameInput = document.getElementById('new-dashboard-input');
                 const errorDiv = document.getElementById('manage-dashboards-error');
+                const showBranchRefCheckbox = document.getElementById('show-branch-ref-checkbox');
+                const showTimeSinceCheckbox = document.getElementById('show-time-since-checkbox');
+                
                 if (nameInput) nameInput.value = '';
                 if (errorDiv) {
                     errorDiv.style.display = 'none';
                     errorDiv.textContent = '';
                 }
                 this.renderDashboardsList();
+                
+                // Update checkbox states when opening modal
+                if (showBranchRefCheckbox) {
+                    showBranchRefCheckbox.checked = this.cardDisplaySettings.showBranchRef;
+                }
+                if (showTimeSinceCheckbox) {
+                    showTimeSinceCheckbox.checked = this.cardDisplaySettings.showTimeSince;
+                }
             }
             
             // Close side nav
@@ -905,8 +1021,29 @@ class DashboardLoader {
         const createButton = document.getElementById('create-dashboard-button');
         const nameInput = document.getElementById('new-dashboard-input');
         const errorDiv = document.getElementById('manage-dashboards-error');
+        const showBranchRefCheckbox = document.getElementById('show-branch-ref-checkbox');
+        const showTimeSinceCheckbox = document.getElementById('show-time-since-checkbox');
         
         if (!modal) return;
+        
+        // Initialize checkbox states
+        if (showBranchRefCheckbox) {
+            showBranchRefCheckbox.checked = this.cardDisplaySettings.showBranchRef;
+            showBranchRefCheckbox.addEventListener('change', (e) => {
+                this.cardDisplaySettings.showBranchRef = e.target.checked;
+                // Reload workflows to update cards
+                this.loadWorkflows();
+            });
+        }
+        
+        if (showTimeSinceCheckbox) {
+            showTimeSinceCheckbox.checked = this.cardDisplaySettings.showTimeSince;
+            showTimeSinceCheckbox.addEventListener('change', (e) => {
+                this.cardDisplaySettings.showTimeSince = e.target.checked;
+                // Reload workflows to update cards
+                this.loadWorkflows();
+            });
+        }
         
         // Open modal (only if button exists)
         if (button) {
@@ -916,6 +1053,13 @@ class DashboardLoader {
                 errorDiv.style.display = 'none';
                 errorDiv.textContent = '';
                 this.renderDashboardsList();
+                // Update checkbox states when opening modal
+                if (showBranchRefCheckbox) {
+                    showBranchRefCheckbox.checked = this.cardDisplaySettings.showBranchRef;
+                }
+                if (showTimeSinceCheckbox) {
+                    showTimeSinceCheckbox.checked = this.cardDisplaySettings.showTimeSince;
+                }
             });
         }
         
