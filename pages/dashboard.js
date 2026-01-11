@@ -1,6 +1,85 @@
 // GitHub Actions Dashboard Loader
 // Loads workflow statuses and renders them dynamically
 
+/**
+ * Format time difference as "X Min Ago", "X HR Ago", or "X Days Ago"
+ * @param {string|Date} updatedAt - ISO timestamp or Date object
+ * @returns {string} - Formatted time string
+ */
+function formatTimeSince(updatedAt) {
+    if (!updatedAt) return '';
+    
+    const now = new Date();
+    const updated = new Date(updatedAt);
+    const diffMs = now - updated;
+    
+    // Handle future dates or very recent updates
+    if (diffMs < 0) {
+        return 'Just now';
+    }
+    
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffMinutes < 60) {
+        return `${diffMinutes} Min Ago`;
+    } else if (diffHours < 24) {
+        return `${diffHours} HR Ago`;
+    } else {
+        return `${diffDays} Days Ago`;
+    }
+}
+
+/**
+ * Card display settings manager
+ */
+class CardDisplaySettings {
+    constructor() {
+        this.storageKey = 'dashboard_card_display_settings';
+        this.settings = this.load();
+    }
+    
+    load() {
+        try {
+            const stored = localStorage.getItem(this.storageKey);
+            if (stored) {
+                return JSON.parse(stored);
+            }
+        } catch (error) {
+            console.error('Failed to load card display settings:', error);
+        }
+        return {
+            displayMode: 'none' // Options: 'none', 'branch', 'time', 'both'
+        };
+    }
+    
+    save() {
+        try {
+            localStorage.setItem(this.storageKey, JSON.stringify(this.settings));
+        } catch (error) {
+            console.error('Failed to save card display settings:', error);
+        }
+    }
+    
+    get displayMode() {
+        return this.settings.displayMode;
+    }
+    
+    set displayMode(value) {
+        this.settings.displayMode = value;
+        this.save();
+    }
+    
+    get showBranchRef() {
+        return this.displayMode === 'branch' || this.displayMode === 'both';
+    }
+    
+    get showTimeSince() {
+        return this.displayMode === 'time' || this.displayMode === 'both';
+    }
+}
+
 class DashboardLoader {
     constructor(config, apiClient, workflowManager) {
         this.config = config;
@@ -12,6 +91,8 @@ class DashboardLoader {
         this.isEditMode = false;
         this.originalWorkflowOrder = null;
         this.draggedElement = null;
+        this.cardDisplaySettings = new CardDisplaySettings();
+        this.attachedListeners = new WeakMap(); // Track attached event listeners
     }
 
     /**
@@ -42,6 +123,46 @@ class DashboardLoader {
 
         link.appendChild(label);
         link.appendChild(statusBadge);
+        
+        // Add optional details section if any options are enabled
+        if (this.cardDisplaySettings.showBranchRef || this.cardDisplaySettings.showTimeSince) {
+            const detailsContainer = document.createElement('div');
+            detailsContainer.className = 'workflow-details';
+            
+            // Add branch/ref information
+            if (this.cardDisplaySettings.showBranchRef && status.headBranch) {
+                const branchDiv = document.createElement('div');
+                branchDiv.className = 'workflow-detail-item';
+                branchDiv.style.display = 'flex';
+                branchDiv.style.alignItems = 'center';
+                branchDiv.style.gap = '4px';
+                branchDiv.style.justifyContent = 'center';
+                
+                // Add branch icon (SVG)
+                const branchIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                branchIcon.setAttribute('viewBox', '0 0 16 16');
+                branchIcon.setAttribute('width', '14');
+                branchIcon.setAttribute('height', '14');
+                branchIcon.setAttribute('fill', 'currentColor');
+                branchIcon.style.flexShrink = '0';
+                branchIcon.innerHTML = '<path fill-rule="evenodd" d="M11.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm-2.25.75a2.25 2.25 0 113 2.122V6A2.5 2.5 0 0110 8.5H6a1 1 0 00-1 1v1.128a2.251 2.251 0 11-1.5 0V5.372a2.25 2.25 0 111.5 0v1.836A2.492 2.492 0 016 7h4a1 1 0 001-1v-.628A2.25 2.25 0 019.5 3.25zM4.25 12a.75.75 0 100 1.5.75.75 0 000-1.5zM3.5 3.25a.75.75 0 111.5 0 .75.75 0 01-1.5 0z"></path>';
+                
+                branchDiv.appendChild(branchIcon);
+                branchDiv.appendChild(document.createTextNode(status.headBranch));
+                detailsContainer.appendChild(branchDiv);
+            }
+            
+            // Add time since last run
+            if (this.cardDisplaySettings.showTimeSince && status.updatedAt) {
+                const timeDiv = document.createElement('div');
+                timeDiv.className = 'workflow-detail-item';
+                timeDiv.textContent = formatTimeSince(status.updatedAt);
+                detailsContainer.appendChild(timeDiv);
+            }
+            
+            link.appendChild(detailsContainer);
+        }
+        
         workflowItem.appendChild(link);
 
         // Add remove button for workflows (will always show for now, API handles permissions)
@@ -206,7 +327,9 @@ class DashboardLoader {
                 conclusion: workflow.conclusion,
                 status: workflow.status,
                 url: workflow.url,
-                updatedAt: workflow.updatedAt
+                updatedAt: workflow.updatedAt,
+                headBranch: workflow.headBranch,
+                headSha: workflow.headSha
             });
             card.setAttribute('data-workflow-key', key);
             grid.appendChild(card);
@@ -315,7 +438,9 @@ class DashboardLoader {
                                     conclusion: workflow.conclusion,
                                     status: workflow.status,
                                     url: workflow.url,
-                                    updatedAt: workflow.updatedAt
+                                    updatedAt: workflow.updatedAt,
+                                    headBranch: workflow.headBranch,
+                                    headSha: workflow.headSha
                                 });
                                 newCard.setAttribute('data-workflow-key', key);
                                 
@@ -866,6 +991,26 @@ class DashboardLoader {
     }
 
     /**
+     * Sync radio button states with settings
+     * @private
+     */
+    _syncRadioStates() {
+        const radioButtons = {
+            none: document.getElementById('show-none-radio'),
+            branch: document.getElementById('show-branch-ref-radio'),
+            time: document.getElementById('show-time-since-radio'),
+            both: document.getElementById('show-both-radio')
+        };
+        
+        const currentMode = this.cardDisplaySettings.displayMode;
+        Object.entries(radioButtons).forEach(([mode, radio]) => {
+            if (radio) {
+                radio.checked = (mode === currentMode);
+            }
+        });
+    }
+
+    /**
      * Set up new dashboard button (side nav)
      */
     setupNewDashboardButton() {
@@ -880,12 +1025,16 @@ class DashboardLoader {
                 manageModal.style.display = 'block';
                 const nameInput = document.getElementById('new-dashboard-input');
                 const errorDiv = document.getElementById('manage-dashboards-error');
+                
                 if (nameInput) nameInput.value = '';
                 if (errorDiv) {
                     errorDiv.style.display = 'none';
                     errorDiv.textContent = '';
                 }
                 this.renderDashboardsList();
+                
+                // Update radio button states when opening modal
+                this._syncRadioStates();
             }
             
             // Close side nav
@@ -908,6 +1057,30 @@ class DashboardLoader {
         
         if (!modal) return;
         
+        // Set up radio button event listeners (only once)
+        const radioButtons = [
+            document.getElementById('show-none-radio'),
+            document.getElementById('show-branch-ref-radio'),
+            document.getElementById('show-time-since-radio'),
+            document.getElementById('show-both-radio')
+        ];
+        
+        radioButtons.forEach(radio => {
+            if (radio && !this.attachedListeners.has(radio)) {
+                radio.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        this.cardDisplaySettings.displayMode = e.target.value;
+                        // Reload workflows to update cards
+                        this.loadWorkflows();
+                    }
+                });
+                this.attachedListeners.set(radio, true);
+            }
+        });
+        
+        // Initialize radio button states
+        this._syncRadioStates();
+        
         // Open modal (only if button exists)
         if (button) {
             button.addEventListener('click', () => {
@@ -916,6 +1089,8 @@ class DashboardLoader {
                 errorDiv.style.display = 'none';
                 errorDiv.textContent = '';
                 this.renderDashboardsList();
+                // Update radio button states when opening modal
+                this._syncRadioStates();
             });
         }
         

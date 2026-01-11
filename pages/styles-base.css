@@ -696,6 +696,49 @@ body.edit-mode .add-workflow-button {
     outline-offset: 2px;
 }
 
+/* Checkbox styles */
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    user-select: none;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.checkbox-label span {
+    line-height: 1.5;
+}
+
+/* Radio button styles */
+.radio-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    user-select: none;
+}
+
+.radio-label input[type="radio"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+    accent-color: var(--border-active, #0969da);
+}
+
+.radio-label span {
+    line-height: 1.5;
+}
+
 /* Repository section styles */
 .repo-section {
     margin-bottom: 32px;
@@ -740,6 +783,23 @@ body.edit-mode .add-workflow-button {
     font-size: 14px;
     word-wrap: break-word;
     width: 100%;
+}
+
+.workflow-details {
+    width: 100%;
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-align: center;
+    padding: 0 8px;
+    align-items: center;
+}
+
+.workflow-detail-item {
+    font-size: 12px;
+    line-height: 1.4;
+    opacity: 0.8;
 }
 
 .workflow-status {
