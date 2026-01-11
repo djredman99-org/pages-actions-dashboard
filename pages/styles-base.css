@@ -717,6 +717,28 @@ body.edit-mode .add-workflow-button {
     line-height: 1.5;
 }
 
+/* Radio button styles */
+.radio-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    user-select: none;
+}
+
+.radio-label input[type="radio"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+    accent-color: var(--border-active, #0969da);
+}
+
+.radio-label span {
+    line-height: 1.5;
+}
+
 /* Repository section styles */
 .repo-section {
     margin-bottom: 32px;

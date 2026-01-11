@@ -50,8 +50,7 @@ class CardDisplaySettings {
             console.error('Failed to load card display settings:', error);
         }
         return {
-            showBranchRef: false,
-            showTimeSince: false
+            displayMode: 'none' // Options: 'none', 'branch', 'time', 'both'
         };
     }
     
@@ -63,22 +62,21 @@ class CardDisplaySettings {
         }
     }
     
-    get showBranchRef() {
-        return this.settings.showBranchRef;
+    get displayMode() {
+        return this.settings.displayMode;
     }
     
-    set showBranchRef(value) {
-        this.settings.showBranchRef = value;
+    set displayMode(value) {
+        this.settings.displayMode = value;
         this.save();
+    }
+    
+    get showBranchRef() {
+        return this.displayMode === 'branch' || this.displayMode === 'both';
     }
     
     get showTimeSince() {
-        return this.settings.showTimeSince;
-    }
-    
-    set showTimeSince(value) {
-        this.settings.showTimeSince = value;
-        this.save();
+        return this.displayMode === 'time' || this.displayMode === 'both';
     }
 }
 
@@ -993,19 +991,23 @@ class DashboardLoader {
     }
 
     /**
-     * Sync checkbox states with settings
+     * Sync radio button states with settings
      * @private
      */
-    _syncCheckboxStates() {
-        const showBranchRefCheckbox = document.getElementById('show-branch-ref-checkbox');
-        const showTimeSinceCheckbox = document.getElementById('show-time-since-checkbox');
+    _syncRadioStates() {
+        const radioButtons = {
+            none: document.getElementById('show-none-radio'),
+            branch: document.getElementById('show-branch-ref-radio'),
+            time: document.getElementById('show-time-since-radio'),
+            both: document.getElementById('show-both-radio')
+        };
         
-        if (showBranchRefCheckbox) {
-            showBranchRefCheckbox.checked = this.cardDisplaySettings.showBranchRef;
-        }
-        if (showTimeSinceCheckbox) {
-            showTimeSinceCheckbox.checked = this.cardDisplaySettings.showTimeSince;
-        }
+        const currentMode = this.cardDisplaySettings.displayMode;
+        Object.entries(radioButtons).forEach(([mode, radio]) => {
+            if (radio) {
+                radio.checked = (mode === currentMode);
+            }
+        });
     }
 
     /**
@@ -1031,8 +1033,8 @@ class DashboardLoader {
                 }
                 this.renderDashboardsList();
                 
-                // Update checkbox states when opening modal
-                this._syncCheckboxStates();
+                // Update radio button states when opening modal
+                this._syncRadioStates();
             }
             
             // Close side nav
@@ -1052,31 +1054,32 @@ class DashboardLoader {
         const createButton = document.getElementById('create-dashboard-button');
         const nameInput = document.getElementById('new-dashboard-input');
         const errorDiv = document.getElementById('manage-dashboards-error');
-        const showBranchRefCheckbox = document.getElementById('show-branch-ref-checkbox');
-        const showTimeSinceCheckbox = document.getElementById('show-time-since-checkbox');
         
         if (!modal) return;
         
-        // Set up checkbox event listeners (only once)
-        if (showBranchRefCheckbox && !this.attachedListeners.has(showBranchRefCheckbox)) {
-            showBranchRefCheckbox.checked = this.cardDisplaySettings.showBranchRef;
-            showBranchRefCheckbox.addEventListener('change', (e) => {
-                this.cardDisplaySettings.showBranchRef = e.target.checked;
-                // Reload workflows to update cards
-                this.loadWorkflows();
-            });
-            this.attachedListeners.set(showBranchRefCheckbox, true);
-        }
+        // Set up radio button event listeners (only once)
+        const radioButtons = [
+            document.getElementById('show-none-radio'),
+            document.getElementById('show-branch-ref-radio'),
+            document.getElementById('show-time-since-radio'),
+            document.getElementById('show-both-radio')
+        ];
         
-        if (showTimeSinceCheckbox && !this.attachedListeners.has(showTimeSinceCheckbox)) {
-            showTimeSinceCheckbox.checked = this.cardDisplaySettings.showTimeSince;
-            showTimeSinceCheckbox.addEventListener('change', (e) => {
-                this.cardDisplaySettings.showTimeSince = e.target.checked;
-                // Reload workflows to update cards
-                this.loadWorkflows();
-            });
-            this.attachedListeners.set(showTimeSinceCheckbox, true);
-        }
+        radioButtons.forEach(radio => {
+            if (radio && !this.attachedListeners.has(radio)) {
+                radio.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        this.cardDisplaySettings.displayMode = e.target.value;
+                        // Reload workflows to update cards
+                        this.loadWorkflows();
+                    }
+                });
+                this.attachedListeners.set(radio, true);
+            }
+        });
+        
+        // Initialize radio button states
+        this._syncRadioStates();
         
         // Open modal (only if button exists)
         if (button) {
@@ -1086,8 +1089,8 @@ class DashboardLoader {
                 errorDiv.style.display = 'none';
                 errorDiv.textContent = '';
                 this.renderDashboardsList();
-                // Update checkbox states when opening modal
-                this._syncCheckboxStates();
+                // Update radio button states when opening modal
+                this._syncRadioStates();
             });
         }
         
