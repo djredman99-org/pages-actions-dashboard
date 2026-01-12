@@ -642,11 +642,10 @@ body.edit-mode .add-workflow-button {
     padding: 4px 8px;
     border: 2px solid #0969da;
     border-radius: 6px;
-    background: var(--bg-canvas, #ffffff);
-    color: var(--fg-default, #1f2328);
     text-align: center;
     min-width: 120px;
     max-width: 100%;
+    /* Theme-specific colors will be applied */
 }
 
 .workflow-label-input:focus {
@@ -658,13 +657,12 @@ body.edit-mode .add-workflow-button {
     font-size: 11px;
     line-height: 1.4;
     padding: 6px 8px;
-    background: var(--bg-overlay, #1f2328);
-    color: var(--fg-on-emphasis, #ffffff);
     border-radius: 4px;
     white-space: nowrap;
     text-align: center;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     z-index: 100;
+    /* Theme-specific colors will be applied */
 }
 
 .workflow-label-edit-tooltip div {
