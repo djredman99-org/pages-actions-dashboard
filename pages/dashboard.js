@@ -804,14 +804,22 @@ class DashboardLoader {
         input.focus();
         input.select();
         
+        // Flag to prevent blur from triggering after intentional save/cancel
+        let isHandlingAction = false;
+        
         // Handle Enter key to save
         const handleSave = async () => {
+            if (isHandlingAction) return;
+            isHandlingAction = true;
+            
             const newLabel = input.value.trim();
             
             // Validate
             if (!newLabel) {
-                // Revert to original
-                link.replaceChild(labelElement, editContainer);
+                alert('Workflow name cannot be empty');
+                input.focus();
+                input.select();
+                isHandlingAction = false;
                 return;
             }
             
@@ -844,6 +852,8 @@ class DashboardLoader {
         
         // Handle Escape key to cancel
         const handleCancel = () => {
+            if (isHandlingAction) return;
+            isHandlingAction = true;
             link.replaceChild(labelElement, editContainer);
         };
         
@@ -862,12 +872,10 @@ class DashboardLoader {
         
         // Handle blur (clicking outside) - save changes
         input.addEventListener('blur', () => {
-            // Use setTimeout to allow click events to process first
-            setTimeout(() => {
-                if (input.parentElement) {
-                    handleSave();
-                }
-            }, 200);
+            // Only handle blur if we're not already handling another action
+            if (!isHandlingAction) {
+                handleSave();
+            }
         });
     }
 

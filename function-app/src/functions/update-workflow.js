@@ -60,12 +60,12 @@ app.http('update-workflow', {
                 };
             }
 
-            if (label !== undefined && (typeof label !== 'string' || label.trim().length === 0)) {
+            if (!label || typeof label !== 'string' || label.trim().length === 0) {
                 return {
                     status: 400,
                     jsonBody: {
                         error: 'Validation error',
-                        message: 'label field must be a non-empty string'
+                        message: 'label field is required and must be a non-empty string'
                     }
                 };
             }
@@ -122,11 +122,9 @@ app.http('update-workflow', {
                 };
             }
 
-            // Update the workflow
+            // Update the workflow label
             const oldLabel = activeDashboard.workflows[workflowIndex].label;
-            if (label !== undefined) {
-                activeDashboard.workflows[workflowIndex].label = label.trim();
-            }
+            activeDashboard.workflows[workflowIndex].label = label.trim();
 
             // Save the updated configuration
             context.log('Saving updated workflow configuration to Storage');
