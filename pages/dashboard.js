@@ -95,6 +95,10 @@ class DashboardLoader {
         this.draggedElement = null;
         this.cardDisplaySettings = new CardDisplaySettings();
         this.attachedListeners = new WeakMap(); // Track attached event listeners
+        
+        // Track pending edits (for deferred save functionality)
+        this.pendingRenames = new Map(); // key: workflow key, value: { workflow, newLabel }
+        this.pendingDeletes = new Set(); // Set of workflow keys to delete
     }
 
     /**
@@ -106,6 +110,10 @@ class DashboardLoader {
     createWorkflowCard(workflow, status) {
         const workflowItem = document.createElement('div');
         workflowItem.className = 'workflow-item';
+        
+        // Add data attribute for workflow key
+        const workflowKey = this.getWorkflowKey(workflow);
+        workflowItem.setAttribute('data-workflow-key', workflowKey);
 
         const link = document.createElement('a');
         link.href = status.url;
@@ -167,7 +175,24 @@ class DashboardLoader {
         
         workflowItem.appendChild(link);
 
-        // Add remove button for workflows (will always show for now, API handles permissions)
+        // Add edit button for renaming workflows (shown in edit mode)
+        const editButton = document.createElement('button');
+        editButton.className = 'workflow-edit-button';
+        editButton.setAttribute('aria-label', `Edit ${workflow.label} workflow title`);
+        editButton.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M18.5 2.49998C18.8978 2.10216 19.4374 1.87866 20 1.87866C20.5626 1.87866 21.1022 2.10216 21.5 2.49998C21.8978 2.89781 22.1213 3.43737 22.1213 3.99998C22.1213 4.56259 21.8978 5.10216 21.5 5.49998L12 15L8 16L9 12L18.5 2.49998Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        `;
+        editButton.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.handleEditWorkflowLabel(workflow, label);
+        };
+        workflowItem.appendChild(editButton);
+
+        // Add remove button for workflows (shown in edit mode)
         const removeButton = document.createElement('button');
         removeButton.className = 'workflow-remove-button';
         removeButton.setAttribute('aria-label', `Remove ${workflow.label} workflow`);
@@ -724,28 +749,141 @@ class DashboardLoader {
     }
 
     /**
-     * Handle removing a workflow
+     * Handle removing a workflow (stages the deletion for save)
      * @param {Object} workflow - Workflow object with owner, repo, workflow properties
      */
-    async handleRemoveWorkflow(workflow) {
+    handleRemoveWorkflow(workflow) {
         // Confirm removal
-        // TODO: Replace with custom modal for better UX consistency
-        const confirmed = confirm(`Are you sure you want to remove "${workflow.label}"?`);
+        const confirmed = confirm(`Mark "${workflow.label}" for deletion? Changes will be saved when you click Save.`);
         if (!confirmed) return;
 
-        try {
-            // Call API to remove workflow
-            await this.api.removeWorkflow(workflow.owner, workflow.repo, workflow.workflow);
-
-            // Reload workflows to update the display
-            await this.loadWorkflows();
-
-            console.log(`Successfully removed workflow: ${workflow.owner}/${workflow.repo}/${workflow.workflow}`);
-        } catch (error) {
-            console.error('Failed to remove workflow:', error);
-            // TODO: Replace with toast notification or error modal for better UX
-            alert(`Failed to remove workflow: ${error.message}`);
+        const workflowKey = this.getWorkflowKey(workflow);
+        
+        // Stage the delete
+        this.pendingDeletes.add(workflowKey);
+        
+        // Find and mark the card as pending deletion
+        const container = document.querySelector('.workflow-grids-container');
+        if (container) {
+            const card = container.querySelector(`[data-workflow-key="${workflowKey}"]`);
+            if (card) {
+                card.classList.add('workflow-pending-delete');
+            }
         }
+        
+        console.log(`Staged delete for workflow: ${workflowKey}`);
+    }
+
+    /**
+     * Handle editing a workflow label (stages the change for save)
+     * @param {Object} workflow - Workflow object with owner, repo, workflow properties
+     * @param {HTMLElement} labelElement - The label div element to replace with input
+     */
+    handleEditWorkflowLabel(workflow, labelElement) {
+        // Don't allow editing if already editing
+        if (labelElement.querySelector('.workflow-label-input')) {
+            return;
+        }
+
+        const originalLabel = workflow.label;
+        const link = labelElement.parentElement;
+        
+        // Create container for input and tooltip
+        const editContainer = document.createElement('div');
+        editContainer.className = 'workflow-label-edit-container';
+        
+        // Create tooltip
+        const tooltip = document.createElement('div');
+        tooltip.className = 'workflow-label-edit-tooltip';
+        tooltip.innerHTML = '<div>ENTER to accept</div><div>ESC to cancel</div>';
+        editContainer.appendChild(tooltip);
+        
+        // Create input element
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'workflow-label-input';
+        input.value = originalLabel;
+        input.setAttribute('aria-label', 'Edit workflow title');
+        editContainer.appendChild(input);
+        
+        // Replace label with edit container
+        link.replaceChild(editContainer, labelElement);
+        
+        // Focus and select the text
+        input.focus();
+        input.select();
+        
+        // Flag to prevent blur from triggering after intentional save/cancel
+        let isHandlingAction = false;
+        
+        // Handle Enter key to stage the rename
+        const handleSave = () => {
+            if (isHandlingAction) return;
+            isHandlingAction = true;
+            
+            const newLabel = input.value.trim();
+            
+            // Validate
+            if (!newLabel) {
+                alert('Workflow title cannot be empty');
+                input.focus();
+                input.select();
+                isHandlingAction = false;
+                return;
+            }
+            
+            // If no change, just revert
+            if (newLabel === originalLabel) {
+                link.replaceChild(labelElement, editContainer);
+                return;
+            }
+            
+            // Stage the rename (don't save to API yet)
+            const workflowKey = this.getWorkflowKey(workflow);
+            this.pendingRenames.set(workflowKey, {
+                workflow: workflow,
+                newLabel: newLabel,
+                originalLabel: originalLabel
+            });
+            
+            // Update the label text in UI (pending state)
+            labelElement.textContent = newLabel;
+            labelElement.classList.add('workflow-label-pending');
+            workflow.label = newLabel;
+            
+            // Replace input with label
+            link.replaceChild(labelElement, editContainer);
+            
+            console.log(`Staged rename for workflow: ${workflowKey} to "${newLabel}"`);
+        };
+        
+        // Handle Escape key to cancel
+        const handleCancel = () => {
+            if (isHandlingAction) return;
+            isHandlingAction = true;
+            link.replaceChild(labelElement, editContainer);
+        };
+        
+        // Handle keydown events
+        const handleKeyDown = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSave();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                handleCancel();
+            }
+        };
+        
+        input.addEventListener('keydown', handleKeyDown);
+        
+        // Handle blur (clicking outside) - save changes
+        input.addEventListener('blur', () => {
+            // Only handle blur if we're not already handling another action
+            if (!isHandlingAction) {
+                handleSave();
+            }
+        });
     }
 
     /**
@@ -1324,6 +1462,10 @@ class DashboardLoader {
         // Store original order for cancel functionality
         this.originalWorkflowOrder = this.captureCurrentOrder();
         
+        // Clear any pending changes from previous edit sessions
+        this.pendingRenames.clear();
+        this.pendingDeletes.clear();
+        
         // Show edit mode banner
         const banner = document.getElementById('edit-mode-banner');
         if (banner) {
@@ -1342,7 +1484,7 @@ class DashboardLoader {
     }
 
     /**
-     * Cancel edit mode and revert to original order
+     * Cancel edit mode and revert all changes (order, renames, deletes)
      */
     cancelEditMode() {
         if (!this.isEditMode) return;
@@ -1358,11 +1500,12 @@ class DashboardLoader {
         // Remove edit mode class from body
         document.body.classList.remove('edit-mode');
         
-        // Revert to original order
-        if (this.originalWorkflowOrder) {
-            this.restoreOrder(this.originalWorkflowOrder);
-            this.originalWorkflowOrder = null;
-        }
+        // Clear all pending changes
+        this.pendingRenames.clear();
+        this.pendingDeletes.clear();
+        
+        // Reload workflows to revert all changes (order, renames, deletes)
+        this.loadWorkflows();
         
         // Disable drag and drop
         this.disableDragAndDrop();
@@ -1373,7 +1516,7 @@ class DashboardLoader {
     }
 
     /**
-     * Save edit mode and persist the new order
+     * Save edit mode and persist all changes (order, renames, deletes)
      */
     async saveEditMode() {
         if (!this.isEditMode) return;
@@ -1382,21 +1525,56 @@ class DashboardLoader {
         if (saveButton) {
             saveButton.disabled = true;
             saveButton.textContent = 'Saving...';
-            saveButton.setAttribute('aria-label', 'Saving workflow order, please wait');
+            saveButton.setAttribute('aria-label', 'Saving all changes, please wait');
         }
 
         try {
-            // Get current order from DOM
-            const newOrder = this.captureCurrentOrder();
+            // 1. Process deletes first
+            for (const workflowKey of this.pendingDeletes) {
+                const [owner, repo, workflow] = workflowKey.split('/');
+                try {
+                    await this.api.removeWorkflow(owner, repo, workflow);
+                    console.log(`Successfully deleted workflow: ${workflowKey}`);
+                } catch (error) {
+                    console.error(`Failed to delete workflow ${workflowKey}:`, error);
+                    throw new Error(`Failed to delete "${workflowKey}": ${error.message}`);
+                }
+            }
             
-            // Build workflows array for API call
+            // 2. Process renames
+            for (const [workflowKey, renameData] of this.pendingRenames) {
+                const { workflow, newLabel } = renameData;
+                try {
+                    await this.api.updateWorkflow(workflow.owner, workflow.repo, workflow.workflow, newLabel);
+                    console.log(`Successfully renamed workflow: ${workflowKey} to "${newLabel}"`);
+                } catch (error) {
+                    console.error(`Failed to rename workflow ${workflowKey}:`, error);
+                    throw new Error(`Failed to rename "${workflowKey}": ${error.message}`);
+                }
+            }
+            
+            // 3. Save reorder (after deletes so deleted items aren't in the new order)
+            const newOrder = this.captureCurrentOrder();
             const workflowsToSave = [];
+            
             Object.values(newOrder).forEach(repoWorkflows => {
-                workflowsToSave.push(...repoWorkflows);
+                repoWorkflows.forEach(wf => {
+                    // Skip workflows marked for deletion
+                    const workflowKey = this.getWorkflowKey(wf);
+                    if (!this.pendingDeletes.has(workflowKey)) {
+                        workflowsToSave.push(wf);
+                    }
+                });
             });
 
-            // Call API to save order
-            await this.api.reorderWorkflows(workflowsToSave);
+            if (workflowsToSave.length > 0) {
+                await this.api.reorderWorkflows(workflowsToSave);
+                console.log('Successfully saved workflow order');
+            }
+
+            // Clear pending changes
+            this.pendingRenames.clear();
+            this.pendingDeletes.clear();
 
             // Exit edit mode
             this.isEditMode = false;
@@ -1415,17 +1593,20 @@ class DashboardLoader {
             
             this.originalWorkflowOrder = null;
             
+            // Reload workflows to show updated state
+            await this.loadWorkflows();
+            
             if (this.api.debug) {
-                console.log('Saved workflow order successfully');
+                console.log('Saved all changes successfully');
             }
         } catch (error) {
-            console.error('Failed to save workflow order:', error);
-            alert(`Failed to save workflow order: ${error.message}`);
+            console.error('Failed to save changes:', error);
+            alert(`Failed to save changes: ${error.message}`);
         } finally {
             if (saveButton) {
                 saveButton.disabled = false;
-                saveButton.textContent = 'Save Order';
-                saveButton.setAttribute('aria-label', 'Save workflow order');
+                saveButton.textContent = 'Save';
+                saveButton.setAttribute('aria-label', 'Save all changes');
             }
         }
     }
@@ -1675,6 +1856,15 @@ class DashboardLoader {
     getRepoKeyForCard(card) {
         const section = card.closest('.repo-section');
         return section ? section.getAttribute('data-repo-key') : '';
+    }
+    
+    /**
+     * Get workflow key from workflow object
+     * @param {Object} workflow - Workflow object with owner, repo, workflow properties
+     * @returns {string} - Workflow key in format "owner/repo/workflow"
+     */
+    getWorkflowKey(workflow) {
+        return `${workflow.owner}/${workflow.repo}/${workflow.workflow}`;
     }
 }
 

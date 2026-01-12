@@ -145,6 +145,12 @@ body {
     color: #adbac7;
 }
 
+.workflow-edit-button {
+    background: #2d333b;
+    border-color: #444c56;
+    color: #adbac7;
+}
+
 .config-error {
     background: #341a03;
     border-color: #9e6a03;
@@ -404,4 +410,16 @@ body {
 .edit-mode-button-primary:hover:not(:disabled) {
     background: #46954a;
     border-color: #46954a;
+}
+
+/* Workflow label editing */
+.workflow-label-input {
+    background: #2d333b;
+    color: #adbac7;
+    border-color: #0969da;
+}
+
+.workflow-label-edit-tooltip {
+    background: #1c2128;
+    color: #c9d1d9;
 }
