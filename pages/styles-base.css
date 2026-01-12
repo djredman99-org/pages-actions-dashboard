@@ -475,6 +475,7 @@ body {
     display: flex;
     align-items: center;
     gap: 16px;
+    /* No justify-content: space-between needed - info only, no action buttons */
 }
 
 .edit-mode-banner-content {

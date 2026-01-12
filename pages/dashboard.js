@@ -816,7 +816,7 @@ class DashboardLoader {
             
             // Validate
             if (!newLabel) {
-                alert('Workflow name cannot be empty');
+                alert('Workflow title cannot be empty');
                 input.focus();
                 input.select();
                 isHandlingAction = false;
@@ -840,10 +840,10 @@ class DashboardLoader {
                 // Replace input with label
                 link.replaceChild(labelElement, editContainer);
                 
-                console.log(`Successfully updated workflow label: ${workflow.owner}/${workflow.repo}/${workflow.workflow} to "${newLabel}"`);
+                console.log(`Successfully updated workflow title: ${workflow.owner}/${workflow.repo}/${workflow.workflow} to "${newLabel}"`);
             } catch (error) {
-                console.error('Failed to update workflow label:', error);
-                alert(`Failed to update workflow label: ${error.message}`);
+                console.error('Failed to update workflow title:', error);
+                alert(`Failed to update workflow title: ${error.message}`);
                 
                 // Revert to original on error
                 link.replaceChild(labelElement, editContainer);
