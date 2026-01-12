@@ -390,6 +390,12 @@ body {
     color: #adbac7;
 }
 
+.edit-mode-info-banner {
+    background: #2d333b;
+    border-color: #539bf5;
+    color: #adbac7;
+}
+
 .edit-mode-button-secondary {
     background: #373e47;
     border-color: #444c56;

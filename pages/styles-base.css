@@ -459,10 +459,21 @@ body {
     padding: 16px;
     border-radius: 6px;
     border: 2px solid;
-    margin-bottom: 24px;
+    margin-bottom: 12px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 16px;
+}
+
+/* Edit mode info banner - similar styling but without actions */
+.edit-mode-info-banner {
+    padding: 16px;
+    border-radius: 6px;
+    border: 2px solid;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
     gap: 16px;
 }
 

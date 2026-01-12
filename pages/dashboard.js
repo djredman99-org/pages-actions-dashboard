@@ -1455,10 +1455,15 @@ class DashboardLoader {
         // Store original order for cancel functionality
         this.originalWorkflowOrder = this.captureCurrentOrder();
         
-        // Show edit mode banner
+        // Show edit mode banners
         const banner = document.getElementById('edit-mode-banner');
         if (banner) {
             banner.style.display = 'flex';
+        }
+        
+        const infoBanner = document.getElementById('edit-mode-info-banner');
+        if (infoBanner) {
+            infoBanner.style.display = 'flex';
         }
         
         // Add edit mode class to body
@@ -1480,10 +1485,15 @@ class DashboardLoader {
 
         this.isEditMode = false;
         
-        // Hide edit mode banner
+        // Hide edit mode banners
         const banner = document.getElementById('edit-mode-banner');
         if (banner) {
             banner.style.display = 'none';
+        }
+        
+        const infoBanner = document.getElementById('edit-mode-info-banner');
+        if (infoBanner) {
+            infoBanner.style.display = 'none';
         }
         
         // Remove edit mode class from body
@@ -1532,10 +1542,15 @@ class DashboardLoader {
             // Exit edit mode
             this.isEditMode = false;
             
-            // Hide edit mode banner
+            // Hide edit mode banners
             const banner = document.getElementById('edit-mode-banner');
             if (banner) {
                 banner.style.display = 'none';
+            }
+            
+            const infoBanner = document.getElementById('edit-mode-info-banner');
+            if (infoBanner) {
+                infoBanner.style.display = 'none';
             }
             
             // Remove edit mode class from body
