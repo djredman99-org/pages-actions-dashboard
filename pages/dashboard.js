@@ -167,7 +167,24 @@ class DashboardLoader {
         
         workflowItem.appendChild(link);
 
-        // Add remove button for workflows (will always show for now, API handles permissions)
+        // Add edit button for renaming workflows (shown in edit mode)
+        const editButton = document.createElement('button');
+        editButton.className = 'workflow-edit-button';
+        editButton.setAttribute('aria-label', `Edit ${workflow.label} workflow title`);
+        editButton.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M18.5 2.49998C18.8978 2.10216 19.4374 1.87866 20 1.87866C20.5626 1.87866 21.1022 2.10216 21.5 2.49998C21.8978 2.89781 22.1213 3.43737 22.1213 3.99998C22.1213 4.56259 21.8978 5.10216 21.5 5.49998L12 15L8 16L9 12L18.5 2.49998Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        `;
+        editButton.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.handleEditWorkflowLabel(workflow, label);
+        };
+        workflowItem.appendChild(editButton);
+
+        // Add remove button for workflows (shown in edit mode)
         const removeButton = document.createElement('button');
         removeButton.className = 'workflow-remove-button';
         removeButton.setAttribute('aria-label', `Remove ${workflow.label} workflow`);
@@ -746,6 +763,112 @@ class DashboardLoader {
             // TODO: Replace with toast notification or error modal for better UX
             alert(`Failed to remove workflow: ${error.message}`);
         }
+    }
+
+    /**
+     * Handle editing a workflow label
+     * @param {Object} workflow - Workflow object with owner, repo, workflow properties
+     * @param {HTMLElement} labelElement - The label div element to replace with input
+     */
+    handleEditWorkflowLabel(workflow, labelElement) {
+        // Don't allow editing if already editing
+        if (labelElement.querySelector('.workflow-label-input')) {
+            return;
+        }
+
+        const originalLabel = workflow.label;
+        const link = labelElement.parentElement;
+        
+        // Create container for input and tooltip
+        const editContainer = document.createElement('div');
+        editContainer.className = 'workflow-label-edit-container';
+        
+        // Create tooltip
+        const tooltip = document.createElement('div');
+        tooltip.className = 'workflow-label-edit-tooltip';
+        tooltip.innerHTML = '<div>ENTER to accept</div><div>ESC to cancel</div>';
+        editContainer.appendChild(tooltip);
+        
+        // Create input element
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'workflow-label-input';
+        input.value = originalLabel;
+        input.setAttribute('aria-label', 'Edit workflow title');
+        editContainer.appendChild(input);
+        
+        // Replace label with edit container
+        link.replaceChild(editContainer, labelElement);
+        
+        // Focus and select the text
+        input.focus();
+        input.select();
+        
+        // Handle Enter key to save
+        const handleSave = async () => {
+            const newLabel = input.value.trim();
+            
+            // Validate
+            if (!newLabel) {
+                // Revert to original
+                link.replaceChild(labelElement, editContainer);
+                return;
+            }
+            
+            // If no change, just revert
+            if (newLabel === originalLabel) {
+                link.replaceChild(labelElement, editContainer);
+                return;
+            }
+            
+            try {
+                // Call API to update workflow label
+                await this.api.updateWorkflow(workflow.owner, workflow.repo, workflow.workflow, newLabel);
+                
+                // Update the label text
+                labelElement.textContent = newLabel;
+                workflow.label = newLabel;
+                
+                // Replace input with label
+                link.replaceChild(labelElement, editContainer);
+                
+                console.log(`Successfully updated workflow label: ${workflow.owner}/${workflow.repo}/${workflow.workflow} to "${newLabel}"`);
+            } catch (error) {
+                console.error('Failed to update workflow label:', error);
+                alert(`Failed to update workflow label: ${error.message}`);
+                
+                // Revert to original on error
+                link.replaceChild(labelElement, editContainer);
+            }
+        };
+        
+        // Handle Escape key to cancel
+        const handleCancel = () => {
+            link.replaceChild(labelElement, editContainer);
+        };
+        
+        // Handle keydown events
+        const handleKeyDown = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSave();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                handleCancel();
+            }
+        };
+        
+        input.addEventListener('keydown', handleKeyDown);
+        
+        // Handle blur (clicking outside) - save changes
+        input.addEventListener('blur', () => {
+            // Use setTimeout to allow click events to process first
+            setTimeout(() => {
+                if (input.parentElement) {
+                    handleSave();
+                }
+            }, 200);
+        });
     }
 
     /**

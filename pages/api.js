@@ -185,6 +185,46 @@ class GitHubActionsAPI {
     }
 
     /**
+     * Update a workflow's properties (e.g., label)
+     * @param {string} owner - Repository owner
+     * @param {string} repo - Repository name
+     * @param {string} workflow - Workflow file name
+     * @param {string} label - New display label
+     * @returns {Promise<Object>} - Response object with success status
+     */
+    async updateWorkflow(owner, repo, workflow, label) {
+        try {
+            const response = await fetch(`${this.functionUrl}/api/update-workflow`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    repo: `${owner}/${repo}`,
+                    workflow: workflow,
+                    label: label
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Failed to update workflow: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (this.debug) {
+                console.log('Workflow updated successfully:', data);
+            }
+
+            return data;
+        } catch (error) {
+            console.error('Failed to update workflow:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Set the active dashboard
      * @param {string} dashboardId - Dashboard ID to set as active
      * @returns {Promise<Object>} - Response object with success status

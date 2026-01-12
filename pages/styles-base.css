@@ -530,7 +530,13 @@ body.edit-mode .workflow-item {
 }
 
 body.edit-mode .workflow-remove-button {
-    display: none;
+    display: flex;
+    opacity: 1;
+}
+
+body.edit-mode .workflow-edit-button {
+    display: flex;
+    opacity: 1;
 }
 
 body.edit-mode .add-workflow-button {
@@ -558,18 +564,13 @@ body.edit-mode .add-workflow-button {
     border-radius: 6px;
     width: 28px;
     height: 28px;
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    opacity: 0;
     transition: all 0.1s;
     padding: 0;
     z-index: 10;
-}
-
-.workflow-item:hover .workflow-remove-button {
-    opacity: 1;
 }
 
 .workflow-remove-button:hover {
@@ -588,6 +589,87 @@ body.edit-mode .add-workflow-button {
     width: 16px;
     height: 16px;
     display: block;
+}
+
+/* Edit button on workflow cards */
+.workflow-edit-button {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    border: 1px solid;
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.1s;
+    padding: 0;
+    z-index: 10;
+}
+
+.workflow-edit-button:hover {
+    background: #0969da;
+    border-color: #0969da;
+    color: white;
+}
+
+.workflow-edit-button:focus-visible {
+    opacity: 1;
+    outline: 2px solid;
+    outline-offset: 2px;
+}
+
+.workflow-edit-button svg {
+    width: 16px;
+    height: 16px;
+    display: block;
+}
+
+/* Workflow label editing state */
+.workflow-label-edit-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.workflow-label-input {
+    font-size: 14px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border: 2px solid #0969da;
+    border-radius: 6px;
+    background: var(--bg-canvas, #ffffff);
+    color: var(--fg-default, #1f2328);
+    text-align: center;
+    min-width: 120px;
+    max-width: 100%;
+}
+
+.workflow-label-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.3);
+}
+
+.workflow-label-edit-tooltip {
+    font-size: 11px;
+    line-height: 1.4;
+    padding: 6px 8px;
+    background: var(--bg-overlay, #1f2328);
+    color: var(--fg-on-emphasis, #ffffff);
+    border-radius: 4px;
+    white-space: nowrap;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+}
+
+.workflow-label-edit-tooltip div {
+    margin: 0;
+    padding: 0;
 }
 
 .workflow-item {
