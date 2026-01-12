@@ -31,7 +31,9 @@ async function getLatestWorkflowRun(octokit, owner, repo, workflowFile) {
                 conclusion: run.conclusion,
                 status: run.status,
                 url: run.html_url,
-                updatedAt: run.updated_at
+                updatedAt: run.updated_at,
+                headBranch: run.head_branch || null,
+                headSha: run.head_sha || null
             };
         }
 
