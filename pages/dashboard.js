@@ -50,7 +50,8 @@ class CardDisplaySettings {
             console.error('Failed to load card display settings:', error);
         }
         return {
-            displayMode: 'none' // Options: 'none', 'branch', 'time', 'both'
+            showBranchRef: false,
+            showTimeSince: false
         };
     }
     
@@ -62,21 +63,22 @@ class CardDisplaySettings {
         }
     }
     
-    get displayMode() {
-        return this.settings.displayMode;
+    get showBranchRef() {
+        return this.settings.showBranchRef;
     }
     
-    set displayMode(value) {
-        this.settings.displayMode = value;
+    set showBranchRef(value) {
+        this.settings.showBranchRef = value;
         this.save();
     }
     
-    get showBranchRef() {
-        return this.displayMode === 'branch' || this.displayMode === 'both';
+    get showTimeSince() {
+        return this.settings.showTimeSince;
     }
     
-    get showTimeSince() {
-        return this.displayMode === 'time' || this.displayMode === 'both';
+    set showTimeSince(value) {
+        this.settings.showTimeSince = value;
+        this.save();
     }
 }
 
@@ -995,19 +997,15 @@ class DashboardLoader {
      * @private
      */
     _syncRadioStates() {
-        const radioButtons = {
-            none: document.getElementById('show-none-radio'),
-            branch: document.getElementById('show-branch-ref-radio'),
-            time: document.getElementById('show-time-since-radio'),
-            both: document.getElementById('show-both-radio')
-        };
+        const branchRadio = document.getElementById('show-branch-ref-radio');
+        const timeRadio = document.getElementById('show-time-since-radio');
         
-        const currentMode = this.cardDisplaySettings.displayMode;
-        Object.entries(radioButtons).forEach(([mode, radio]) => {
-            if (radio) {
-                radio.checked = (mode === currentMode);
-            }
-        });
+        if (branchRadio) {
+            branchRadio.checked = this.cardDisplaySettings.showBranchRef;
+        }
+        if (timeRadio) {
+            timeRadio.checked = this.cardDisplaySettings.showTimeSince;
+        }
     }
 
     /**
@@ -1057,26 +1055,31 @@ class DashboardLoader {
         
         if (!modal) return;
         
-        // Set up radio button event listeners (only once)
-        const radioButtons = [
-            document.getElementById('show-none-radio'),
-            document.getElementById('show-branch-ref-radio'),
-            document.getElementById('show-time-since-radio'),
-            document.getElementById('show-both-radio')
-        ];
+        // Set up radio button event listeners (only once) - each acts as independent toggle
+        const branchRadio = document.getElementById('show-branch-ref-radio');
+        const timeRadio = document.getElementById('show-time-since-radio');
         
-        radioButtons.forEach(radio => {
-            if (radio && !this.attachedListeners.has(radio)) {
-                radio.addEventListener('change', (e) => {
-                    if (e.target.checked) {
-                        this.cardDisplaySettings.displayMode = e.target.value;
-                        // Reload workflows to update cards
-                        this.loadWorkflows();
-                    }
-                });
-                this.attachedListeners.set(radio, true);
-            }
-        });
+        if (branchRadio && !this.attachedListeners.has(branchRadio)) {
+            branchRadio.addEventListener('click', (e) => {
+                // Toggle the checked state
+                this.cardDisplaySettings.showBranchRef = !this.cardDisplaySettings.showBranchRef;
+                e.target.checked = this.cardDisplaySettings.showBranchRef;
+                // Reload workflows to update cards
+                this.loadWorkflows();
+            });
+            this.attachedListeners.set(branchRadio, true);
+        }
+        
+        if (timeRadio && !this.attachedListeners.has(timeRadio)) {
+            timeRadio.addEventListener('click', (e) => {
+                // Toggle the checked state
+                this.cardDisplaySettings.showTimeSince = !this.cardDisplaySettings.showTimeSince;
+                e.target.checked = this.cardDisplaySettings.showTimeSince;
+                // Reload workflows to update cards
+                this.loadWorkflows();
+            });
+            this.attachedListeners.set(timeRadio, true);
+        }
         
         // Initialize radio button states
         this._syncRadioStates();
