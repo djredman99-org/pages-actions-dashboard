@@ -459,23 +459,11 @@ body {
     padding: 16px;
     border-radius: 6px;
     border: 2px solid;
-    margin-bottom: 12px;
+    margin-bottom: 24px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-}
-
-/* Edit mode info banner - similar styling but without actions */
-.edit-mode-info-banner {
-    padding: 16px;
-    border-radius: 6px;
-    border: 2px solid;
-    margin-bottom: 24px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    /* No justify-content: space-between needed - info only, no action buttons */
 }
 
 .edit-mode-banner-content {
@@ -1192,6 +1180,28 @@ body.edit-mode .add-workflow-button {
     padding: 16px;
     text-align: center;
     font-size: 14px;
+}
+
+/* Pending change indicators */
+.workflow-label-pending {
+    font-style: italic;
+    opacity: 0.85;
+}
+
+.workflow-pending-delete {
+    opacity: 0.5;
+    position: relative;
+}
+
+.workflow-pending-delete::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: currentColor;
+    transform: translateY(-50%);
 }
 
 /* Responsive design */
