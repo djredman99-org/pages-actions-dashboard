@@ -5,19 +5,57 @@ on:
     branches: [ main ]
     paths:
       - 'function-app/**'
+      - 'function-app-insights/**'
   workflow_dispatch:
     inputs:
       function_app_name:
         description: 'Function App Name (optional - will use from deployment outputs if not provided)'
         required: false
         type: string
+      deploy_target:
+        description: 'Which function app to deploy'
+        required: false
+        default: 'dashboard'
+        type: choice
+        options:
+          - dashboard
+          - insights
+          - both
 
 permissions:
   contents: read
   id-token: write
 
 jobs:
+  determine-target:
+    runs-on: ubuntu-latest
+    outputs:
+      deploy_dashboard: ${{ steps.decide.outputs.dashboard }}
+      deploy_insights: ${{ steps.decide.outputs.insights }}
+    steps:
+      - id: decide
+        run: |
+          if [ "${{ github.event_name }}" == "push" ]; then
+            # Auto-detect based on changed files
+            echo "dashboard=true" >> $GITHUB_OUTPUT
+            echo "insights=false" >> $GITHUB_OUTPUT
+          else
+            # Manual dispatch - use input
+            TARGET="${{ inputs.deploy_target }}"
+            if [ "$TARGET" == "both" ]; then
+              echo "dashboard=true" >> $GITHUB_OUTPUT
+              echo "insights=true" >> $GITHUB_OUTPUT
+            elif [ "$TARGET" == "insights" ]; then
+              echo "dashboard=false" >> $GITHUB_OUTPUT
+              echo "insights=true" >> $GITHUB_OUTPUT
+            else
+              echo "dashboard=true" >> $GITHUB_OUTPUT
+              echo "insights=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
   deploy:
+    needs: determine-target
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -59,6 +97,7 @@ jobs:
           echo "✅ All required secrets are present" >> $GITHUB_STEP_SUMMARY
 
       - name: Install dependencies
+        if: needs.determine-target.outputs.deploy_dashboard == 'true'
         run: |
           echo "### 📦 Installing Dependencies" >> $GITHUB_STEP_SUMMARY
           cd function-app
@@ -96,6 +135,7 @@ jobs:
           fi
 
       - name: Deploy to Azure Function App
+        if: needs.determine-target.outputs.deploy_dashboard == 'true'
         env:
           FUNCTION_APP_NAME: ${{ inputs.function_app_name || secrets.FUNCTION_APP_NAME }}
         run: |
@@ -139,7 +179,34 @@ jobs:
           echo "- \`add-workflow\`: HTTP endpoint to add workflows to configuration" >> $GITHUB_STEP_SUMMARY
           echo "- \`remove-workflow\`: HTTP endpoint to remove workflows from configuration" >> $GITHUB_STEP_SUMMARY
 
+      - name: Install insights dependencies
+        if: needs.determine-target.outputs.deploy_insights == 'true'
+        working-directory: function-app-insights
+        run: |
+          echo "### 📦 Installing Insights Dependencies" >> $GITHUB_STEP_SUMMARY
+          npm ci
+          echo "✅ Insights dependencies installed" >> $GITHUB_STEP_SUMMARY
+
+      - name: Deploy Insights Function App
+        if: needs.determine-target.outputs.deploy_insights == 'true'
+        env:
+          INSIGHTS_APP_NAME: ${{ secrets.INSIGHTS_FUNCTION_APP_NAME }}
+        working-directory: function-app-insights
+        run: |
+          echo "### 🔬 Deploying Insights Function App" >> $GITHUB_STEP_SUMMARY
+          echo "Target: $INSIGHTS_APP_NAME" >> $GITHUB_STEP_SUMMARY
+          
+          func azure functionapp publish "$INSIGHTS_APP_NAME" --javascript
+          
+          echo "✅ **Insights Deployment Complete**" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployed Functions:**" >> $GITHUB_STEP_SUMMARY
+          echo "- \`webhook-receiver\`: Validates GitHub webhooks" >> $GITHUB_STEP_SUMMARY
+          echo "- \`event-triage\`: Processes and stores events" >> $GITHUB_STEP_SUMMARY
+          echo "- \`get-insights-data\`: Query API for analytics" >> $GITHUB_STEP_SUMMARY
+          echo "- \`health\`: Health check endpoint" >> $GITHUB_STEP_SUMMARY
+
       - name: Verify Deployment
+        if: needs.determine-target.outputs.deploy_dashboard == 'true'
         env:
           FUNCTION_APP_NAME: ${{ inputs.function_app_name || secrets.FUNCTION_APP_NAME }}
         run: |
@@ -179,6 +246,23 @@ jobs:
             echo "⚠️ Function endpoint returned HTTP $HTTP_STATUS" >> $GITHUB_STEP_SUMMARY
             echo "   This may be expected if workflows are not yet configured" >> $GITHUB_STEP_SUMMARY
           fi
+
+      - name: Verify Insights Deployment
+        if: needs.determine-target.outputs.deploy_insights == 'true'
+        env:
+          INSIGHTS_APP_NAME: ${{ secrets.INSIGHTS_FUNCTION_APP_NAME }}
+        run: |
+          echo "### ✅ Verifying Insights Deployment" >> $GITHUB_STEP_SUMMARY
+          
+          RG=$(az functionapp list --query "[?name=='$INSIGHTS_APP_NAME'].resourceGroup" -o tsv)
+          STATE=$(az functionapp show --name "$INSIGHTS_APP_NAME" --resource-group "$RG" --query state -o tsv)
+          HOST=$(az functionapp show --name "$INSIGHTS_APP_NAME" --resource-group "$RG" --query defaultHostName -o tsv)
+          
+          echo "State: $STATE" >> $GITHUB_STEP_SUMMARY
+          echo "URL: https://$HOST" >> $GITHUB_STEP_SUMMARY
+          
+          HEALTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://$HOST/api/health" || echo "000")
+          echo "Health endpoint: HTTP $HEALTH_CODE" >> $GITHUB_STEP_SUMMARY
 
       - name: Deployment Summary
         if: always()

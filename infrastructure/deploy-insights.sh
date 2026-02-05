@@ -14,19 +14,19 @@ NC='\033[0m' # No Color
 echo -e "${GREEN}=== GitHub Actions Insights Infrastructure Deployment ===${NC}"
 echo ""
 
-# Check if parameters file exists
-if [ ! -f "insights.parameters.json" ]; then
-    echo -e "${YELLOW}Creating insights.parameters.json from example...${NC}"
-    cp insights.parameters.example.json insights.parameters.json
-    echo -e "${RED}Please edit insights.parameters.json with your values before continuing!${NC}"
+# Use shared parameters.json file (single source of truth)
+if [ ! -f "parameters.json" ]; then
+    echo -e "${RED}Error: parameters.json not found. Deploy main infrastructure first.${NC}"
     exit 1
 fi
 
-# Load parameters
-LOCATION=$(jq -r '.parameters.location.value' insights.parameters.json)
-BASE_NAME=$(jq -r '.parameters.baseName.value' insights.parameters.json)
-ENVIRONMENT=$(jq -r '.parameters.environment.value' insights.parameters.json)
-EXISTING_KEY_VAULT_NAME=$(jq -r '.parameters.existingKeyVaultName.value' insights.parameters.json)
+# Load common parameters from shared file
+LOCATION=$(jq -r '.parameters.location.value' parameters.json)
+BASE_NAME=$(jq -r '.parameters.baseName.value' parameters.json)
+ENVIRONMENT=$(jq -r '.parameters.environment.value' parameters.json)
+
+# Derive Key Vault name from base parameters
+EXISTING_KEY_VAULT_NAME="${BASE_NAME}-kv-${ENVIRONMENT}"
 
 # Construct resource names
 RESOURCE_GROUP="${BASE_NAME}-rg"
@@ -51,13 +51,16 @@ fi
 echo -e "${GREEN}Resource group found!${NC}"
 echo ""
 
-# Deploy Bicep template
+# Deploy Bicep template with inline parameters
 echo -e "${YELLOW}Deploying Insights infrastructure...${NC}"
 az deployment group create \
     --name "$DEPLOYMENT_NAME" \
     --resource-group "$RESOURCE_GROUP" \
     --template-file insights.bicep \
-    --parameters insights.parameters.json \
+    --parameters location="$LOCATION" \
+    --parameters baseName="$BASE_NAME" \
+    --parameters environment="$ENVIRONMENT" \
+    --parameters existingKeyVaultName="$EXISTING_KEY_VAULT_NAME" \
     --verbose
 
 echo ""
