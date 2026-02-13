@@ -100,7 +100,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
           cache-dependency-path: 'function-app/package.json'
 
@@ -114,12 +114,18 @@ jobs:
             MISSING_SECRETS+=("AZURE_CREDENTIALS")
           fi
           
-          if [ -z "${{ secrets.FUNCTION_APP_NAME }}" ] && [ -z "${{ inputs.function_app_name }}" ]; then
-            MISSING_SECRETS+=("FUNCTION_APP_NAME (or provide as workflow input)")
+          # Only validate dashboard secrets if deploying dashboard
+          if [ "${{ needs.determine-target.outputs.deploy_dashboard }}" == "true" ]; then
+            if [ -z "${{ secrets.FUNCTION_APP_NAME }}" ] && [ -z "${{ inputs.function_app_name }}" ]; then
+              MISSING_SECRETS+=("FUNCTION_APP_NAME (or provide as workflow input)")
+            fi
           fi
           
-          if [ -z "${{ secrets.INSIGHTS_FUNCTION_APP_NAME }}" ] && [ -z "${{ inputs.insights_function_app_name }}" ]; then
-            MISSING_SECRETS+=("INSIGHTS_FUNCTION_APP_NAME (or provide as workflow input)")
+          # Only validate insights secrets if deploying insights
+          if [ "${{ needs.determine-target.outputs.deploy_insights }}" == "true" ]; then
+            if [ -z "${{ secrets.INSIGHTS_FUNCTION_APP_NAME }}" ] && [ -z "${{ inputs.insights_function_app_name }}" ]; then
+              MISSING_SECRETS+=("INSIGHTS_FUNCTION_APP_NAME (or provide as workflow input)")
+            fi
           fi
           
           if [ ${#MISSING_SECRETS[@]} -gt 0 ]; then
@@ -127,6 +133,10 @@ jobs:
             for secret in "${MISSING_SECRETS[@]}"; do
               echo "  - \`$secret\`" >> $GITHUB_STEP_SUMMARY
             done
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Deployment Targets:**" >> $GITHUB_STEP_SUMMARY
+            echo "- Dashboard: ${{ needs.determine-target.outputs.deploy_dashboard }}" >> $GITHUB_STEP_SUMMARY
+            echo "- Insights: ${{ needs.determine-target.outputs.deploy_insights }}" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "Please add these secrets in repository Settings → Secrets and variables → Actions" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
@@ -136,6 +146,10 @@ jobs:
           fi
           
           echo "✅ All required secrets are present" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment Targets:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Dashboard: ${{ needs.determine-target.outputs.deploy_dashboard }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Insights: ${{ needs.determine-target.outputs.deploy_insights }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Install dependencies
         if: needs.determine-target.outputs.deploy_dashboard == 'true'
@@ -186,7 +200,7 @@ jobs:
           
           echo "**Deployment Configuration:**" >> $GITHUB_STEP_SUMMARY
           echo "- Function App Name: \`$FUNCTION_APP_NAME\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Node.js Version: 18" >> $GITHUB_STEP_SUMMARY
+          echo "- Node.js Version: 20" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           echo "Deploying function code (this may take a few minutes)..." >> $GITHUB_STEP_SUMMARY
