@@ -203,53 +203,33 @@ The `parameters.json` file configures the deployment:
 - Storage Account: `{baseName}{environment}` (no hyphens, lowercase)
 
 ## Outputs
+
+After deployment, the template provides:
+
+| Output | Description |
+|--------|-------------|
+| `functionAppName` | Name of the Function App |
+| `functionAppUrl` | HTTPS URL of the Function App |
+| `keyVaultName` | Name of the Key Vault |
+| `storageAccountName` | Name of the Storage Account |
+| `storageContainerName` | Name of the workflow config container |
+| `functionAppPrincipalId` | Managed Identity principal ID |
+
+## Customization
+
+### Change Function App Plan
+
+To use a different App Service Plan (e.g., Premium for no cold starts):
+
+Edit `main.bicep`:
+```bicep
+sku: {
+  name: 'EP1'  // Premium Elastic Plan
+  tier: 'ElasticPremium'
+}
 ```
 
-Bicep deployments are idempotent - only changed resources will be updated.
-
-## Resource Naming
-
-Resources are named using a combination of:
-- `baseName`: Base name for all resources (from parameters)
-- `environment`: Environment name (dev/staging/prod)
-- `uniqueSuffix`: Auto-generated unique string based on resource group ID
-
-Example resource names:
-- Function App: `ghactionsdash-func-dev-abc123`
-- Key Vault: `ghactionsdash-kv-dev-abc123`
-- Storage Account: `ghactionsdashdevabc123` (no hyphens, max 24 chars)
-
-## Parameters
-
-### Required Parameters
-
-- **githubAppId**: GitHub App ID (numeric)
-
-**Note**: The GitHub App private key is uploaded separately via `az keyvault secret set` and is not included as a parameter.
-
-### Optional Parameters
-
-- **location**: Azure region (default: resource group location)
-- **baseName**: Base name for resources (default: "ghactionsdash")
-- **environment**: Environment name (default: "dev", allowed: dev/staging/prod)
-
-## Outputs
-
-After deployment, the following outputs are available:
-
-- **functionAppName**: Name of the deployed Function App
-- **functionAppUrl**: HTTPS URL of the Function App
-- **keyVaultName**: Name of the Key Vault
-- **storageAccountName**: Name of the Storage Account
-- **storageContainerName**: Name of the workflow config container
-- **functionAppPrincipalId**: Managed Identity principal ID
-
-Access outputs from the deployment:
-```bash
-az deployment group show \
-  --name <DEPLOYMENT_NAME> \
-  --resource-group <RESOURCE_GROUP_NAME> \
-  --query properties.outputs
+### Restrict CORS Origins
 ```
 
 ## Customization

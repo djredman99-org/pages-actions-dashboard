@@ -182,112 +182,16 @@ For complete API documentation, see [WORKFLOW_MANAGEMENT_API.md](../WORKFLOW_MAN
 - `POST /api/delete-dashboard` - Delete a dashboard
 
 ## Monitoring
-```json
-{
-  "success": true,
-  "message": "Workflow added successfully",
-  "dashboardId": "550e8400-e29b-41d4-a716-446655440000",
-  "workflow": {
-    "owner": "owner",
-    "repo": "repo",
-    "workflow": "workflow-file.yml",
-    "label": "Workflow Label"
-  }
-}
+
+Application Insights is automatically configured for monitoring. View logs:
+
+```bash
+az functionapp log tail --name FUNCTION_APP_NAME --resource-group RESOURCE_GROUP_NAME
 ```
 
-**Error Responses:**
-- `400 Bad Request`: Invalid request body or validation error
-- `409 Conflict`: Workflow already exists
-- `500 Internal Server Error`: Server error
+**See:** [DEPLOYMENT_NOTES.md](../DEPLOYMENT_NOTES.md#monitoring) for monitoring queries and alerts.
 
-#### POST/DELETE `/api/remove-workflow`
-
-Removes a workflow from the dashboard configuration.
-
-**Request Body:**
-```json
-{
-  "repo": "owner/repo",
-  "workflow": "workflow-file.yml"
-}
-```
-
-**Success Response (200):**
-```json
-{
-  "success": true,
-  "message": "Workflow removed successfully",
-  "dashboardId": "550e8400-e29b-41d4-a716-446655440000",
-  "workflow": {
-    "owner": "owner",
-    "repo": "repo",
-    "workflow": "workflow-file.yml",
-    "label": "Workflow Label"
-  }
-}
-```
-
-**Error Responses:**
-- `400 Bad Request`: Invalid request body or validation error
-- `404 Not Found`: Workflow not found
-- `500 Internal Server Error`: Server error
-
-#### POST `/api/reorder-workflows`
-
-Reorders workflows within the active dashboard.
-
-**Request Body:**
-```json
-{
-  "workflows": [
-    {
-      "owner": "owner",
-      "repo": "repo",
-      "workflow": "first-workflow.yml"
-    },
-    {
-      "owner": "owner",
-      "repo": "repo",
-      "workflow": "second-workflow.yml"
-    }
-  ]
-}
-```
-
-**Success Response (200):**
-```json
-{
-  "success": true,
-  "message": "Reordered 2 workflows",
-  "dashboardId": "550e8400-e29b-41d4-a716-446655440000"
-}
-```
-
-**Error Responses:**
-- `400 Bad Request`: Invalid request body, workflow count mismatch, or validation error
-- `404 Not Found`: Dashboard not found
-- `500 Internal Server Error`: Server error
-
-**Note**: The workflows array must contain all existing workflows in the active dashboard in the desired order.
-
-## Monitoring
-
-### Application Insights
-
-The function automatically logs to Application Insights. View logs in Azure Portal:
-
-1. Go to Function App → Application Insights
-2. Navigate to "Logs" or "Live Metrics"
-
-### Query Logs
-
-Example query to view function executions:
-```kusto
-requests
-| where operation_Name == "get-workflow-statuses"
-| project timestamp, duration, resultCode
-| order by timestamp desc
+## Troubleshooting
 ```
 
 ### Error Tracking
