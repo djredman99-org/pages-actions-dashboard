@@ -12,6 +12,10 @@ on:
         description: 'Function App Name (optional - will use from deployment outputs if not provided)'
         required: false
         type: string
+      insights_function_app_name:
+        description: 'Insights Function App Name (optional - will use from deployment outputs if not provided)'
+        required: false
+        type: string
       deploy_target:
         description: 'Which function app to deploy'
         required: false
@@ -33,12 +37,41 @@ jobs:
       deploy_dashboard: ${{ steps.decide.outputs.dashboard }}
       deploy_insights: ${{ steps.decide.outputs.insights }}
     steps:
+      - name: Checkout code
+        if: github.event_name == 'push'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      
       - id: decide
         run: |
           if [ "${{ github.event_name }}" == "push" ]; then
             # Auto-detect based on changed files
-            echo "dashboard=true" >> $GITHUB_OUTPUT
-            echo "insights=false" >> $GITHUB_OUTPUT
+            DASHBOARD_CHANGED=false
+            INSIGHTS_CHANGED=false
+            
+            # Get list of changed files in the push
+            CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || git diff --name-only --diff-filter=A HEAD)
+            
+            echo "Changed files:"
+            echo "$CHANGED_FILES"
+            
+            # Check if dashboard files changed
+            if echo "$CHANGED_FILES" | grep -q "^function-app/"; then
+              DASHBOARD_CHANGED=true
+            fi
+            
+            # Check if insights files changed
+            if echo "$CHANGED_FILES" | grep -q "^function-app-insights/"; then
+              INSIGHTS_CHANGED=true
+            fi
+            
+            echo "dashboard=$DASHBOARD_CHANGED" >> $GITHUB_OUTPUT
+            echo "insights=$INSIGHTS_CHANGED" >> $GITHUB_OUTPUT
+            
+            echo "### 🎯 Deployment Targets (Auto-detected)" >> $GITHUB_STEP_SUMMARY
+            echo "- Dashboard: $DASHBOARD_CHANGED" >> $GITHUB_STEP_SUMMARY
+            echo "- Insights: $INSIGHTS_CHANGED" >> $GITHUB_STEP_SUMMARY
           else
             # Manual dispatch - use input
             TARGET="${{ inputs.deploy_target }}"
@@ -52,6 +85,9 @@ jobs:
               echo "dashboard=true" >> $GITHUB_OUTPUT
               echo "insights=false" >> $GITHUB_OUTPUT
             fi
+            
+            echo "### 🎯 Deployment Targets (Manual)" >> $GITHUB_STEP_SUMMARY
+            echo "Selected: $TARGET" >> $GITHUB_STEP_SUMMARY
           fi
 
   deploy:
@@ -82,6 +118,10 @@ jobs:
             MISSING_SECRETS+=("FUNCTION_APP_NAME (or provide as workflow input)")
           fi
           
+          if [ -z "${{ secrets.INSIGHTS_FUNCTION_APP_NAME }}" ] && [ -z "${{ inputs.insights_function_app_name }}" ]; then
+            MISSING_SECRETS+=("INSIGHTS_FUNCTION_APP_NAME (or provide as workflow input)")
+          fi
+          
           if [ ${#MISSING_SECRETS[@]} -gt 0 ]; then
             echo "❌ **Missing required secrets:**" >> $GITHUB_STEP_SUMMARY
             for secret in "${MISSING_SECRETS[@]}"; do
@@ -91,6 +131,7 @@ jobs:
             echo "Please add these secrets in repository Settings → Secrets and variables → Actions" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**Note**: \`FUNCTION_APP_NAME\` is typically set after running the infrastructure deployment workflow." >> $GITHUB_STEP_SUMMARY
+            echo "**Note**: \`INSIGHTS_FUNCTION_APP_NAME\` is set after running the infrastructure deployment with 'include_insights' option." >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
           
@@ -190,7 +231,7 @@ jobs:
       - name: Deploy Insights Function App
         if: needs.determine-target.outputs.deploy_insights == 'true'
         env:
-          INSIGHTS_APP_NAME: ${{ secrets.INSIGHTS_FUNCTION_APP_NAME }}
+          INSIGHTS_APP_NAME: ${{ inputs.insights_function_app_name || secrets.INSIGHTS_FUNCTION_APP_NAME }}
         working-directory: function-app-insights
         run: |
           echo "### 🔬 Deploying Insights Function App" >> $GITHUB_STEP_SUMMARY
@@ -250,7 +291,7 @@ jobs:
       - name: Verify Insights Deployment
         if: needs.determine-target.outputs.deploy_insights == 'true'
         env:
-          INSIGHTS_APP_NAME: ${{ secrets.INSIGHTS_FUNCTION_APP_NAME }}
+          INSIGHTS_APP_NAME: ${{ inputs.insights_function_app_name || secrets.INSIGHTS_FUNCTION_APP_NAME }}
         run: |
           echo "### ✅ Verifying Insights Deployment" >> $GITHUB_STEP_SUMMARY
           

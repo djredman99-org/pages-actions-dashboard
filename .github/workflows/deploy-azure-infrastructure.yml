@@ -298,13 +298,48 @@ jobs:
           echo "### 🔬 Deploying Insights Infrastructure" >> $GITHUB_STEP_SUMMARY
           
           cd infrastructure
+          
+          # Run the deployment script
           ./deploy-insights.sh
           
-          INSIGHTS_FUNC_NAME="${{ env.KEY_VAULT_NAME }}" | sed 's/-kv-/-func-insights-/'
+          # Get the latest deployment name for insights
+          LATEST_DEPLOYMENT=$(az deployment group list \
+            --resource-group "$RESOURCE_GROUP_NAME" \
+            --query "[?contains(name, 'insights-deployment')].name | sort(@) | [-1]" \
+            -o tsv)
+          
+          if [ -z "$LATEST_DEPLOYMENT" ]; then
+            echo "❌ Failed to find insights deployment" >> $GITHUB_STEP_SUMMARY
+            echo "No deployment matching 'insights-deployment' pattern was found." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          
+          echo "Latest insights deployment: $LATEST_DEPLOYMENT" >> $GITHUB_STEP_SUMMARY
+          
+          # Extract the insights function app name from deployment outputs
+          INSIGHTS_FUNC_NAME=$(az deployment group show \
+            --name "$LATEST_DEPLOYMENT" \
+            --resource-group "$RESOURCE_GROUP_NAME" \
+            --query 'properties.outputs.functionAppInsightsName.value' \
+            -o tsv)
+          
+          INSIGHTS_FUNC_URL=$(az deployment group show \
+            --name "$LATEST_DEPLOYMENT" \
+            --resource-group "$RESOURCE_GROUP_NAME" \
+            --query 'properties.outputs.functionAppInsightsUrl.value' \
+            -o tsv)
+          
           echo "INSIGHTS_FUNCTION_APP_NAME=$INSIGHTS_FUNC_NAME" >> $GITHUB_ENV
+          echo "INSIGHTS_FUNCTION_APP_URL=$INSIGHTS_FUNC_URL" >> $GITHUB_ENV
           
           echo "✅ Insights infrastructure deployed" >> $GITHUB_STEP_SUMMARY
-          echo "Function name: $INSIGHTS_FUNC_NAME" >> $GITHUB_STEP_SUMMARY
+          echo "**Insights Function App:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Name: \`$INSIGHTS_FUNC_NAME\`" >> $GITHUB_STEP_SUMMARY
+          echo "- URL: \`$INSIGHTS_FUNC_URL\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**⚠️ Important:** Add the following secret to your repository:" >> $GITHUB_STEP_SUMMARY
+          echo "- Secret name: \`INSIGHTS_FUNCTION_APP_NAME\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Secret value: \`$INSIGHTS_FUNC_NAME\`" >> $GITHUB_STEP_SUMMARY
 
       - name: Deployment Summary
         if: always()
@@ -332,6 +367,20 @@ jobs:
             echo "     func azure functionapp publish $FUNCTION_APP_NAME" >> $GITHUB_STEP_SUMMARY
             echo "     \`\`\`" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # Add insights deployment instructions if insights were deployed
+            if [ "${{ inputs.include_insights }}" == "true" ] && [ -n "$INSIGHTS_FUNCTION_APP_NAME" ]; then
+              echo "2b. Deploy the Insights Function App code:" >> $GITHUB_STEP_SUMMARY
+              echo "   - **Automated**: Run the \"Deploy Azure Function\" workflow from Actions tab with 'insights' or 'both' option" >> $GITHUB_STEP_SUMMARY
+              echo "   - **Manual**: Run the following commands:" >> $GITHUB_STEP_SUMMARY
+              echo "     \`\`\`bash" >> $GITHUB_STEP_SUMMARY
+              echo "     cd function-app-insights" >> $GITHUB_STEP_SUMMARY
+              echo "     npm install" >> $GITHUB_STEP_SUMMARY
+              echo "     func azure functionapp publish $INSIGHTS_FUNCTION_APP_NAME" >> $GITHUB_STEP_SUMMARY
+              echo "     \`\`\`" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+            
             echo "3. Upload workflow configuration to Azure Storage:" >> $GITHUB_STEP_SUMMARY
             echo "   \`\`\`bash" >> $GITHUB_STEP_SUMMARY
             echo "   az storage blob upload \\" >> $GITHUB_STEP_SUMMARY

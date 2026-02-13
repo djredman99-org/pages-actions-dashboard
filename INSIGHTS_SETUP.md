@@ -40,46 +40,74 @@ Before you begin, ensure you have:
 
 ## Deployment Process
 
-### Step 1: Prepare Infrastructure Parameters
+You can deploy Insights using either:
+- **Option A: Automated GitHub Actions Workflow** (Recommended) - Deploys infrastructure and code automatically
+- **Option B: Manual Deployment** - Deploy using command line for more control
+
+### Option A: Automated Deployment via GitHub Actions (Recommended)
+
+This is the easiest way to deploy the Insights infrastructure and function app code.
+
+#### Step 1: Run the Infrastructure Deployment Workflow
+
+1. Go to your repository on GitHub
+2. Click on **Actions** tab
+3. Select **Deploy Azure Infrastructure** workflow
+4. Click **Run workflow**
+5. Configure the workflow:
+   - **Environment**: Choose your environment (dev/staging/prod)
+   - **Also deploy Insights infrastructure**: ✅ **Check this box**
+6. Click **Run workflow**
+
+The workflow will:
+- ✅ Deploy the main infrastructure (if not already deployed)
+- ✅ Deploy Insights infrastructure (Cosmos DB and Function App)
+- ✅ Configure all necessary permissions
+- ✅ Display the Insights Function App name in the output
+
+#### Step 2: Save the Insights Function App Name
+
+After the workflow completes:
+1. Check the workflow summary for the Insights Function App name
+2. Add it as a repository secret:
+   - Go to **Settings** → **Secrets and variables** → **Actions**
+   - Click **New repository secret**
+   - Name: `INSIGHTS_FUNCTION_APP_NAME`
+   - Value: The function app name from the workflow output (e.g., `ghactionsdash-func-insights-dev`)
+
+#### Step 3: Deploy the Function App Code
+
+1. Go to **Actions** tab
+2. Select **Deploy Azure Function** workflow
+3. Click **Run workflow**
+4. Configure:
+   - **Which function app to deploy**: Select **insights** or **both**
+5. Click **Run workflow**
+
+This will deploy the Insights function app code automatically.
+
+#### Step 4: Configure GitHub Webhook
+
+Continue with the webhook configuration in [Step 5 of Manual Deployment](#step-5-configure-github-webhook) below.
+
+---
+
+### Option B: Manual Deployment
+
+Use this option if you prefer command-line control or need to customize the deployment.
+
+#### Step 1: Prepare Infrastructure Parameters
 
 Navigate to the infrastructure directory:
 ```bash
 cd infrastructure
 ```
 
-Create the Insights parameters file:
-```bash
-cp insights.parameters.example.json insights.parameters.json
-```
+**Note**: The Insights deployment now reads from the shared `parameters.json` file (not a separate `insights.parameters.json`). The script will derive the Key Vault name from your base parameters using the pattern: `<baseName>-kv-<environment>` (e.g., `ghactionsdash-kv-dev`).
 
-Edit `insights.parameters.json`:
-```json
-{
-  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
-  "contentVersion": "1.0.0.0",
-  "parameters": {
-    "location": {
-      "value": "eastus"
-    },
-    "baseName": {
-      "value": "ghactionsdash"
-    },
-    "environment": {
-      "value": "dev"
-    },
-    "existingKeyVaultName": {
-      "value": "ghactionsdash-kv-dev"
-    }
-  }
-}
-```
+Make sure your main `parameters.json` exists with the correct values for `location`, `baseName`, and `environment`.
 
-**Important**:
-- Use the **same** `baseName` and `environment` as your main infrastructure
-- Update `existingKeyVaultName` to match your existing Key Vault name
-- You can find your Key Vault name using: `az keyvault list --query "[].name" -o tsv`
-
-### Step 2: Deploy Insights Infrastructure
+#### Step 2: Deploy Insights Infrastructure
 
 Run the deployment script:
 ```bash
