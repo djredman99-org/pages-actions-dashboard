@@ -104,7 +104,12 @@ jobs:
           
           # Check if parameters.json exists
           if [ ! -f "infrastructure/parameters.json" ]; then
-            echo "⚠️ parameters.json not found, will rely on secrets/inputs only" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **Warning:** parameters.json not found" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Function app names will need to be provided via:" >> $GITHUB_STEP_SUMMARY
+            echo "- Workflow inputs, or" >> $GITHUB_STEP_SUMMARY
+            echo "- Repository secrets (\`FUNCTION_APP_NAME\`, \`INSIGHTS_FUNCTION_APP_NAME\`)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
             echo "dashboard_name=" >> $GITHUB_OUTPUT
             echo "insights_name=" >> $GITHUB_OUTPUT
             exit 0
@@ -114,11 +119,19 @@ jobs:
           BASE_NAME=$(jq -r '.parameters.baseName.value' infrastructure/parameters.json)
           ENVIRONMENT=$(jq -r '.parameters.environment.value' infrastructure/parameters.json)
           
+          # Validate parameters
+          if [ -z "$BASE_NAME" ] || [ "$BASE_NAME" = "null" ] || [ -z "$ENVIRONMENT" ] || [ "$ENVIRONMENT" = "null" ]; then
+            echo "❌ Invalid parameters.json: baseName or environment is missing" >> $GITHUB_STEP_SUMMARY
+            echo "dashboard_name=" >> $GITHUB_OUTPUT
+            echo "insights_name=" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
           # Derive function app names using the same convention as Bicep templates
           DASHBOARD_FUNC_NAME="${BASE_NAME}-func-${ENVIRONMENT}"
           INSIGHTS_FUNC_NAME="${BASE_NAME}-func-insights-${ENVIRONMENT}"
           
-          echo "**Derived Names:**" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Derived Names from parameters.json:**" >> $GITHUB_STEP_SUMMARY
           echo "- Dashboard Function: \`$DASHBOARD_FUNC_NAME\`" >> $GITHUB_STEP_SUMMARY
           echo "- Insights Function: \`$INSIGHTS_FUNC_NAME\`" >> $GITHUB_STEP_SUMMARY
           
@@ -151,8 +164,13 @@ jobs:
             fi
           fi
           
-          # Insights function app name can be derived from parameters.json, so no secret validation needed
-          # The derived name will be used if no input or secret is provided
+          # Validate insights sources if deploying insights
+          if [ "${{ needs.determine-target.outputs.deploy_insights }}" == "true" ]; then
+            # Check if we have a name from any source (secret, input, or derived)
+            if [ -z "${{ secrets.INSIGHTS_FUNCTION_APP_NAME }}" ] && [ -z "${{ inputs.insights_function_app_name }}" ] && [ -z "${{ steps.derive-names.outputs.insights_name }}" ]; then
+              MISSING_SECRETS+=("INSIGHTS_FUNCTION_APP_NAME (secret, workflow input, or valid parameters.json required)")
+            fi
+          fi
           
           if [ ${#MISSING_SECRETS[@]} -gt 0 ]; then
             echo "❌ **Missing required secrets:**" >> $GITHUB_STEP_SUMMARY
@@ -289,8 +307,16 @@ jobs:
             exit 1
           fi
           
+          # Determine source for display
+          NAME_SOURCE="derived from parameters.json"
+          if [ -n "${{ inputs.insights_function_app_name }}" ]; then
+            NAME_SOURCE="workflow input"
+          elif [ -n "${{ secrets.INSIGHTS_FUNCTION_APP_NAME }}" ]; then
+            NAME_SOURCE="secret"
+          fi
+          
           echo "**Target:** \`$INSIGHTS_APP_NAME\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Source:** ${{ inputs.insights_function_app_name && 'workflow input' || (secrets.INSIGHTS_FUNCTION_APP_NAME && 'secret' || 'derived from parameters.json') }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Source:** $NAME_SOURCE" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           func azure functionapp publish "$INSIGHTS_APP_NAME" --javascript
