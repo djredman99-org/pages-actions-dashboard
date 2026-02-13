@@ -151,7 +151,7 @@ jobs:
           RG_EXISTS=$(az group exists --name "$RESOURCE_GROUP_NAME")
           if [ "$RG_EXISTS" = "false" ]; then
             echo "Creating resource group for permission check..." >> $GITHUB_STEP_SUMMARY
-            if ! az group create --name "$RESOURCE_GROUP_NAME" --location "$LOCATION" --output none > /dev/null 2>&1; then
+            if ! az group create --name "$RESOURCE_GROUP_NAME" --location "$LOCATION" --output none 2>&1; then
               echo "⚠️ Warning: Could not create resource group. This may affect permission validation." >> $GITHUB_STEP_SUMMARY
             fi
           fi
@@ -171,14 +171,19 @@ jobs:
             --scope /subscriptions/$SUBSCRIPTION_ID \
             --query "[].{role:roleDefinitionName,scope:scope}" -o json 2>/dev/null || echo '[]')
           
-          # Combine role assignments safely using portable approach
-          ALL_ROLE_ASSIGNMENTS=$(echo "[$RG_ROLE_ASSIGNMENTS,$SUB_ROLE_ASSIGNMENTS]" | jq 'flatten')
+          # Combine role assignments safely with proper null handling
+          ALL_ROLE_ASSIGNMENTS=$(jq -s 'add // []' <(echo "$RG_ROLE_ASSIGNMENTS") <(echo "$SUB_ROLE_ASSIGNMENTS"))
           
-          # Check if User Access Administrator or Owner role is assigned (at any scope)
-          # Use default values to handle potential jq failures
-          HAS_UAA=$(echo "$ALL_ROLE_ASSIGNMENTS" | jq '[.[]? | select(.role=="User Access Administrator")] | length' || echo "0")
-          HAS_OWNER=$(echo "$ALL_ROLE_ASSIGNMENTS" | jq '[.[]? | select(.role=="Owner")] | length' || echo "0")
-          HAS_CONTRIBUTOR=$(echo "$ALL_ROLE_ASSIGNMENTS" | jq '[.[]? | select(.role=="Contributor")] | length' || echo "0")
+          # Count role assignments with a reusable function
+          count_role() {
+            local role_name="$1"
+            echo "$ALL_ROLE_ASSIGNMENTS" | jq --arg role "$role_name" '[.[]? | select(.role==$role)] | length' || echo "0"
+          }
+          
+          # Check if required roles are assigned (at any scope)
+          HAS_UAA=$(count_role "User Access Administrator")
+          HAS_OWNER=$(count_role "Owner")
+          HAS_CONTRIBUTOR=$(count_role "Contributor")
           
           echo "**Role Assignments (Resource Group + Subscription):**" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
