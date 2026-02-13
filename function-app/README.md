@@ -192,62 +192,22 @@ az functionapp log tail --name FUNCTION_APP_NAME --resource-group RESOURCE_GROUP
 **See:** [DEPLOYMENT_NOTES.md](../DEPLOYMENT_NOTES.md#monitoring) for monitoring queries and alerts.
 
 ## Troubleshooting
-```
-
-### Error Tracking
-
-Track errors and exceptions:
-```kusto
-exceptions
-| where operation_Name == "get-workflow-statuses"
-| project timestamp, type, message, operation_Name
-| order by timestamp desc
-```
-
-## Troubleshooting
-
-### Function returns 500 error
-
-Check Application Insights logs for detailed error messages:
-```bash
-az monitor app-insights query \
-  --app <APP_INSIGHTS_NAME> \
-  --analytics-query "exceptions | order by timestamp desc | take 10"
-```
-
-### "Missing required environment variables"
-
-Verify environment variables are set in Function App configuration:
-```bash
-az functionapp config appsettings list \
-  --name <FUNCTION_APP_NAME> \
-  --resource-group <RESOURCE_GROUP_NAME>
-```
-
-### "Key Vault access failed"
-
-Ensure Function App's Managed Identity has "Key Vault Secrets User" role:
-```bash
-az role assignment list \
-  --assignee <FUNCTION_APP_PRINCIPAL_ID> \
-  --scope /subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RG_NAME>/providers/Microsoft.KeyVault/vaults/<VAULT_NAME>
-```
-
-### "Storage access failed"
-
-Ensure Function App's Managed Identity has "Storage Blob Data Contributor" role:
-```bash
-Application Insights is automatically configured for monitoring. View logs:
-
-```bash
-az functionapp log tail --name FUNCTION_APP_NAME --resource-group RESOURCE_GROUP_NAME
-```
-
-**See:** [DEPLOYMENT_NOTES.md](../DEPLOYMENT_NOTES.md#monitoring) for monitoring queries and alerts.
-
-## Troubleshooting
 
 ### Common Issues
+
+**Function returns 500 errors:**
+- Check Application Insights logs
+- Verify RBAC permissions (Key Vault Secrets User, Storage Blob Data Contributor)
+- Ensure GitHub App credentials are in Key Vault
+
+**GitHub App authentication failed:**
+- Verify GitHub App ID and private key in Key Vault
+- Check GitHub App is installed on target repositories
+- Ensure App has "Actions: Read" permission
+
+**See:** [SETUP.md](../SETUP.md#troubleshooting) for comprehensive troubleshooting.
+
+## Security
 
 **Function returns 500 errors:**
 - Check Application Insights logs
