@@ -114,6 +114,89 @@ Before you begin, ensure you have:
    - Run: `az keyvault secret set --vault-name ghactionsdash-kv-dev --name github-app-private-key --file ./uploaded-file.pem`
    - Clean up: `rm ./uploaded-file.pem`
 
+## Step 2b: Create Service Principal for CI/CD (Optional)
+
+If you plan to use GitHub Actions for automated deployment, you need to create an Azure service principal with the appropriate permissions.
+
+### Why This Permission is Required
+
+The deployment creates role assignments to grant your Function App's managed identity access to Key Vault and Storage. To create these role assignments, the service principal needs either:
+- **User Access Administrator** role (recommended - grants only role assignment permissions)
+- **Owner** role (grants full control including role assignments)
+
+### Create Service Principal
+
+1. **Get your subscription ID**:
+   ```bash
+   az account show --query id -o tsv
+   ```
+
+2. **Create service principal with User Access Administrator role** (recommended):
+   ```bash
+   az ad sp create-for-rbac \
+     --name "github-actions-dashboard-deployer" \
+     --role "User Access Administrator" \
+     --scopes /subscriptions/<YOUR_SUBSCRIPTION_ID>/resourceGroups/ghactionsdash-rg \
+     --sdk-auth
+   ```
+   
+   **OR** create with Owner role (if you need full control):
+   ```bash
+   az ad sp create-for-rbac \
+     --name "github-actions-dashboard-deployer" \
+     --role "Owner" \
+     --scopes /subscriptions/<YOUR_SUBSCRIPTION_ID>/resourceGroups/ghactionsdash-rg \
+     --sdk-auth
+   ```
+
+   **Note**: The resource group will be created automatically if it doesn't exist. If you want subscription-level access, replace the scope with `/subscriptions/<YOUR_SUBSCRIPTION_ID>`.
+
+3. **Save the JSON output** - you'll need it for GitHub Actions secret `AZURE_CREDENTIALS`:
+   ```json
+   {
+     "clientId": "...",
+     "clientSecret": "...",
+     "subscriptionId": "...",
+     "tenantId": "...",
+     "activeDirectoryEndpointUrl": "...",
+     "resourceManagerEndpointUrl": "...",
+     "activeDirectoryGraphResourceId": "...",
+     "sqlManagementEndpointUrl": "...",
+     "galleryEndpointUrl": "...",
+     "managementEndpointUrl": "..."
+   }
+   ```
+
+4. **Add additional Contributor role** (required for resource creation):
+   ```bash
+   az role assignment create \
+     --assignee <clientId-from-step-3> \
+     --role "Contributor" \
+     --scope /subscriptions/<YOUR_SUBSCRIPTION_ID>/resourceGroups/ghactionsdash-rg
+   ```
+
+5. **Add the JSON output as a GitHub secret**:
+   - Go to your repository → Settings → Secrets and variables → Actions
+   - Click "New repository secret"
+   - Name: `AZURE_CREDENTIALS`
+   - Value: Paste the entire JSON output from step 3
+
+### Required GitHub Secrets for CI/CD
+
+For automated deployment via GitHub Actions, add these secrets to your repository:
+
+| Secret Name | Description | How to Get |
+|------------|-------------|-----------|
+| `AZURE_CREDENTIALS` | Service principal credentials (JSON) | Created in step 2-3 above |
+| `GH_APP_ID` | GitHub App ID | From Step 1 |
+| `GH_APP_PRIVATE_KEY` | GitHub App private key (.pem file contents) | From Step 1 |
+| `FUNCTION_APP_NAME` | Function App name (optional) | Output from infrastructure deployment |
+
+**Security Note**: The service principal should have the minimum required permissions. We recommend:
+- **User Access Administrator** + **Contributor** on the resource group (not subscription-wide)
+- Rotate credentials every 3-6 months
+- Use separate service principals for dev/staging/prod environments
+
 ## Step 3: Deploy Azure Infrastructure
 
 1. Login to Azure CLI:

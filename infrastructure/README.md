@@ -540,8 +540,55 @@ Resource names must be globally unique. Try:
 
 ### RBAC Assignment Fails
 
-Ensure you have permissions to assign roles:
-- Owner or User Access Administrator role on the resource group
+**Error**: `Authorization failed for template resource... does not have permission to perform action 'Microsoft.Authorization/roleAssignments/write'`
+
+**Cause**: The service principal or user account deploying the infrastructure doesn't have permission to create role assignments.
+
+**Solution**:
+
+For **manual deployment** (using your user account):
+```bash
+# Assign User Access Administrator role to your user
+az role assignment create \
+  --assignee <your-user-email> \
+  --role "User Access Administrator" \
+  --scope /subscriptions/<subscription-id>/resourceGroups/<resource-group-name>
+```
+
+For **CI/CD deployment** (using service principal):
+
+The service principal needs **both** roles:
+1. **Contributor** - to create Azure resources
+2. **User Access Administrator** - to create role assignments
+
+```bash
+# Get the service principal object ID
+SP_OBJECT_ID=$(az ad sp show --id <client-id-from-AZURE_CREDENTIALS> --query id -o tsv)
+
+# Assign Contributor role (if not already assigned)
+az role assignment create \
+  --assignee $SP_OBJECT_ID \
+  --role "Contributor" \
+  --scope /subscriptions/<subscription-id>/resourceGroups/<resource-group-name>
+
+# Assign User Access Administrator role
+az role assignment create \
+  --assignee $SP_OBJECT_ID \
+  --role "User Access Administrator" \
+  --scope /subscriptions/<subscription-id>/resourceGroups/<resource-group-name>
+```
+
+**Alternative**: Use the **Owner** role instead (grants both permissions):
+```bash
+az role assignment create \
+  --assignee $SP_OBJECT_ID \
+  --role "Owner" \
+  --scope /subscriptions/<subscription-id>/resourceGroups/<resource-group-name>
+```
+
+**Security Best Practice**: Assign roles at the resource group level (not subscription-wide) to follow the principle of least privilege.
+
+For detailed CI/CD setup instructions, see [AZURE_SETUP.md - Step 2b](../AZURE_SETUP.md#step-2b-create-service-principal-for-cicd-optional).
 
 ### Key Vault Access Denied
 
