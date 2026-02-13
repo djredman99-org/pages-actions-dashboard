@@ -130,6 +130,109 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Validate Azure permissions
+        run: |
+          echo "### 🔍 Validating Azure Permissions" >> $GITHUB_STEP_SUMMARY
+          
+          RESOURCE_GROUP_NAME="${RESOURCE_GROUP_NAME:-ghactionsdash-rg}"
+          
+          # Get current service principal object ID
+          SP_OBJECT_ID=$(az account show --query user.name -o tsv)
+          SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+          
+          echo "**Service Principal**: \`$SP_OBJECT_ID\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Subscription**: \`$SUBSCRIPTION_ID\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Create resource group if needed for permission check
+          az group create --name "$RESOURCE_GROUP_NAME" --location "${LOCATION:-eastus}" --output none 2>/dev/null || true
+          
+          # Check for role assignments permission
+          echo "Checking role assignment permissions..." >> $GITHUB_STEP_SUMMARY
+          
+          # Get role assignments for the service principal at resource group scope
+          ROLE_ASSIGNMENTS=$(az role assignment list \
+            --assignee $SP_OBJECT_ID \
+            --scope /subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP_NAME \
+            --query "[].{role:roleDefinitionName}" -o json)
+          
+          # Check if User Access Administrator or Owner role is assigned
+          HAS_UAA=$(echo "$ROLE_ASSIGNMENTS" | jq -r '.[] | select(.role=="User Access Administrator") | .role' | wc -l)
+          HAS_OWNER=$(echo "$ROLE_ASSIGNMENTS" | jq -r '.[] | select(.role=="Owner") | .role' | wc -l)
+          HAS_CONTRIBUTOR=$(echo "$ROLE_ASSIGNMENTS" | jq -r '.[] | select(.role=="Contributor") | .role' | wc -l)
+          
+          echo "**Role Assignments:**" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+          echo "$ROLE_ASSIGNMENTS" | jq '.' >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Validate required permissions
+          MISSING_PERMISSIONS=()
+          
+          if [ "$HAS_CONTRIBUTOR" -eq 0 ] && [ "$HAS_OWNER" -eq 0 ]; then
+            MISSING_PERMISSIONS+=("Contributor (required to create Azure resources)")
+          fi
+          
+          if [ "$HAS_UAA" -eq 0 ] && [ "$HAS_OWNER" -eq 0 ]; then
+            MISSING_PERMISSIONS+=("User Access Administrator (required to create role assignments)")
+          fi
+          
+          if [ ${#MISSING_PERMISSIONS[@]} -gt 0 ]; then
+            echo "❌ **Missing Required Permissions**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The service principal is missing the following required roles:" >> $GITHUB_STEP_SUMMARY
+            for perm in "${MISSING_PERMISSIONS[@]}"; do
+              echo "  - \`$perm\`" >> $GITHUB_STEP_SUMMARY
+            done
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**To fix this:**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "1. Get the service principal object ID:" >> $GITHUB_STEP_SUMMARY
+            echo "   \`\`\`bash" >> $GITHUB_STEP_SUMMARY
+            echo "   SP_OBJECT_ID=\$(az ad sp show --id <client-id> --query id -o tsv)" >> $GITHUB_STEP_SUMMARY
+            echo "   \`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "2. Assign the required roles:" >> $GITHUB_STEP_SUMMARY
+            echo "   \`\`\`bash" >> $GITHUB_STEP_SUMMARY
+            echo "   # Assign Contributor role" >> $GITHUB_STEP_SUMMARY
+            echo "   az role assignment create \\" >> $GITHUB_STEP_SUMMARY
+            echo "     --assignee \$SP_OBJECT_ID \\" >> $GITHUB_STEP_SUMMARY
+            echo "     --role \"Contributor\" \\" >> $GITHUB_STEP_SUMMARY
+            echo "     --scope /subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP_NAME" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "   # Assign User Access Administrator role" >> $GITHUB_STEP_SUMMARY
+            echo "   az role assignment create \\" >> $GITHUB_STEP_SUMMARY
+            echo "     --assignee \$SP_OBJECT_ID \\" >> $GITHUB_STEP_SUMMARY
+            echo "     --role \"User Access Administrator\" \\" >> $GITHUB_STEP_SUMMARY
+            echo "     --scope /subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP_NAME" >> $GITHUB_STEP_SUMMARY
+            echo "   \`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Or** use the Owner role (grants both permissions):" >> $GITHUB_STEP_SUMMARY
+            echo "   \`\`\`bash" >> $GITHUB_STEP_SUMMARY
+            echo "   az role assignment create \\" >> $GITHUB_STEP_SUMMARY
+            echo "     --assignee \$SP_OBJECT_ID \\" >> $GITHUB_STEP_SUMMARY
+            echo "     --role \"Owner\" \\" >> $GITHUB_STEP_SUMMARY
+            echo "     --scope /subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP_NAME" >> $GITHUB_STEP_SUMMARY
+            echo "   \`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "📖 For detailed instructions, see [AZURE_SETUP.md - Step 2b](https://github.com/${{ github.repository }}/blob/main/AZURE_SETUP.md#step-2b-create-service-principal-for-cicd-optional)" >> $GITHUB_STEP_SUMMARY
+            
+            # Also echo to stdout
+            echo "❌ Missing Required Permissions"
+            echo ""
+            echo "The service principal is missing the following required roles:"
+            for perm in "${MISSING_PERMISSIONS[@]}"; do
+              echo "  - $perm"
+            done
+            echo ""
+            echo "See the step summary for commands to fix this issue."
+            
+            exit 1
+          fi
+          
+          echo "✅ All required permissions are present" >> $GITHUB_STEP_SUMMARY
+
       - name: Deploy Azure Infrastructure
         id: deploy
         run: |
