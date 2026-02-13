@@ -24,12 +24,21 @@ param corsAllowedOrigins array = [
   'https://*.github.io'
 ]
 
+@description('Deploy Insights infrastructure (Cosmos DB and Insights Function App)')
+param deployInsights bool = false
+
 // Variables
 var storageAccountName = '${baseName}${environment}'
 var functionAppName = '${baseName}-func-${environment}'
+var functionAppInsightsName = '${baseName}-func-insights-${environment}'
 var appServicePlanName = '${baseName}-plan-${environment}'
+var appServicePlanInsightsName = '${baseName}-plan-insights-${environment}'
 var keyVaultName = '${baseName}-kv-${environment}'
 var applicationInsightsName = '${baseName}-ai-${environment}'
+var applicationInsightsInsightsName = '${baseName}-ai-insights-${environment}'
+var cosmosDbAccountName = '${baseName}-cosmos-${environment}'
+var cosmosDbDatabaseName = 'ActionsInsights'
+var cosmosDbContainerName = 'events'
 var storageContainerName = 'workflow-configs'
 
 // Storage Account for workflow configurations and function app storage
@@ -216,6 +225,187 @@ resource storageBlobDataContributorRole 'Microsoft.Authorization/roleAssignments
   }
 }
 
+// Insights Infrastructure (conditionally deployed)
+
+// Application Insights for Insights monitoring
+resource applicationInsightsInsights 'Microsoft.Insights/components@2020-02-02' = if (deployInsights) {
+  name: applicationInsightsInsightsName
+  location: location
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+    publicNetworkAccessForIngestion: 'Enabled'
+    publicNetworkAccessForQuery: 'Enabled'
+  }
+}
+
+// App Service Plan for Insights (Consumption plan for serverless)
+resource appServicePlanInsights 'Microsoft.Web/serverfarms@2022-09-01' = if (deployInsights) {
+  name: appServicePlanInsightsName
+  location: location
+  sku: {
+    name: 'Y1'
+    tier: 'Dynamic'
+  }
+  properties: {}
+}
+
+// Cosmos DB Account for storing webhook events
+resource cosmosDbAccount 'Microsoft.DocumentDB/databaseAccounts@2023-04-15' = if (deployInsights) {
+  name: cosmosDbAccountName
+  location: location
+  kind: 'GlobalDocumentDB'
+  properties: {
+    databaseAccountOfferType: 'Standard'
+    consistencyPolicy: {
+      defaultConsistencyLevel: 'Session'
+    }
+    locations: [
+      {
+        locationName: location
+        failoverPriority: 0
+        isZoneRedundant: false
+      }
+    ]
+    enableAutomaticFailover: false
+    enableMultipleWriteLocations: false
+    capabilities: [
+      {
+        name: 'EnableServerless'
+      }
+    ]
+  }
+}
+
+// Cosmos DB Database
+resource cosmosDatabase 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2023-04-15' = if (deployInsights) {
+  parent: cosmosDbAccount
+  name: cosmosDbDatabaseName
+  properties: {
+    resource: {
+      id: cosmosDbDatabaseName
+    }
+  }
+}
+
+// Cosmos DB Container for events with partition key
+resource cosmosContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-04-15' = if (deployInsights) {
+  parent: cosmosDatabase
+  name: cosmosDbContainerName
+  properties: {
+    resource: {
+      id: cosmosDbContainerName
+      partitionKey: {
+        paths: [
+          '/partitionKey'
+        ]
+        kind: 'Hash'
+      }
+      indexingPolicy: {
+        indexingMode: 'consistent'
+        automatic: true
+        includedPaths: [
+          {
+            path: '/*'
+          }
+        ]
+        excludedPaths: [
+          {
+            path: '/"_etag"/?'
+          }
+          {
+            path: '/rawPayload/*'
+          }
+        ]
+      }
+    }
+  }
+}
+
+// Function App for Insights with managed identity
+resource functionAppInsights 'Microsoft.Web/sites@2022-09-01' = if (deployInsights) {
+  name: functionAppInsightsName
+  location: location
+  kind: 'functionapp'
+  identity: {
+    type: 'SystemAssigned'
+  }
+  properties: {
+    serverFarmId: appServicePlanInsights.id
+    httpsOnly: true
+    siteConfig: {
+      appSettings: [
+        {
+          name: 'FUNCTIONS_EXTENSION_VERSION'
+          value: '~4'
+        }
+        {
+          name: 'FUNCTIONS_WORKER_RUNTIME'
+          value: 'node'
+        }
+        {
+          name: 'WEBSITE_NODE_DEFAULT_VERSION'
+          value: '~20'
+        }
+        {
+          name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
+          value: applicationInsightsInsights.properties.InstrumentationKey
+        }
+        {
+          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+          value: applicationInsightsInsights.properties.ConnectionString
+        }
+        {
+          name: 'KEY_VAULT_URL'
+          value: keyVault.properties.vaultUri
+        }
+        {
+          name: 'COSMOS_DB_ENDPOINT'
+          value: cosmosDbAccount.properties.documentEndpoint
+        }
+        {
+          name: 'COSMOS_DB_DATABASE'
+          value: cosmosDbDatabaseName
+        }
+        {
+          name: 'COSMOS_DB_CONTAINER'
+          value: cosmosDbContainerName
+        }
+      ]
+      cors: {
+        allowedOrigins: corsAllowedOrigins
+        supportCredentials: false
+      }
+      ftpsState: 'Disabled'
+      minTlsVersion: '1.2'
+    }
+  }
+}
+
+// Role assignments for Insights Function App managed identity
+
+// Key Vault Secrets User role for reading webhook secret
+resource keyVaultSecretsUserRoleInsights 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (deployInsights) {
+  name: guid(keyVault.id, functionAppInsightsName, 'Key Vault Secrets User Insights')
+  scope: keyVault
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')
+    principalId: functionAppInsights.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+// Cosmos DB Data Contributor role for reading/writing events
+resource cosmosDbDataContributorRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (deployInsights) {
+  name: guid(cosmosDbAccountName, functionAppInsightsName, 'Cosmos DB Data Contributor')
+  scope: cosmosDbAccount
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '00000000-0000-0000-0000-000000000002')
+    principalId: functionAppInsights.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
 // Outputs
 output functionAppName string = functionApp.name
 output functionAppUrl string = 'https://${functionApp.properties.defaultHostName}'
@@ -223,3 +413,12 @@ output keyVaultName string = keyVault.name
 output storageAccountName string = storageAccount.name
 output storageContainerName string = storageContainerName
 output functionAppPrincipalId string = functionApp.identity.principalId
+
+// Insights outputs (conditionally available)
+output functionAppInsightsName string = deployInsights ? functionAppInsightsName : ''
+output functionAppInsightsUrl string = deployInsights ? 'https://${functionAppInsights.properties.defaultHostName}' : ''
+output cosmosDbAccountName string = deployInsights ? cosmosDbAccountName : ''
+output cosmosDbDatabaseName string = deployInsights ? cosmosDbDatabaseName : ''
+output cosmosDbContainerName string = deployInsights ? cosmosDbContainerName : ''
+output cosmosDbEndpoint string = deployInsights ? cosmosDbAccount.properties.documentEndpoint : ''
+output functionAppInsightsPrincipalId string = deployInsights ? functionAppInsights.identity.principalId : ''

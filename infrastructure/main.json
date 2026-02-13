@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.39.26.7824",
-      "templateHash": "7651323827635543527"
+      "version": "0.40.2.10011",
+      "templateHash": "4783717994969658710"
     }
   },
   "parameters": {
@@ -49,14 +49,27 @@
       "metadata": {
         "description": "CORS allowed origins for the function app (e.g., https://your-org.github.io)"
       }
+    },
+    "deployInsights": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Deploy Insights infrastructure (Cosmos DB and Insights Function App)"
+      }
     }
   },
   "variables": {
     "storageAccountName": "[format('{0}{1}', parameters('baseName'), parameters('environment'))]",
     "functionAppName": "[format('{0}-func-{1}', parameters('baseName'), parameters('environment'))]",
+    "functionAppInsightsName": "[format('{0}-func-insights-{1}', parameters('baseName'), parameters('environment'))]",
     "appServicePlanName": "[format('{0}-plan-{1}', parameters('baseName'), parameters('environment'))]",
+    "appServicePlanInsightsName": "[format('{0}-plan-insights-{1}', parameters('baseName'), parameters('environment'))]",
     "keyVaultName": "[format('{0}-kv-{1}', parameters('baseName'), parameters('environment'))]",
     "applicationInsightsName": "[format('{0}-ai-{1}', parameters('baseName'), parameters('environment'))]",
+    "applicationInsightsInsightsName": "[format('{0}-ai-insights-{1}', parameters('baseName'), parameters('environment'))]",
+    "cosmosDbAccountName": "[format('{0}-cosmos-{1}', parameters('baseName'), parameters('environment'))]",
+    "cosmosDbDatabaseName": "ActionsInsights",
+    "cosmosDbContainerName": "events",
     "storageContainerName": "workflow-configs"
   },
   "resources": [
@@ -232,7 +245,7 @@
     {
       "type": "Microsoft.Authorization/roleAssignments",
       "apiVersion": "2022-04-01",
-      "scope": "[format('Microsoft.KeyVault/vaults/{0}', variables('keyVaultName'))]",
+      "scope": "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]",
       "name": "[guid(resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName')), resourceId('Microsoft.Web/sites', variables('functionAppName')), 'Key Vault Secrets User')]",
       "properties": {
         "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')]",
@@ -247,7 +260,7 @@
     {
       "type": "Microsoft.Authorization/roleAssignments",
       "apiVersion": "2022-04-01",
-      "scope": "[format('Microsoft.Storage/storageAccounts/{0}', take(variables('storageAccountName'), 24))]",
+      "scope": "[resourceId('Microsoft.Storage/storageAccounts', take(variables('storageAccountName'), 24))]",
       "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', take(variables('storageAccountName'), 24)), resourceId('Microsoft.Web/sites', variables('functionAppName')), 'Storage Blob Data Contributor')]",
       "properties": {
         "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')]",
@@ -257,6 +270,209 @@
       "dependsOn": [
         "[resourceId('Microsoft.Web/sites', variables('functionAppName'))]",
         "[resourceId('Microsoft.Storage/storageAccounts', take(variables('storageAccountName'), 24))]"
+      ]
+    },
+    {
+      "condition": "[parameters('deployInsights')]",
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2020-02-02",
+      "name": "[variables('applicationInsightsInsightsName')]",
+      "location": "[parameters('location')]",
+      "kind": "web",
+      "properties": {
+        "Application_Type": "web",
+        "publicNetworkAccessForIngestion": "Enabled",
+        "publicNetworkAccessForQuery": "Enabled"
+      }
+    },
+    {
+      "condition": "[parameters('deployInsights')]",
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2022-09-01",
+      "name": "[variables('appServicePlanInsightsName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Y1",
+        "tier": "Dynamic"
+      },
+      "properties": {}
+    },
+    {
+      "condition": "[parameters('deployInsights')]",
+      "type": "Microsoft.DocumentDB/databaseAccounts",
+      "apiVersion": "2023-04-15",
+      "name": "[variables('cosmosDbAccountName')]",
+      "location": "[parameters('location')]",
+      "kind": "GlobalDocumentDB",
+      "properties": {
+        "databaseAccountOfferType": "Standard",
+        "consistencyPolicy": {
+          "defaultConsistencyLevel": "Session"
+        },
+        "locations": [
+          {
+            "locationName": "[parameters('location')]",
+            "failoverPriority": 0,
+            "isZoneRedundant": false
+          }
+        ],
+        "enableAutomaticFailover": false,
+        "enableMultipleWriteLocations": false,
+        "capabilities": [
+          {
+            "name": "EnableServerless"
+          }
+        ]
+      }
+    },
+    {
+      "condition": "[parameters('deployInsights')]",
+      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases",
+      "apiVersion": "2023-04-15",
+      "name": "[format('{0}/{1}', variables('cosmosDbAccountName'), variables('cosmosDbDatabaseName'))]",
+      "properties": {
+        "resource": {
+          "id": "[variables('cosmosDbDatabaseName')]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosDbAccountName'))]"
+      ]
+    },
+    {
+      "condition": "[parameters('deployInsights')]",
+      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+      "apiVersion": "2023-04-15",
+      "name": "[format('{0}/{1}/{2}', variables('cosmosDbAccountName'), variables('cosmosDbDatabaseName'), variables('cosmosDbContainerName'))]",
+      "properties": {
+        "resource": {
+          "id": "[variables('cosmosDbContainerName')]",
+          "partitionKey": {
+            "paths": [
+              "/partitionKey"
+            ],
+            "kind": "Hash"
+          },
+          "indexingPolicy": {
+            "indexingMode": "consistent",
+            "automatic": true,
+            "includedPaths": [
+              {
+                "path": "/*"
+              }
+            ],
+            "excludedPaths": [
+              {
+                "path": "/\"_etag\"/?"
+              },
+              {
+                "path": "/rawPayload/*"
+              }
+            ]
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('cosmosDbAccountName'), variables('cosmosDbDatabaseName'))]"
+      ]
+    },
+    {
+      "condition": "[parameters('deployInsights')]",
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2022-09-01",
+      "name": "[variables('functionAppInsightsName')]",
+      "location": "[parameters('location')]",
+      "kind": "functionapp",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanInsightsName'))]",
+        "httpsOnly": true,
+        "siteConfig": {
+          "appSettings": [
+            {
+              "name": "FUNCTIONS_EXTENSION_VERSION",
+              "value": "~4"
+            },
+            {
+              "name": "FUNCTIONS_WORKER_RUNTIME",
+              "value": "node"
+            },
+            {
+              "name": "WEBSITE_NODE_DEFAULT_VERSION",
+              "value": "~20"
+            },
+            {
+              "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+              "value": "[reference(resourceId('Microsoft.Insights/components', variables('applicationInsightsInsightsName')), '2020-02-02').InstrumentationKey]"
+            },
+            {
+              "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+              "value": "[reference(resourceId('Microsoft.Insights/components', variables('applicationInsightsInsightsName')), '2020-02-02').ConnectionString]"
+            },
+            {
+              "name": "KEY_VAULT_URL",
+              "value": "[reference(resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName')), '2023-07-01').vaultUri]"
+            },
+            {
+              "name": "COSMOS_DB_ENDPOINT",
+              "value": "[reference(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosDbAccountName')), '2023-04-15').documentEndpoint]"
+            },
+            {
+              "name": "COSMOS_DB_DATABASE",
+              "value": "[variables('cosmosDbDatabaseName')]"
+            },
+            {
+              "name": "COSMOS_DB_CONTAINER",
+              "value": "[variables('cosmosDbContainerName')]"
+            }
+          ],
+          "cors": {
+            "allowedOrigins": "[parameters('corsAllowedOrigins')]",
+            "supportCredentials": false
+          },
+          "ftpsState": "Disabled",
+          "minTlsVersion": "1.2"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Insights/components', variables('applicationInsightsInsightsName'))]",
+        "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanInsightsName'))]",
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosDbAccountName'))]",
+        "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+      ]
+    },
+    {
+      "condition": "[parameters('deployInsights')]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]",
+      "name": "[guid(resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName')), variables('functionAppInsightsName'), 'Key Vault Secrets User Insights')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')]",
+        "principalId": "[reference(resourceId('Microsoft.Web/sites', variables('functionAppInsightsName')), '2022-09-01', 'full').identity.principalId]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', variables('functionAppInsightsName'))]",
+        "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+      ]
+    },
+    {
+      "condition": "[parameters('deployInsights')]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosDbAccountName'))]",
+      "name": "[guid(variables('cosmosDbAccountName'), variables('functionAppInsightsName'), 'Cosmos DB Data Contributor')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '00000000-0000-0000-0000-000000000002')]",
+        "principalId": "[reference(resourceId('Microsoft.Web/sites', variables('functionAppInsightsName')), '2022-09-01', 'full').identity.principalId]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosDbAccountName'))]",
+        "[resourceId('Microsoft.Web/sites', variables('functionAppInsightsName'))]"
       ]
     }
   ],
@@ -284,6 +500,34 @@
     "functionAppPrincipalId": {
       "type": "string",
       "value": "[reference(resourceId('Microsoft.Web/sites', variables('functionAppName')), '2022-09-01', 'full').identity.principalId]"
+    },
+    "functionAppInsightsName": {
+      "type": "string",
+      "value": "[if(parameters('deployInsights'), variables('functionAppInsightsName'), '')]"
+    },
+    "functionAppInsightsUrl": {
+      "type": "string",
+      "value": "[if(parameters('deployInsights'), format('https://{0}', reference(resourceId('Microsoft.Web/sites', variables('functionAppInsightsName')), '2022-09-01').defaultHostName), '')]"
+    },
+    "cosmosDbAccountName": {
+      "type": "string",
+      "value": "[if(parameters('deployInsights'), variables('cosmosDbAccountName'), '')]"
+    },
+    "cosmosDbDatabaseName": {
+      "type": "string",
+      "value": "[if(parameters('deployInsights'), variables('cosmosDbDatabaseName'), '')]"
+    },
+    "cosmosDbContainerName": {
+      "type": "string",
+      "value": "[if(parameters('deployInsights'), variables('cosmosDbContainerName'), '')]"
+    },
+    "cosmosDbEndpoint": {
+      "type": "string",
+      "value": "[if(parameters('deployInsights'), reference(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosDbAccountName')), '2023-04-15').documentEndpoint, '')]"
+    },
+    "functionAppInsightsPrincipalId": {
+      "type": "string",
+      "value": "[if(parameters('deployInsights'), reference(resourceId('Microsoft.Web/sites', variables('functionAppInsightsName')), '2022-09-01', 'full').identity.principalId, '')]"
     }
   }
 }

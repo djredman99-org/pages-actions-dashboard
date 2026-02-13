@@ -161,12 +161,22 @@ jobs:
           # Deploy infrastructure
           echo "Deploying resources (this may take several minutes)..." >> $GITHUB_STEP_SUMMARY
           
+          # Prepare deployment parameters
+          DEPLOY_PARAMS="--parameters @parameters.json"
+          if [ "${{ inputs.include_insights }}" == "true" ]; then
+            DEPLOY_PARAMS="$DEPLOY_PARAMS --parameters deployInsights=true"
+            echo "- **Insights**: Enabled" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Insights**: Disabled (use include_insights input to enable)" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
           set +e  # Don't exit on error, we want to capture the error
           DEPLOY_OUTPUT=$(az deployment group create \
             --name "$DEPLOYMENT_NAME" \
             --resource-group "$RESOURCE_GROUP_NAME" \
             --template-file main.bicep \
-            --parameters @parameters.json \
+            $DEPLOY_PARAMS \
             --output json 2>&1)
           DEPLOY_EXIT_CODE=$?
           set -e
@@ -206,6 +216,25 @@ jobs:
           echo "- Key Vault: \`$KEY_VAULT_NAME\`" >> $GITHUB_STEP_SUMMARY
           echo "- Storage Account: \`$STORAGE_ACCOUNT_NAME\`" >> $GITHUB_STEP_SUMMARY
           echo "- Workflow Container: \`$STORAGE_CONTAINER_NAME\`" >> $GITHUB_STEP_SUMMARY
+          
+          # Extract insights outputs if deployed
+          if [ "${{ inputs.include_insights }}" == "true" ]; then
+            INSIGHTS_FUNC_NAME=$(echo "$DEPLOY_OUTPUT" | jq -r '.properties.outputs.functionAppInsightsName.value')
+            INSIGHTS_FUNC_URL=$(echo "$DEPLOY_OUTPUT" | jq -r '.properties.outputs.functionAppInsightsUrl.value')
+            COSMOS_DB_ACCOUNT=$(echo "$DEPLOY_OUTPUT" | jq -r '.properties.outputs.cosmosDbAccountName.value')
+            COSMOS_DB_ENDPOINT=$(echo "$DEPLOY_OUTPUT" | jq -r '.properties.outputs.cosmosDbEndpoint.value')
+            
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Insights Resources:**" >> $GITHUB_STEP_SUMMARY
+            echo "- Insights Function App: \`$INSIGHTS_FUNC_NAME\`" >> $GITHUB_STEP_SUMMARY
+            echo "- Insights Function URL: \`$INSIGHTS_FUNC_URL\`" >> $GITHUB_STEP_SUMMARY
+            echo "- Cosmos DB Account: \`$COSMOS_DB_ACCOUNT\`" >> $GITHUB_STEP_SUMMARY
+            echo "- Cosmos DB Endpoint: \`$COSMOS_DB_ENDPOINT\`" >> $GITHUB_STEP_SUMMARY
+            
+            # Export insights outputs
+            echo "INSIGHTS_FUNCTION_APP_NAME=$INSIGHTS_FUNC_NAME" >> $GITHUB_ENV
+            echo "INSIGHTS_FUNCTION_APP_URL=$INSIGHTS_FUNC_URL" >> $GITHUB_ENV
+          fi
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Export outputs for next steps
@@ -291,57 +320,6 @@ jobs:
           else
             echo "❌ GitHub App Private Key not found in Key Vault" >> $GITHUB_STEP_SUMMARY
           fi
-
-      - name: Deploy Insights Infrastructure
-        if: inputs.include_insights == true
-        run: |
-          echo "### 🔬 Deploying Insights Infrastructure" >> $GITHUB_STEP_SUMMARY
-          
-          cd infrastructure
-          
-          # Run the deployment script
-          ./deploy-insights.sh
-          
-          # Get the latest deployment name for insights
-          LATEST_DEPLOYMENT=$(az deployment group list \
-            --resource-group "$RESOURCE_GROUP_NAME" \
-            --query "[?contains(name, 'insights-deployment')].name | sort(@) | [-1]" \
-            -o tsv)
-          
-          if [ -z "$LATEST_DEPLOYMENT" ]; then
-            echo "❌ Failed to find insights deployment" >> $GITHUB_STEP_SUMMARY
-            echo "No deployment matching 'insights-deployment' pattern was found." >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
-          
-          echo "Latest insights deployment: $LATEST_DEPLOYMENT" >> $GITHUB_STEP_SUMMARY
-          
-          # Extract the insights function app name from deployment outputs
-          INSIGHTS_FUNC_NAME=$(az deployment group show \
-            --name "$LATEST_DEPLOYMENT" \
-            --resource-group "$RESOURCE_GROUP_NAME" \
-            --query 'properties.outputs.functionAppInsightsName.value' \
-            -o tsv)
-          
-          INSIGHTS_FUNC_URL=$(az deployment group show \
-            --name "$LATEST_DEPLOYMENT" \
-            --resource-group "$RESOURCE_GROUP_NAME" \
-            --query 'properties.outputs.functionAppInsightsUrl.value' \
-            -o tsv)
-          
-          echo "INSIGHTS_FUNCTION_APP_NAME=$INSIGHTS_FUNC_NAME" >> $GITHUB_ENV
-          echo "INSIGHTS_FUNCTION_APP_URL=$INSIGHTS_FUNC_URL" >> $GITHUB_ENV
-          
-          echo "✅ Insights infrastructure deployed" >> $GITHUB_STEP_SUMMARY
-          echo "**Insights Function App:**" >> $GITHUB_STEP_SUMMARY
-          echo "- Name: \`$INSIGHTS_FUNC_NAME\`" >> $GITHUB_STEP_SUMMARY
-          echo "- URL: \`$INSIGHTS_FUNC_URL\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**ℹ️ Note:** The insights function app name is automatically derived from \`parameters.json\`" >> $GITHUB_STEP_SUMMARY
-          echo "during deployment, so no \`INSIGHTS_FUNCTION_APP_NAME\` secret is required." >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Optional:** If you want to inject the insights URL into the dashboard later," >> $GITHUB_STEP_SUMMARY
-          echo "you can add \`INSIGHTS_FUNCTION_URL\` secret with value: \`$INSIGHTS_FUNC_URL\`" >> $GITHUB_STEP_SUMMARY
 
       - name: Deployment Summary
         if: always()
