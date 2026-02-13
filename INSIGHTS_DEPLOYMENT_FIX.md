@@ -124,8 +124,7 @@ determine-target:
 
 ### 3. Enhanced Secret Validation
 
-Added conditional validation for `INSIGHTS_FUNCTION_APP_NAME` - it's only required when deploying insights:
-
+**Original Implementation** (conditional - deprecated):
 ```yaml
 # Check insights secret only if deploying insights
 if [ "${{ needs.determine-target.outputs.deploy_insights }}" == "true" ]; then
@@ -134,6 +133,16 @@ if [ "${{ needs.determine-target.outputs.deploy_insights }}" == "true" ]; then
   fi
 fi
 ```
+
+**Updated Implementation** (always required - matches dashboard pattern):
+```yaml
+# Always check, just like dashboard function app
+if [ -z "${{ secrets.INSIGHTS_FUNCTION_APP_NAME }}" ] && [ -z "${{ inputs.insights_function_app_name }}" ]; then
+  MISSING_SECRETS+=("INSIGHTS_FUNCTION_APP_NAME (or provide as workflow input)")
+fi
+```
+
+This change makes the insights secret required all the time, matching the dashboard behavior.
 
 ## How to Deploy Insights Now
 
@@ -178,9 +187,26 @@ To verify the fix works:
 1. ✅ Proper output capture from Bicep deployment
 2. ✅ Automatic detection of insights code changes
 3. ✅ Clear instructions for users in workflow summaries
-4. ✅ Conditional secret validation (only when needed)
+4. ✅ Required secrets validation (matching dashboard pattern)
 5. ✅ Better error messages and troubleshooting info
 6. ✅ Deployment summaries include insights information
+
+## Latest Update: Required Secret Configuration
+
+**Change Date**: 2026-02-13
+
+The `INSIGHTS_FUNCTION_APP_NAME` secret is now **always required** (not conditionally), matching the dashboard function app pattern:
+
+- Added `insights_function_app_name` workflow input option
+- Validation now checks: `secrets.INSIGHTS_FUNCTION_APP_NAME` OR `inputs.insights_function_app_name`
+- All insights deployment steps use: `${{ inputs.insights_function_app_name || secrets.INSIGHTS_FUNCTION_APP_NAME }}`
+- This matches the exact pattern used for `FUNCTION_APP_NAME` / `function_app_name`
+
+**Benefits**:
+- Consistent secret management across dashboard and insights
+- Easier to understand and maintain
+- Can override via workflow input if needed
+- Always validated upfront, preventing deployment failures
 
 ## Documentation Updates
 
