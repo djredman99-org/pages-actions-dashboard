@@ -135,6 +135,7 @@ jobs:
           echo "### 🔍 Validating Azure Permissions" >> $GITHUB_STEP_SUMMARY
           
           RESOURCE_GROUP_NAME="${RESOURCE_GROUP_NAME:-ghactionsdash-rg}"
+          LOCATION="${LOCATION:-eastus}"
           
           # Get current service principal object ID
           SP_OBJECT_ID=$(az account show --query user.name -o tsv)
@@ -142,28 +143,38 @@ jobs:
           
           echo "**Service Principal**: \`$SP_OBJECT_ID\`" >> $GITHUB_STEP_SUMMARY
           echo "**Subscription**: \`$SUBSCRIPTION_ID\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Resource Group**: \`$RESOURCE_GROUP_NAME\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Create resource group if needed for permission check
-          az group create --name "$RESOURCE_GROUP_NAME" --location "${LOCATION:-eastus}" --output none 2>/dev/null || true
+          az group create --name "$RESOURCE_GROUP_NAME" --location "$LOCATION" --output none 2>/dev/null || true
           
           # Check for role assignments permission
           echo "Checking role assignment permissions..." >> $GITHUB_STEP_SUMMARY
           
-          # Get role assignments for the service principal at resource group scope
-          ROLE_ASSIGNMENTS=$(az role assignment list \
+          # Get role assignments at resource group scope
+          RG_ROLE_ASSIGNMENTS=$(az role assignment list \
             --assignee $SP_OBJECT_ID \
             --scope /subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP_NAME \
-            --query "[].{role:roleDefinitionName}" -o json)
+            --query "[].{role:roleDefinitionName,scope:scope}" -o json 2>/dev/null || echo '[]')
           
-          # Check if User Access Administrator or Owner role is assigned
-          HAS_UAA=$(echo "$ROLE_ASSIGNMENTS" | jq -r '.[] | select(.role=="User Access Administrator") | .role' | wc -l)
-          HAS_OWNER=$(echo "$ROLE_ASSIGNMENTS" | jq -r '.[] | select(.role=="Owner") | .role' | wc -l)
-          HAS_CONTRIBUTOR=$(echo "$ROLE_ASSIGNMENTS" | jq -r '.[] | select(.role=="Contributor") | .role' | wc -l)
+          # Get role assignments at subscription scope (inherited)
+          SUB_ROLE_ASSIGNMENTS=$(az role assignment list \
+            --assignee $SP_OBJECT_ID \
+            --scope /subscriptions/$SUBSCRIPTION_ID \
+            --query "[].{role:roleDefinitionName,scope:scope}" -o json 2>/dev/null || echo '[]')
           
-          echo "**Role Assignments:**" >> $GITHUB_STEP_SUMMARY
+          # Combine role assignments
+          ALL_ROLE_ASSIGNMENTS=$(jq -s 'add' <(echo "$RG_ROLE_ASSIGNMENTS") <(echo "$SUB_ROLE_ASSIGNMENTS"))
+          
+          # Check if User Access Administrator or Owner role is assigned (at any scope)
+          HAS_UAA=$(echo "$ALL_ROLE_ASSIGNMENTS" | jq -r '.[] | select(.role=="User Access Administrator") | .role' | wc -l)
+          HAS_OWNER=$(echo "$ALL_ROLE_ASSIGNMENTS" | jq -r '.[] | select(.role=="Owner") | .role' | wc -l)
+          HAS_CONTRIBUTOR=$(echo "$ALL_ROLE_ASSIGNMENTS" | jq -r '.[] | select(.role=="Contributor") | .role' | wc -l)
+          
+          echo "**Role Assignments (Resource Group + Subscription):**" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
-          echo "$ROLE_ASSIGNMENTS" | jq '.' >> $GITHUB_STEP_SUMMARY
+          echo "$ALL_ROLE_ASSIGNMENTS" | jq '.' >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           

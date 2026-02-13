@@ -193,7 +193,7 @@ For automated deployment via GitHub Actions, add these secrets to your repositor
 | `FUNCTION_APP_NAME` | Function App name (optional) | Output from infrastructure deployment |
 
 **Security Note**: The service principal should have the minimum required permissions. We recommend:
-- **User Access Administrator** + **Contributor** on the resource group (not subscription-wide)
+- **Contributor** + **User Access Administrator** roles on the resource group (not subscription-wide)
 - Rotate credentials every 3-6 months
 - Use separate service principals for dev/staging/prod environments
 
