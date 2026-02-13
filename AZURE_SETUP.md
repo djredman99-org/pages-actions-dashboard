@@ -131,20 +131,11 @@ The deployment creates role assignments to grant your Function App's managed ide
    az account show --query id -o tsv
    ```
 
-2. **Create service principal with User Access Administrator role** (recommended):
+2. **Create service principal with Contributor role**:
    ```bash
    az ad sp create-for-rbac \
      --name "github-actions-dashboard-deployer" \
-     --role "User Access Administrator" \
-     --scopes /subscriptions/<YOUR_SUBSCRIPTION_ID>/resourceGroups/ghactionsdash-rg \
-     --sdk-auth
-   ```
-   
-   **OR** create with Owner role (if you need full control):
-   ```bash
-   az ad sp create-for-rbac \
-     --name "github-actions-dashboard-deployer" \
-     --role "Owner" \
+     --role "Contributor" \
      --scopes /subscriptions/<YOUR_SUBSCRIPTION_ID>/resourceGroups/ghactionsdash-rg \
      --sdk-auth
    ```
@@ -167,12 +158,22 @@ The deployment creates role assignments to grant your Function App's managed ide
    }
    ```
 
-4. **Add additional Contributor role** (required for resource creation):
+4. **Add User Access Administrator role** (required for role assignments):
    ```bash
    az role assignment create \
      --assignee <clientId-from-step-3> \
-     --role "Contributor" \
+     --role "User Access Administrator" \
      --scope /subscriptions/<YOUR_SUBSCRIPTION_ID>/resourceGroups/ghactionsdash-rg
+   ```
+   
+   **Alternative**: Use the **Owner** role instead (grants both Contributor and User Access Administrator permissions):
+   ```bash
+   # If you prefer, you can replace steps 2 and 4 with a single Owner role assignment
+   az ad sp create-for-rbac \
+     --name "github-actions-dashboard-deployer" \
+     --role "Owner" \
+     --scopes /subscriptions/<YOUR_SUBSCRIPTION_ID>/resourceGroups/ghactionsdash-rg \
+     --sdk-auth
    ```
 
 5. **Add the JSON output as a GitHub secret**:

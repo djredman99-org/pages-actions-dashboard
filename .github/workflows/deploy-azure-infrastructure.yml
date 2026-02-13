@@ -164,13 +164,13 @@ jobs:
             --scope /subscriptions/$SUBSCRIPTION_ID \
             --query "[].{role:roleDefinitionName,scope:scope}" -o json 2>/dev/null || echo '[]')
           
-          # Combine role assignments
-          ALL_ROLE_ASSIGNMENTS=$(jq -s 'add' <(echo "$RG_ROLE_ASSIGNMENTS") <(echo "$SUB_ROLE_ASSIGNMENTS"))
+          # Combine role assignments safely
+          ALL_ROLE_ASSIGNMENTS=$(jq -s 'flatten' <(echo "$RG_ROLE_ASSIGNMENTS") <(echo "$SUB_ROLE_ASSIGNMENTS"))
           
           # Check if User Access Administrator or Owner role is assigned (at any scope)
-          HAS_UAA=$(echo "$ALL_ROLE_ASSIGNMENTS" | jq -r '.[] | select(.role=="User Access Administrator") | .role' | wc -l)
-          HAS_OWNER=$(echo "$ALL_ROLE_ASSIGNMENTS" | jq -r '.[] | select(.role=="Owner") | .role' | wc -l)
-          HAS_CONTRIBUTOR=$(echo "$ALL_ROLE_ASSIGNMENTS" | jq -r '.[] | select(.role=="Contributor") | .role' | wc -l)
+          HAS_UAA=$(echo "$ALL_ROLE_ASSIGNMENTS" | jq '[.[]? | select(.role=="User Access Administrator")] | length')
+          HAS_OWNER=$(echo "$ALL_ROLE_ASSIGNMENTS" | jq '[.[]? | select(.role=="Owner")] | length')
+          HAS_CONTRIBUTOR=$(echo "$ALL_ROLE_ASSIGNMENTS" | jq '[.[]? | select(.role=="Contributor")] | length')
           
           echo "**Role Assignments (Resource Group + Subscription):**" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
