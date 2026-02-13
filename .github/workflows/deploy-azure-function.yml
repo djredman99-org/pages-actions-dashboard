@@ -12,6 +12,10 @@ on:
         description: 'Function App Name (optional - will use from deployment outputs if not provided)'
         required: false
         type: string
+      insights_function_app_name:
+        description: 'Insights Function App Name (optional - will use from deployment outputs if not provided)'
+        required: false
+        type: string
       deploy_target:
         description: 'Which function app to deploy'
         required: false
@@ -114,11 +118,8 @@ jobs:
             MISSING_SECRETS+=("FUNCTION_APP_NAME (or provide as workflow input)")
           fi
           
-          # Check insights secret only if deploying insights
-          if [ "${{ needs.determine-target.outputs.deploy_insights }}" == "true" ]; then
-            if [ -z "${{ secrets.INSIGHTS_FUNCTION_APP_NAME }}" ]; then
-              MISSING_SECRETS+=("INSIGHTS_FUNCTION_APP_NAME (required when deploying insights)")
-            fi
+          if [ -z "${{ secrets.INSIGHTS_FUNCTION_APP_NAME }}" ] && [ -z "${{ inputs.insights_function_app_name }}" ]; then
+            MISSING_SECRETS+=("INSIGHTS_FUNCTION_APP_NAME (or provide as workflow input)")
           fi
           
           if [ ${#MISSING_SECRETS[@]} -gt 0 ]; then
@@ -230,7 +231,7 @@ jobs:
       - name: Deploy Insights Function App
         if: needs.determine-target.outputs.deploy_insights == 'true'
         env:
-          INSIGHTS_APP_NAME: ${{ secrets.INSIGHTS_FUNCTION_APP_NAME }}
+          INSIGHTS_APP_NAME: ${{ inputs.insights_function_app_name || secrets.INSIGHTS_FUNCTION_APP_NAME }}
         working-directory: function-app-insights
         run: |
           echo "### 🔬 Deploying Insights Function App" >> $GITHUB_STEP_SUMMARY
@@ -290,7 +291,7 @@ jobs:
       - name: Verify Insights Deployment
         if: needs.determine-target.outputs.deploy_insights == 'true'
         env:
-          INSIGHTS_APP_NAME: ${{ secrets.INSIGHTS_FUNCTION_APP_NAME }}
+          INSIGHTS_APP_NAME: ${{ inputs.insights_function_app_name || secrets.INSIGHTS_FUNCTION_APP_NAME }}
         run: |
           echo "### ✅ Verifying Insights Deployment" >> $GITHUB_STEP_SUMMARY
           
