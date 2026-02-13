@@ -337,9 +337,11 @@ jobs:
           echo "- Name: \`$INSIGHTS_FUNC_NAME\`" >> $GITHUB_STEP_SUMMARY
           echo "- URL: \`$INSIGHTS_FUNC_URL\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**⚠️ Important:** Add the following secret to your repository:" >> $GITHUB_STEP_SUMMARY
-          echo "- Secret name: \`INSIGHTS_FUNCTION_APP_NAME\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Secret value: \`$INSIGHTS_FUNC_NAME\`" >> $GITHUB_STEP_SUMMARY
+          echo "**ℹ️ Note:** The insights function app name is automatically derived from \`parameters.json\`" >> $GITHUB_STEP_SUMMARY
+          echo "during deployment, so no \`INSIGHTS_FUNCTION_APP_NAME\` secret is required." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Optional:** If you want to inject the insights URL into the dashboard later," >> $GITHUB_STEP_SUMMARY
+          echo "you can add \`INSIGHTS_FUNCTION_URL\` secret with value: \`$INSIGHTS_FUNC_URL\`" >> $GITHUB_STEP_SUMMARY
 
       - name: Deployment Summary
         if: always()

@@ -13,7 +13,7 @@ on:
         required: false
         type: string
       insights_function_app_name:
-        description: 'Insights Function App Name (optional - will use from deployment outputs if not provided)'
+        description: 'Insights Function App Name (optional - will be derived from parameters.json if not provided)'
         required: false
         type: string
       deploy_target:
@@ -97,6 +97,35 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Derive function app names from parameters
+        id: derive-names
+        run: |
+          echo "### 📋 Deriving Function App Names" >> $GITHUB_STEP_SUMMARY
+          
+          # Check if parameters.json exists
+          if [ ! -f "infrastructure/parameters.json" ]; then
+            echo "⚠️ parameters.json not found, will rely on secrets/inputs only" >> $GITHUB_STEP_SUMMARY
+            echo "dashboard_name=" >> $GITHUB_OUTPUT
+            echo "insights_name=" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          # Read baseName and environment from parameters.json
+          BASE_NAME=$(jq -r '.parameters.baseName.value' infrastructure/parameters.json)
+          ENVIRONMENT=$(jq -r '.parameters.environment.value' infrastructure/parameters.json)
+          
+          # Derive function app names using the same convention as Bicep templates
+          DASHBOARD_FUNC_NAME="${BASE_NAME}-func-${ENVIRONMENT}"
+          INSIGHTS_FUNC_NAME="${BASE_NAME}-func-insights-${ENVIRONMENT}"
+          
+          echo "**Derived Names:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Dashboard Function: \`$DASHBOARD_FUNC_NAME\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Insights Function: \`$INSIGHTS_FUNC_NAME\`" >> $GITHUB_STEP_SUMMARY
+          
+          # Export as outputs
+          echo "dashboard_name=$DASHBOARD_FUNC_NAME" >> $GITHUB_OUTPUT
+          echo "insights_name=$INSIGHTS_FUNC_NAME" >> $GITHUB_OUTPUT
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -116,17 +145,14 @@ jobs:
           
           # Only validate dashboard secrets if deploying dashboard
           if [ "${{ needs.determine-target.outputs.deploy_dashboard }}" == "true" ]; then
-            if [ -z "${{ secrets.FUNCTION_APP_NAME }}" ] && [ -z "${{ inputs.function_app_name }}" ]; then
-              MISSING_SECRETS+=("FUNCTION_APP_NAME (or provide as workflow input)")
+            # Check if we have a name from any source (secret, input, or derived)
+            if [ -z "${{ secrets.FUNCTION_APP_NAME }}" ] && [ -z "${{ inputs.function_app_name }}" ] && [ -z "${{ steps.derive-names.outputs.dashboard_name }}" ]; then
+              MISSING_SECRETS+=("FUNCTION_APP_NAME (secret, workflow input, or valid parameters.json required)")
             fi
           fi
           
-          # Only validate insights secrets if deploying insights
-          if [ "${{ needs.determine-target.outputs.deploy_insights }}" == "true" ]; then
-            if [ -z "${{ secrets.INSIGHTS_FUNCTION_APP_NAME }}" ] && [ -z "${{ inputs.insights_function_app_name }}" ]; then
-              MISSING_SECRETS+=("INSIGHTS_FUNCTION_APP_NAME (or provide as workflow input)")
-            fi
-          fi
+          # Insights function app name can be derived from parameters.json, so no secret validation needed
+          # The derived name will be used if no input or secret is provided
           
           if [ ${#MISSING_SECRETS[@]} -gt 0 ]; then
             echo "❌ **Missing required secrets:**" >> $GITHUB_STEP_SUMMARY
@@ -141,7 +167,7 @@ jobs:
             echo "Please add these secrets in repository Settings → Secrets and variables → Actions" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**Note**: \`FUNCTION_APP_NAME\` is typically set after running the infrastructure deployment workflow." >> $GITHUB_STEP_SUMMARY
-            echo "**Note**: \`INSIGHTS_FUNCTION_APP_NAME\` is set after running the infrastructure deployment with 'include_insights' option." >> $GITHUB_STEP_SUMMARY
+            echo "**Note**: Insights function app name is automatically derived from \`infrastructure/parameters.json\` (baseName-func-insights-environment)." >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
           
@@ -244,12 +270,28 @@ jobs:
 
       - name: Deploy Insights Function App
         if: needs.determine-target.outputs.deploy_insights == 'true'
-        env:
-          INSIGHTS_APP_NAME: ${{ inputs.insights_function_app_name || secrets.INSIGHTS_FUNCTION_APP_NAME }}
         working-directory: function-app-insights
         run: |
           echo "### 🔬 Deploying Insights Function App" >> $GITHUB_STEP_SUMMARY
-          echo "Target: $INSIGHTS_APP_NAME" >> $GITHUB_STEP_SUMMARY
+          
+          # Determine insights function app name with priority: input > secret > derived
+          INSIGHTS_APP_NAME="${{ inputs.insights_function_app_name }}"
+          if [ -z "$INSIGHTS_APP_NAME" ]; then
+            INSIGHTS_APP_NAME="${{ secrets.INSIGHTS_FUNCTION_APP_NAME }}"
+          fi
+          if [ -z "$INSIGHTS_APP_NAME" ]; then
+            INSIGHTS_APP_NAME="${{ steps.derive-names.outputs.insights_name }}"
+          fi
+          
+          if [ -z "$INSIGHTS_APP_NAME" ]; then
+            echo "❌ Could not determine insights function app name" >> $GITHUB_STEP_SUMMARY
+            echo "Please provide via workflow input, secret, or ensure parameters.json exists" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          
+          echo "**Target:** \`$INSIGHTS_APP_NAME\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Source:** ${{ inputs.insights_function_app_name && 'workflow input' || (secrets.INSIGHTS_FUNCTION_APP_NAME && 'secret' || 'derived from parameters.json') }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           
           func azure functionapp publish "$INSIGHTS_APP_NAME" --javascript
           
@@ -304,10 +346,17 @@ jobs:
 
       - name: Verify Insights Deployment
         if: needs.determine-target.outputs.deploy_insights == 'true'
-        env:
-          INSIGHTS_APP_NAME: ${{ inputs.insights_function_app_name || secrets.INSIGHTS_FUNCTION_APP_NAME }}
         run: |
           echo "### ✅ Verifying Insights Deployment" >> $GITHUB_STEP_SUMMARY
+          
+          # Determine insights function app name with priority: input > secret > derived
+          INSIGHTS_APP_NAME="${{ inputs.insights_function_app_name }}"
+          if [ -z "$INSIGHTS_APP_NAME" ]; then
+            INSIGHTS_APP_NAME="${{ secrets.INSIGHTS_FUNCTION_APP_NAME }}"
+          fi
+          if [ -z "$INSIGHTS_APP_NAME" ]; then
+            INSIGHTS_APP_NAME="${{ steps.derive-names.outputs.insights_name }}"
+          fi
           
           RG=$(az functionapp list --query "[?name=='$INSIGHTS_APP_NAME'].resourceGroup" -o tsv)
           STATE=$(az functionapp show --name "$INSIGHTS_APP_NAME" --resource-group "$RG" --query state -o tsv)
