@@ -1,12 +1,16 @@
 # Azure Infrastructure
 
-This directory contains the Infrastructure as Code (IaC) for deploying the Azure resources required by the GitHub Actions Dashboard.
+This directory contains the Infrastructure as Code (IaC) for deploying the Azure resources required by the GitHub Actions Dashboard and the Insights feature.
 
 ## Resources Created
 
-The Bicep template creates the following Azure resources:
+The repository provides two separate Bicep templates:
 
-### Core Resources
+### Main Infrastructure (main.bicep)
+
+The main Bicep template creates the following Azure resources for the Dashboard:
+
+#### Core Resources
 
 1. **Azure Function App** (Consumption Plan)
    - Runtime: Node.js 18
@@ -32,12 +36,54 @@ The Bicep template creates the following Azure resources:
    - Consumption plan (serverless, pay-per-execution)
    - Auto-scaling based on demand
 
+### Insights Infrastructure (insights.bicep)
+
+The Insights Bicep template creates separate Azure resources for the Insights feature:
+
+#### Insights Resources
+
+1. **Separate Azure Function App** (Consumption Plan)
+   - Runtime: Node.js 20
+   - System-assigned Managed Identity
+   - CORS enabled for GitHub Pages
+   - Dedicated Application Insights
+
+2. **Azure Cosmos DB** (Serverless)
+   - Database: ActionsInsights
+   - Container: events
+   - Partition Key: `/partitionKey` (YYYY-MM format)
+   - Optimized for time-series data
+
+3. **Application Insights** (Insights-specific)
+   - Separate monitoring for Insights functions
+   - Performance metrics and error tracking
+
+4. **App Service Plan** (Insights)
+   - Separate consumption plan for Insights functions
+   - Independent scaling from main dashboard
+
+#### Key Vault Integration
+
+The Insights infrastructure reuses the existing Key Vault from the main infrastructure to:
+- Store the GitHub webhook secret
+- Maintain centralized secret management
+- Leverage existing Managed Identity setup
+
 ### Security Configuration
 
+**Main Infrastructure**:
 - **Managed Identity**: Function App uses system-assigned managed identity
 - **RBAC Roles**:
   - Function App → Key Vault: "Key Vault Secrets User"
   - Function App → Storage: "Storage Blob Data Contributor"
+
+**Insights Infrastructure**:
+- **Managed Identity**: Insights Function App uses system-assigned managed identity
+- **RBAC Roles**:
+  - Insights Function App → Key Vault: "Key Vault Secrets User"
+  - Insights Function App → Cosmos DB: "Cosmos DB Data Contributor"
+
+**Common Security**:
 - **Network Security**:
   - HTTPS only for all services
   - TLS 1.2 minimum
@@ -45,10 +91,18 @@ The Bicep template creates the following Azure resources:
 
 ## Files
 
-- **main.bicep**: Main Bicep template defining all resources
+### Main Infrastructure
+- **main.bicep**: Main Bicep template defining dashboard resources
 - **parameters.example.json**: Example parameter file (template)
 - **parameters.json**: Deployment parameters (tracked in git, NO SECRETS - GitHub App ID is injected by workflow)
-- **deploy.sh**: Manual deployment script
+- **deploy.sh**: Manual deployment script for main infrastructure
+
+### Insights Infrastructure
+- **insights.bicep**: Bicep template for Insights feature resources (Cosmos DB, Function App)
+- **insights.parameters.example.json**: Example parameter file for Insights deployment
+- **deploy-insights.sh**: Deployment script for Insights infrastructure
+
+### Documentation
 - **README.md**: This file
 
 ## Prerequisites
@@ -68,6 +122,8 @@ The Bicep template creates the following Azure resources:
    - App ID
    - Private key (.pem file)
    - Installed on target repositories
+
+4. **Webhook Secret** (for Insights): A strong random secret for validating GitHub webhooks
 
 ## Deployment
 
@@ -191,6 +247,125 @@ az deployment group create \
   --template-file main.bicep \
   --parameters @parameters.json
 ```
+
+## Deploying Insights Infrastructure
+
+The Insights infrastructure must be deployed **after** the main infrastructure since it depends on the existing Key Vault.
+
+### Prerequisites
+
+1. Main infrastructure already deployed (see above)
+2. Key Vault name from main deployment
+3. Strong webhook secret generated
+
+### Deployment Steps
+
+#### 1. Prepare Insights Parameters
+
+```bash
+cd infrastructure
+cp insights.parameters.example.json insights.parameters.json
+```
+
+Edit `insights.parameters.json` with your values:
+```json
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "eastus"
+    },
+    "baseName": {
+      "value": "ghactionsdash"
+    },
+    "environment": {
+      "value": "dev"
+    },
+    "existingKeyVaultName": {
+      "value": "ghactionsdash-kv-dev"
+    }
+  }
+}
+```
+
+**Note**: Use the same `baseName` and `environment` as the main infrastructure.
+
+#### 2. Deploy Insights Infrastructure
+
+```bash
+./deploy-insights.sh
+```
+
+The script will:
+1. Verify the main resource group exists
+2. Deploy Cosmos DB and Insights Function App
+3. Configure RBAC permissions
+4. Output deployment details and next steps
+
+#### 3. Create Webhook Secret
+
+Generate a strong random secret and store it in Key Vault:
+
+```bash
+# Generate a random secret (32 characters)
+WEBHOOK_SECRET=$(openssl rand -base64 32)
+
+# Store in Key Vault
+az keyvault secret set \
+  --vault-name <KEY_VAULT_NAME> \
+  --name github-webhook-secret \
+  --value "$WEBHOOK_SECRET"
+
+# Save the secret for GitHub webhook configuration
+echo "Webhook Secret: $WEBHOOK_SECRET"
+```
+
+#### 4. Deploy Insights Function Code
+
+```bash
+cd ../function-app-insights
+npm install
+func azure functionapp publish <INSIGHTS_FUNCTION_APP_NAME> --javascript
+```
+
+#### 5. Configure GitHub Webhook
+
+1. Go to your GitHub organization or repository settings
+2. Navigate to **Webhooks** → **Add webhook**
+3. Configure:
+   - **Payload URL**: `https://<INSIGHTS_FUNCTION_APP_NAME>.azurewebsites.net/api/event-triage`
+   - **Content type**: `application/json`
+   - **Secret**: Use the webhook secret from step 3
+   - **Events**: Select **Workflow runs**
+   - **Active**: Check
+
+#### 6. Verify Deployment
+
+Test the webhook endpoint:
+```bash
+curl https://<INSIGHTS_FUNCTION_APP_NAME>.azurewebsites.net/api/health
+```
+
+Check Cosmos DB:
+```bash
+az cosmosdb sql database show \
+  --account-name <COSMOS_DB_ACCOUNT_NAME> \
+  --resource-group <RESOURCE_GROUP_NAME> \
+  --name ActionsInsights
+```
+
+### Insights Outputs
+
+After Insights deployment, the following outputs are available:
+
+- **functionAppInsightsName**: Name of the Insights Function App
+- **functionAppInsightsUrl**: HTTPS URL of the Insights Function App
+- **cosmosDbAccountName**: Name of the Cosmos DB account
+- **cosmosDbDatabaseName**: Database name (ActionsInsights)
+- **cosmosDbContainerName**: Container name (events)
+- **cosmosDbEndpoint**: Cosmos DB endpoint URL
+- **functionAppInsightsPrincipalId**: Managed Identity principal ID
 
 ## Update Deployment
 

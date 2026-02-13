@@ -1,0 +1,11 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "KEY_VAULT_URL": "https://your-keyvault-name.vault.azure.net/",
+    "COSMOS_DB_ENDPOINT": "https://your-cosmosdb-account.documents.azure.com:443/",
+    "COSMOS_DB_DATABASE": "ActionsInsights",
+    "COSMOS_DB_CONTAINER": "events"
+  }
+}

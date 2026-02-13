@@ -4,6 +4,7 @@ A GitHub Pages site that serves as a centralized dashboard for monitoring GitHub
 
 ## Features
 
+### Dashboard
 - **Multiple Dashboards**: Organize workflows into separate dashboards and switch between them
 - **Multi-Repository Support**: Monitor workflows from any GitHub repository (public, private, or internal)
 - **Dynamic Workflow Management**: Add and remove workflows via dashboard UI or API without redeployment
@@ -15,6 +16,16 @@ A GitHub Pages site that serves as a centralized dashboard for monitoring GitHub
 - **Responsive Design**: Adapts to different screen sizes with multiple themes
 - **Auto-Refresh**: Automatically refreshes workflow statuses every 5 minutes
 - **Accessible**: Fully clickable workflow cards with keyboard navigation support
+
+### Insights (NEW)
+- **Webhook Integration**: Captures GitHub workflow_run events via webhooks
+- **Time-Series Storage**: Events stored in Cosmos DB partitioned by month
+- **Historical Analytics**: Track workflow execution history and trends
+- **Performance Monitoring**: Analyze workflow success rates and duration
+- **Custom Reporting**: Query data via API for custom reports and insights
+- **Separate Function App**: Dedicated Azure Function App for webhook processing
+
+📖 **Insights Setup**: See [INSIGHTS_SETUP.md](INSIGHTS_SETUP.md) for complete deployment guide.
 
 ## Architecture Overview
 
@@ -107,6 +118,7 @@ Dashboard refreshes every 5 minutes by default. To change the interval, edit `pa
 
 ### Getting Started
 - **[AZURE_SETUP.md](AZURE_SETUP.md)** - Complete deployment guide with step-by-step instructions
+- **[INSIGHTS_SETUP.md](INSIGHTS_SETUP.md)** - Insights feature deployment and configuration guide
 - **[PAGES_SETUP.md](PAGES_SETUP.md)** - GitHub Pages configuration and authentication setup
 - **[DEPLOYMENT_NOTES.md](DEPLOYMENT_NOTES.md)** - Deployment checklist, troubleshooting, and monitoring
 
@@ -114,7 +126,8 @@ Dashboard refreshes every 5 minutes by default. To change the interval, edit `pa
 - **[AZURE_IMPLEMENTATION.md](AZURE_IMPLEMENTATION.md)** - Detailed architecture and technical implementation
 - **[MULTIPLE_DASHBOARDS.md](MULTIPLE_DASHBOARDS.md)** - Multiple dashboards feature guide
 - **[WORKFLOW_MANAGEMENT_API.md](WORKFLOW_MANAGEMENT_API.md)** - Dynamic workflow management API documentation
-- **[function-app/README.md](function-app/README.md)** - Function App development and deployment guide
+- **[function-app/README.md](function-app/README.md)** - Dashboard Function App development and deployment guide
+- **[function-app-insights/README.md](function-app-insights/README.md)** - Insights Function App API documentation
 - **[infrastructure/README.md](infrastructure/README.md)** - Infrastructure as Code details
 
 ### Customization

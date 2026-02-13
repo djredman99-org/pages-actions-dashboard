@@ -24,11 +24,19 @@ function-app/.vscode/
 function-app/dist/
 function-app/.funcignore
 
+# Azure Insights Function files
+function-app-insights/node_modules/
+function-app-insights/local.settings.json
+function-app-insights/.vscode/
+function-app-insights/dist/
+function-app-insights/.funcignore
+
 # Azure Infrastructure files
 # Note: parameters.json is tracked in git - DO NOT add secrets to this file
 # GitHub App Private Key should be stored in GitHub secrets and uploaded via workflow
 infrastructure/deployment-output.json
 infrastructure/deployment-outputs.env
+infrastructure/insights.parameters.json
 
 # Dependencies
 node_modules/

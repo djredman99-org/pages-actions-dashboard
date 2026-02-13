@@ -12,6 +12,11 @@ on:
           - dev
           - staging
           - prod
+      include_insights:
+        description: 'Also deploy Insights infrastructure'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -286,6 +291,20 @@ jobs:
           else
             echo "❌ GitHub App Private Key not found in Key Vault" >> $GITHUB_STEP_SUMMARY
           fi
+
+      - name: Deploy Insights Infrastructure
+        if: inputs.include_insights == true
+        run: |
+          echo "### 🔬 Deploying Insights Infrastructure" >> $GITHUB_STEP_SUMMARY
+          
+          cd infrastructure
+          ./deploy-insights.sh
+          
+          INSIGHTS_FUNC_NAME="${{ env.KEY_VAULT_NAME }}" | sed 's/-kv-/-func-insights-/'
+          echo "INSIGHTS_FUNCTION_APP_NAME=$INSIGHTS_FUNC_NAME" >> $GITHUB_ENV
+          
+          echo "✅ Insights infrastructure deployed" >> $GITHUB_STEP_SUMMARY
+          echo "Function name: $INSIGHTS_FUNC_NAME" >> $GITHUB_STEP_SUMMARY
 
       - name: Deployment Summary
         if: always()
