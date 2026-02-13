@@ -198,6 +198,14 @@ jobs:
           set -e
           
           if [ $DEPLOY_EXIT_CODE -ne 0 ]; then
+            # Echo to stdout for job logs
+            echo "❌ Deployment Failed"
+            echo ""
+            echo "Error Details:"
+            echo "$DEPLOY_OUTPUT"
+            echo ""
+            
+            # Also write to GitHub Step Summary
             echo "❌ **Deployment Failed**" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**Error Details:**" >> $GITHUB_STEP_SUMMARY
