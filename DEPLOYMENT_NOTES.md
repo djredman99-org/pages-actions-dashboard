@@ -1,165 +1,87 @@
 # Deployment Notes
 
-## Important Information
+> **Note:** For the complete setup guide, see [SETUP.md](SETUP.md).
 
-### Dependabot Checker Timeout
+This document contains important information about deployment, monitoring, and maintenance.
 
-**Note**: The Dependabot checker may timeout during CI/CD due to the npm dependencies in the function-app. This is expected and not a blocking issue. The timeout occurs because:
+## Automated Deployment
 
-1. Function app has several Azure and GitHub-related npm packages
-2. Dependabot needs time to analyze all dependencies
-3. The analysis is optional and doesn't affect functionality
+All deployments are automated via GitHub Actions workflows. No manual Azure CLI commands are required for standard deployments.
 
-**Action**: You can safely ignore Dependabot timeout warnings. The dependencies are:
-- `@azure/functions` (v4.0.0)
-- `@azure/identity` (v4.0.0)
-- `@azure/keyvault-secrets` (v4.7.0)
-- `@azure/storage-blob` (v12.17.0)
-- `@octokit/auth-app` (v6.0.0)
-- `@octokit/rest` (v20.0.0)
+### Deployment Workflows
 
-All dependencies are using stable, recent versions and can be updated independently after deployment.
+1. **Deploy Azure Infrastructure** (`.github/workflows/deploy-azure-infrastructure.yml`)
+   - Creates all Azure resources (Function App, Key Vault, Storage)
+   - Uploads GitHub App credentials to Key Vault
+   - Outputs configuration details
+   - **Trigger:** Manual via workflow_dispatch
 
-### Dependency Management
+2. **Deploy Azure Function** (`.github/workflows/deploy-azure-function.yml`)
+   - Deploys function app code to Azure
+   - Automatically triggers on changes to `function-app/**`
+   - Can be manually triggered via workflow_dispatch
 
-To check for updates after deployment:
+3. **Deploy Dashboard to GitHub Pages** (`.github/workflows/deploy-dashboard.yml`)
+   - Builds and deploys the dashboard frontend
+   - Injects Azure Function URL from secrets
+   - Automatically triggers on push to `main` branch
 
-```bash
-cd function-app
-npm outdated
-npm update
-```
+### Deployment Order
 
-To audit for security vulnerabilities:
+For initial setup, run workflows in this order:
 
-```bash
-cd function-app
-npm audit
-npm audit fix  # Apply automatic fixes if available
-```
-
-### GitHub Actions Workflows
-
-The Pages site is deployed with the `deploy-dashboard.yml`.
-
-## Pre-Deployment Checklist
-
-Before deploying this solution, ensure you have:
-
-- [ ] Azure subscription with appropriate permissions
-- [ ] Azure CLI installed and configured (`az login`)
-- [ ] Azure Functions Core Tools installed
-- [ ] GitHub App created with:
-  - [ ] App ID saved
-  - [ ] Private key downloaded (.pem file)
-  - [ ] App installed on target organization/repositories
-  - [ ] "Actions: Read-only" permission granted
-- [ ] Repository secret `AZURE_FUNCTION_URL` ready to be added
-
-## Deployment Order
-
-1. **Deploy Azure Infrastructure** (infrastructure/deploy.sh)
-   - Creates all Azure resources
-   - Stores GitHub App credentials in Key Vault
-   - Outputs Function App URL
-
-2. **Deploy Function App Code** (automated via GitHub Actions or manual)
-   - **Automated**: Use the "Deploy Azure Function" workflow (`.github/workflows/deploy-azure-function.yml`)
-     - Automatically triggers on changes to `function-app/**` directory
-     - Can be manually triggered via workflow_dispatch
-     - Requires `FUNCTION_APP_NAME` and `AZURE_CREDENTIALS` secrets
-   - **Manual**: Run `func azure functionapp publish <FUNCTION_APP_NAME> --javascript`
-   - Deploys Node.js code to Function App
-   - Installs npm dependencies on Azure
-
-3. **Upload Workflow Configuration** (az storage blob upload)
-   - Uploads workflows.json to Azure Storage
-   - Defines which workflows to monitor
-
-4. **Configure Repository Secret** (GitHub Settings)
-   - Add `AZURE_FUNCTION_URL` with Function App URL
-
-5. **Configure GitHub Pages** (GitHub Settings → Pages)
-   - Set **Source** to **"GitHub Actions"** (NOT "Deploy from a branch")
-   - This enables our custom build workflow to inject secrets
-   - 📖 See [PAGES_SETUP.md](PAGES_SETUP.md) for detailed setup and authentication info
-
-6. **Deploy Pages Site** (merge PR or push to main)
-   - Automatically deploys with updated configuration
+1. **Deploy Azure Infrastructure** → Creates Azure resources
+2. **Add FUNCTION_APP_NAME secret** → Use output from step 1
+3. **Deploy Azure Function** → Deploys function code
+4. **Add AZURE_FUNCTION_URL secret** → Use output from step 3
+5. **Deploy Dashboard** → Deploys frontend to GitHub Pages
 
 ## Post-Deployment Verification
 
-After deployment, verify:
+After deployment, verify everything is working:
 
-1. **Azure Resources**:
-   ```bash
-   az resource list --resource-group <RESOURCE_GROUP_NAME> --output table
-   ```
+### 1. Check Azure Resources
 
-2. **Function Health**:
-   ```bash
-   curl https://<FUNCTION_APP_NAME>.azurewebsites.net/api/get-workflow-statuses
-   ```
-   Should return JSON with workflow statuses (or empty array if no workflows configured).
+```bash
+az resource list --resource-group ghactionsdash-rg --output table
+```
 
-3. **Dashboard Access**:
-   - Visit: `https://<your-org>.github.io/pages-actions-dashboard/`
-   - Should load workflow cards
-   - Check browser console for errors
+### 2. Test Function App
 
-4. **Application Insights**:
-   - Azure Portal → Function App → Application Insights
-   - Verify requests are being logged
+```bash
+curl https://YOUR_FUNCTION_APP_NAME.azurewebsites.net/api/get-workflow-statuses
+```
+
+Should return JSON with workflow statuses (or empty array if not configured).
+
+### 3. Verify Dashboard
+
+1. Visit: `https://{your-org}.github.io/{repo-name}/`
+2. Workflow cards should display with current statuses
+3. Check browser console for errors
+
+### 4. Check Application Insights
+
+- Azure Portal → Function App → Application Insights
+- Verify requests are being logged
+- Check for any error messages
 
 ## Common Issues
 
-### Issue: Dashboard shows "Configuration Required"
-
-**Cause**: Azure Function URL not configured
-
-**Fix**:
-1. Verify secret exists: GitHub Settings → Secrets → `AZURE_FUNCTION_URL`
-2. Check deployment succeeded: Actions tab
-3. View deployed config.js to verify URL was injected
-
-### Issue: Function returns 500 error
-
-**Cause**: Missing environment variables or RBAC permissions
-
-**Fix**:
-1. Check function logs:
-   ```bash
-   az functionapp log tail --name <FUNCTION_APP_NAME> --resource-group <RG>
-   ```
-2. Verify RBAC assignments:
-   ```bash
-   az role assignment list --assignee <FUNCTION_APP_PRINCIPAL_ID>
-   ```
-
-### Issue: "GitHub App authentication failed"
-
-**Cause**: Invalid credentials in Key Vault or app not installed
-
-**Fix**:
-1. Verify secrets in Key Vault:
-   ```bash
-   az keyvault secret show --vault-name <VAULT> --name github-app-id
-   ```
-2. Verify GitHub App is installed on organization
-3. Check App has "Actions: Read" permission
+See [SETUP.md](SETUP.md#troubleshooting) for comprehensive troubleshooting guide.
 
 ## Monitoring
 
-### Key Metrics to Watch
+### Key Metrics
 
-**Function App**:
-- Execution count (should increase with dashboard usage)
+**Function App:**
+- Execution count (increases with dashboard usage)
 - Average duration (should be 1-5 seconds)
 - Error rate (should be near 0%)
 
-**Application Insights Queries**:
+**Application Insights Queries:**
 
-**Request Success Rate**:
+**Request Success Rate:**
 ```kusto
 requests
 | where operation_Name == "get-workflow-statuses"
@@ -167,43 +89,43 @@ requests
 | extend successRate = success * 100.0 / total
 ```
 
-**Average Duration**:
+**Average Duration:**
 ```kusto
 requests
 | where operation_Name == "get-workflow-statuses"
 | summarize avg(duration) by bin(timestamp, 1h)
 ```
 
-### Alerts to Configure
+### Recommended Alerts
 
-Recommended Azure Monitor alerts:
+Configure these Azure Monitor alerts:
 
-1. **Function Errors**:
+1. **Function Errors**
    - Condition: Failed requests > 5 in 5 minutes
    - Action: Email/Teams notification
 
-2. **Function Duration**:
+2. **Function Duration**
    - Condition: Average duration > 10 seconds
    - Action: Email notification
 
-3. **Azure Costs**:
+3. **Azure Costs**
    - Condition: Daily cost > $1
    - Action: Email notification
 
-## Security Considerations
+## Security Best Practices
 
 ### Secrets Management
 
-**Never commit**:
-- local.settings.json (contains Azure resource URLs)
-- Any file with actual credentials
-- GitHub App private key files (.pem)
+**Never commit:**
+- `infrastructure/parameters.json` with real secrets (use placeholder values)
+- GitHub App private key files (`.pem`)
+- Any file with credentials
 
-**Best Practices**:
-- GitHub App private key should be uploaded directly to Key Vault using `az keyvault secret set --file`
-- Never include the private key in deployment parameters to prevent exposure in Azure deployment logs
-- Rotate GitHub App private key regularly (every 3-6 months)
+**Best Practices:**
+- GitHub App private key should be uploaded to Key Vault via `az keyvault secret set --file`
+- Rotate GitHub App private key every 3-6 months
 - Review Key Vault access logs monthly
+- Use GitHub Secrets for all sensitive configuration
 
 ### CORS Configuration
 
@@ -216,29 +138,55 @@ Default configuration allows `https://*.github.io`. For production:
    ]
    ```
 
-2. Redeploy infrastructure:
+2. Redeploy infrastructure (run Deploy Azure Infrastructure workflow)
+
+## Maintenance
+
+### Dependency Updates
+
+Check for npm package updates regularly:
+
+```bash
+cd function-app
+npm outdated
+npm update
+npm audit fix  # Apply security fixes
+```
+
+### GitHub App Key Rotation
+
+Every 3-6 months:
+
+1. Generate new private key in GitHub App settings
+2. Upload to Key Vault:
    ```bash
-   ./infrastructure/deploy.sh
+   az keyvault secret set \
+     --vault-name YOUR_KEY_VAULT_NAME \
+     --name github-app-private-key \
+     --file /path/to/new-private-key.pem
    ```
+3. Update `GH_APP_PRIVATE_KEY` repository secret
+4. Restart Function App:
+   ```bash
+   az functionapp restart --name YOUR_FUNCTION_APP_NAME --resource-group ghactionsdash-rg
+   ```
+
+### Cost Optimization
+
+Monitor costs in Azure Portal:
+- Set up cost alerts (recommended: $1/day threshold)
+- Review Application Insights data retention settings
+- Consider using consumption plan (default) for low-traffic dashboards
 
 ## Support Resources
 
-- **Azure Documentation**: https://docs.microsoft.com/azure/azure-functions/
-- **Bicep Documentation**: https://docs.microsoft.com/azure/azure-resource-manager/bicep/
-- **GitHub Apps**: https://docs.github.com/apps
-- **Repository Documentation**:
-  - Setup: [AZURE_SETUP.md](AZURE_SETUP.md)
-  - Migration: [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md)
-  - Architecture: [AZURE_IMPLEMENTATION.md](AZURE_IMPLEMENTATION.md)
+- **[SETUP.md](SETUP.md)** - Complete setup guide
+- **[AZURE_IMPLEMENTATION.md](AZURE_IMPLEMENTATION.md)** - Architecture details
+- **[Azure Functions Documentation](https://docs.microsoft.com/azure/azure-functions/)**
+- **[GitHub Apps Documentation](https://docs.github.com/apps)**
 
-## Contact
+## Related Documentation
 
-For issues specific to this implementation:
-- Open GitHub issue in this repository
-- Include: error messages, screenshots, resource names
-- Tag with: `azure-function` label
-
----
-
-**Last Updated**: 2025-12-20  
-**Version**: 1.0.1
+- **[SETUP.md](SETUP.md)** - Complete setup and troubleshooting
+- **[AZURE_SETUP.md](AZURE_SETUP.md)** - Manual deployment guide
+- **[MULTIPLE_DASHBOARDS.md](MULTIPLE_DASHBOARDS.md)** - Multiple dashboards feature

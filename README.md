@@ -28,33 +28,18 @@ The dashboard uses a secure Azure Function backend:
 
 ## Quick Start
 
-**Prerequisites**:
-- Azure subscription with permissions to create resources
-- Azure CLI installed and configured
-- Azure Functions Core Tools
-- Node.js 18+
-- GitHub App created and installed on your repositories
+Get your dashboard up and running in 4 simple steps:
 
-**Deployment Process**: 
-1. Deploy Azure infrastructure (Function App, Key Vault, Storage)
-2. Upload GitHub App private key to Key Vault
-3. Deploy function app code
-4. Upload workflow configuration to Azure Storage
-5. Configure the appropriate repository secrets
-6. Configure GitHub Pages
+1. **Create a GitHub App** - Secure authentication to GitHub API
+2. **Create Azure Service Principal** - Allows automated deployments
+3. **Configure GitHub Secrets** - Store credentials securely
+4. **Configure GitHub Pages** - Enable the dashboard hosting
 
-**Note:** There are Actions Workflows that automate the deployment process for you
+All deployments are automated via GitHub Actions workflows. No manual Azure CLI commands required!
 
-**Required Repository Secrets**:
-1. AZURE_CREDENTIALS - Service Principal credentials in JSON format to deploy Azure Infrastructure
-2. AZURE_FUNCTION_URL - Used by the Pages application
-3. FUNCTION_APP_NAME - Used to set the name of the Function App during the deployment
-4. GH_APP_ID - The GitHub App's App ID
-5. GH_APP_PRIVATE_KEY - The GitHub App's private key
+📖 **Complete Setup Guide**: See [SETUP.md](SETUP.md) for detailed step-by-step instructions.
 
-Your dashboard will be available at `https://{your-username}.github.io/pages-actions-dashboard/`
-
-📖 **Complete Setup Guide**: See [AZURE_SETUP.md](AZURE_SETUP.md) for detailed step-by-step instructions.
+Your dashboard will be available at `https://{your-org}.github.io/{repo-name}/`
 
 ## Configuration
 
@@ -82,7 +67,7 @@ You can manage workflows in multiple ways:
 3. **API**: Use the workflow management Azure Functions for dynamic management
 4. **Automated**: Integrate workflow management into your own tools
 
-📖 **Manual Configuration**: See [AZURE_SETUP.md](AZURE_SETUP.md#step-6-upload-workflow-configuration) for workflow configuration format and upload instructions.
+📖 **Manual Configuration**: See [SETUP.md](SETUP.md#configure-workflows-to-monitor) for workflow configuration format and upload instructions.
 
 📖 **API Usage**: See [WORKFLOW_MANAGEMENT_API.md](WORKFLOW_MANAGEMENT_API.md) for complete API documentation with examples.
 
@@ -106,23 +91,20 @@ Dashboard refreshes every 5 minutes by default. To change the interval, edit `pa
 ## Documentation
 
 ### Getting Started
-- **[AZURE_SETUP.md](AZURE_SETUP.md)** - Complete deployment guide with step-by-step instructions
-- **[PAGES_SETUP.md](PAGES_SETUP.md)** - GitHub Pages configuration and authentication setup
-- **[DEPLOYMENT_NOTES.md](DEPLOYMENT_NOTES.md)** - Deployment checklist, troubleshooting, and monitoring
+- **[SETUP.md](SETUP.md)** - Complete setup guide with automated deployment via GitHub Actions
+
+### Features & Usage
+- **[MULTIPLE_DASHBOARDS.md](MULTIPLE_DASHBOARDS.md)** - Organize workflows into multiple dashboards
+- **[WORKFLOW_MANAGEMENT_API.md](WORKFLOW_MANAGEMENT_API.md)** - API documentation for programmatic workflow management
 
 ### Technical Details
-- **[AZURE_IMPLEMENTATION.md](AZURE_IMPLEMENTATION.md)** - Detailed architecture and technical implementation
-- **[MULTIPLE_DASHBOARDS.md](MULTIPLE_DASHBOARDS.md)** - Multiple dashboards feature guide
-- **[WORKFLOW_MANAGEMENT_API.md](WORKFLOW_MANAGEMENT_API.md)** - Dynamic workflow management API documentation
-- **[function-app/README.md](function-app/README.md)** - Function App development and deployment guide
+- **[AZURE_IMPLEMENTATION.md](AZURE_IMPLEMENTATION.md)** - Architecture and technical implementation details
+- **[function-app/README.md](function-app/README.md)** - Function App development guide
 - **[infrastructure/README.md](infrastructure/README.md)** - Infrastructure as Code details
 
 ### Customization
-- **[COLOR_SCHEMES.md](COLOR_SCHEMES.md)** - Theme color palettes and usage
-- **[pages/THEMES.md](pages/THEMES.md)** - Theme system documentation and customization
-
-### Legacy Documentation
-- **[DYNAMIC_WORKFLOWS.md](DYNAMIC_WORKFLOWS.md)** - (Deprecated) Dynamic workflow management reference
+- **[COLOR_SCHEMES.md](COLOR_SCHEMES.md)** - Theme color palettes
+- **[pages/THEMES.md](pages/THEMES.md)** - Theme customization guide
 
 ## Troubleshooting
 
@@ -145,7 +127,7 @@ Dashboard refreshes every 5 minutes by default. To change the interval, edit `pa
 - Check Actions tab for deployment workflow status
 - Clear browser cache and hard refresh (Ctrl+Shift+R / Cmd+Shift+R)
 
-📖 **Detailed Troubleshooting**: See [AZURE_SETUP.md](AZURE_SETUP.md#troubleshooting) and [DEPLOYMENT_NOTES.md](DEPLOYMENT_NOTES.md#common-issues) for comprehensive troubleshooting guides.
+📖 **Detailed Troubleshooting**: See [SETUP.md](SETUP.md#troubleshooting) for comprehensive troubleshooting guide.
 
 ## Security
 
