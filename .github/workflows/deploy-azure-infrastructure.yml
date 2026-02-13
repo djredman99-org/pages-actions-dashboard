@@ -147,7 +147,14 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Create resource group if needed for permission check
-          az group create --name "$RESOURCE_GROUP_NAME" --location "$LOCATION" --output none 2>/dev/null || true
+          # Check if resource group exists first
+          RG_EXISTS=$(az group exists --name "$RESOURCE_GROUP_NAME")
+          if [ "$RG_EXISTS" = "false" ]; then
+            echo "Creating resource group for permission check..." >> $GITHUB_STEP_SUMMARY
+            if ! az group create --name "$RESOURCE_GROUP_NAME" --location "$LOCATION" --output none 2>&1; then
+              echo "⚠️ Warning: Could not create resource group. This may affect permission validation." >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
           
           # Check for role assignments permission
           echo "Checking role assignment permissions..." >> $GITHUB_STEP_SUMMARY
@@ -168,9 +175,10 @@ jobs:
           ALL_ROLE_ASSIGNMENTS=$(jq -s 'flatten' <(echo "$RG_ROLE_ASSIGNMENTS") <(echo "$SUB_ROLE_ASSIGNMENTS"))
           
           # Check if User Access Administrator or Owner role is assigned (at any scope)
-          HAS_UAA=$(echo "$ALL_ROLE_ASSIGNMENTS" | jq '[.[]? | select(.role=="User Access Administrator")] | length')
-          HAS_OWNER=$(echo "$ALL_ROLE_ASSIGNMENTS" | jq '[.[]? | select(.role=="Owner")] | length')
-          HAS_CONTRIBUTOR=$(echo "$ALL_ROLE_ASSIGNMENTS" | jq '[.[]? | select(.role=="Contributor")] | length')
+          # Use default values to handle potential jq failures
+          HAS_UAA=$(echo "$ALL_ROLE_ASSIGNMENTS" | jq '[.[]? | select(.role=="User Access Administrator")] | length' || echo "0")
+          HAS_OWNER=$(echo "$ALL_ROLE_ASSIGNMENTS" | jq '[.[]? | select(.role=="Owner")] | length' || echo "0")
+          HAS_CONTRIBUTOR=$(echo "$ALL_ROLE_ASSIGNMENTS" | jq '[.[]? | select(.role=="Contributor")] | length' || echo "0")
           
           echo "**Role Assignments (Resource Group + Subscription):**" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
@@ -178,14 +186,14 @@ jobs:
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          # Validate required permissions
+          # Validate required permissions (with safe defaults)
           MISSING_PERMISSIONS=()
           
-          if [ "$HAS_CONTRIBUTOR" -eq 0 ] && [ "$HAS_OWNER" -eq 0 ]; then
+          if [ "${HAS_CONTRIBUTOR:-0}" -eq 0 ] && [ "${HAS_OWNER:-0}" -eq 0 ]; then
             MISSING_PERMISSIONS+=("Contributor (required to create Azure resources)")
           fi
           
-          if [ "$HAS_UAA" -eq 0 ] && [ "$HAS_OWNER" -eq 0 ]; then
+          if [ "${HAS_UAA:-0}" -eq 0 ] && [ "${HAS_OWNER:-0}" -eq 0 ]; then
             MISSING_PERMISSIONS+=("User Access Administrator (required to create role assignments)")
           fi
           
