@@ -308,6 +308,12 @@ jobs:
             --query "[?contains(name, 'insights-deployment')].name | sort(@) | [-1]" \
             -o tsv)
           
+          if [ -z "$LATEST_DEPLOYMENT" ]; then
+            echo "❌ Failed to find insights deployment" >> $GITHUB_STEP_SUMMARY
+            echo "No deployment matching 'insights-deployment' pattern was found." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          
           echo "Latest insights deployment: $LATEST_DEPLOYMENT" >> $GITHUB_STEP_SUMMARY
           
           # Extract the insights function app name from deployment outputs

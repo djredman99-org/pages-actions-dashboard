@@ -47,7 +47,7 @@ jobs:
             INSIGHTS_CHANGED=false
             
             # Get list of changed files in the push
-            CHANGED_FILES=$(git diff --name-only HEAD^ HEAD)
+            CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || git diff --name-only --diff-filter=A HEAD)
             
             echo "Changed files:"
             echo "$CHANGED_FILES"

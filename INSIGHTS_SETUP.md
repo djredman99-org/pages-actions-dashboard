@@ -103,48 +103,11 @@ Navigate to the infrastructure directory:
 cd infrastructure
 ```
 
-**Note**: The Insights deployment now reads from the shared `parameters.json` file (not a separate `insights.parameters.json`). The script will derive the Key Vault name from your base parameters using the pattern `{baseName}-kv-{environment}`.
+**Note**: The Insights deployment now reads from the shared `parameters.json` file (not a separate `insights.parameters.json`). The script will derive the Key Vault name from your base parameters using the pattern: `<baseName>-kv-<environment>` (e.g., `ghactionsdash-kv-dev`).
 
 Make sure your main `parameters.json` exists with the correct values for `location`, `baseName`, and `environment`.
 
 #### Step 2: Deploy Insights Infrastructure
-```bash
-cd infrastructure
-```
-
-Create the Insights parameters file:
-```bash
-cp insights.parameters.example.json insights.parameters.json
-```
-
-Edit `insights.parameters.json`:
-```json
-{
-  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
-  "contentVersion": "1.0.0.0",
-  "parameters": {
-    "location": {
-      "value": "eastus"
-    },
-    "baseName": {
-      "value": "ghactionsdash"
-    },
-    "environment": {
-      "value": "dev"
-    },
-    "existingKeyVaultName": {
-      "value": "ghactionsdash-kv-dev"
-    }
-  }
-}
-```
-
-**Important**:
-- Use the **same** `baseName` and `environment` as your main infrastructure
-- Update `existingKeyVaultName` to match your existing Key Vault name
-- You can find your Key Vault name using: `az keyvault list --query "[].name" -o tsv`
-
-### Step 2: Deploy Insights Infrastructure
 
 Run the deployment script:
 ```bash
