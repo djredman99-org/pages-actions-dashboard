@@ -1,6 +1,8 @@
 # Azure Infrastructure
 
-This directory contains the Infrastructure as Code (IaC) for deploying the Azure resources required by the GitHub Actions Dashboard.
+> **Note:** This is a technical reference for infrastructure developers. For setup instructions, see [SETUP.md](../SETUP.md).
+
+This directory contains the Infrastructure as Code (IaC) for deploying Azure resources required by the GitHub Actions Dashboard.
 
 ## Resources Created
 
@@ -73,31 +75,25 @@ The Bicep template creates the following Azure resources:
 
 ### Automated Deployment (Recommended)
 
-Use the GitHub Actions workflow for automated deployment. See [CI/CD Deployment](#cicd-deployment) section below.
+Use the GitHub Actions workflow for deployment:
 
-### Manual Deployment
+1. Ensure `parameters.json` exists with your configuration
+2. Configure required GitHub Secrets (see [SETUP.md](../SETUP.md))
+3. Run the **"Deploy Azure Infrastructure"** workflow from the Actions tab
 
-#### 1. Prepare Parameters
+The workflow automatically:
+- Validates secrets and configuration
+- Deploys all resources
+- Uploads GitHub App credentials to Key Vault
+- Outputs resource names and URLs
 
-The `parameters.json` file is already in the repository with default values. For manual deployment, you can either:
+**See:** [SETUP.md](../SETUP.md) for complete automated setup instructions.
 
-**Option A: Edit the existing parameters.json**
-```bash
-cd infrastructure
-# Edit parameters.json with your values
-```
+### Manual Deployment (Advanced)
 
-**Option B: Copy from example**
-```bash
-cp parameters.example.json parameters.json
-```
+For manual deployment using Azure CLI:
 
-Edit `parameters.json` with your values:
-```json
-{
-  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
-  "contentVersion": "1.0.0.0",
-  "parameters": {
+**See:** [AZURE_SETUP.md](../AZURE_SETUP.md) for detailed manual deployment instructions.
     "location": {
       "value": "eastus"
     },
@@ -190,61 +186,50 @@ az deployment group create \
   --resource-group $RESOURCE_GROUP_NAME \
   --template-file main.bicep \
   --parameters @parameters.json
-```
-
-## Update Deployment
-
-To update existing resources with changes:
-
-```bash
-./deploy.sh
-```
-
-Bicep deployments are idempotent - only changed resources will be updated.
-
-## Resource Naming
-
-Resources are named using a combination of:
-- `baseName`: Base name for all resources (from parameters)
-- `environment`: Environment name (dev/staging/prod)
-- `uniqueSuffix`: Auto-generated unique string based on resource group ID
-
-Example resource names:
-- Function App: `ghactionsdash-func-dev-abc123`
-- Key Vault: `ghactionsdash-kv-dev-abc123`
-- Storage Account: `ghactionsdashdevabc123` (no hyphens, max 24 chars)
-
 ## Parameters
 
-### Required Parameters
+The `parameters.json` file configures the deployment:
 
-- **githubAppId**: GitHub App ID (numeric)
+| Parameter | Description | Default | Notes |
+|-----------|-------------|---------|-------|
+| `location` | Azure region | `eastus` | Choose based on your location |
+| `baseName` | Resource name prefix | `ghactionsdash` | Must be globally unique |
+| `environment` | Environment suffix | `dev` | e.g., dev, staging, prod |
+| `githubAppId` | GitHub App ID | - | Injected by workflow or set manually |
 
-**Note**: The GitHub App private key is uploaded separately via `az keyvault secret set` and is not included as a parameter.
-
-### Optional Parameters
-
-- **location**: Azure region (default: resource group location)
-- **baseName**: Base name for resources (default: "ghactionsdash")
-- **environment**: Environment name (default: "dev", allowed: dev/staging/prod)
+**Resource Naming Pattern:**
+- Function App: `{baseName}-func-{environment}`
+- Key Vault: `{baseName}-kv-{environment}`
+- Storage Account: `{baseName}{environment}` (no hyphens, lowercase)
 
 ## Outputs
 
-After deployment, the following outputs are available:
+After deployment, the template provides:
 
-- **functionAppName**: Name of the deployed Function App
-- **functionAppUrl**: HTTPS URL of the Function App
-- **keyVaultName**: Name of the Key Vault
-- **storageAccountName**: Name of the Storage Account
-- **storageContainerName**: Name of the workflow config container
-- **functionAppPrincipalId**: Managed Identity principal ID
+| Output | Description |
+|--------|-------------|
+| `functionAppName` | Name of the Function App |
+| `functionAppUrl` | HTTPS URL of the Function App |
+| `keyVaultName` | Name of the Key Vault |
+| `storageAccountName` | Name of the Storage Account |
+| `storageContainerName` | Name of the workflow config container |
+| `functionAppPrincipalId` | Managed Identity principal ID |
 
-Access outputs from the deployment:
-```bash
-az deployment group show \
-  --name <DEPLOYMENT_NAME> \
-  --resource-group <RESOURCE_GROUP_NAME> \
-  --query properties.outputs
+## Customization
+
+### Change Function App Plan
+
+To use a different App Service Plan (e.g., Premium for no cold starts):
+
+Edit `main.bicep`:
+```bicep
+sku: {
+  name: 'EP1'  // Premium Elastic Plan
+  tier: 'ElasticPremium'
+}
+```
+
+### Restrict CORS Origins
 ```
 
 ## Customization
@@ -302,92 +287,45 @@ resource mySecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
 ### Consumption Plan (Default)
 
 - **Pay-per-execution**: Only pay when function runs
-- **No charges when idle**
-- **Free tier**: 1M executions/month free
 
-Estimated cost: **$1-5/month** for typical usage.
-
-### Premium Plan
-
-- **Pre-warmed instances**: No cold starts
-- **Better performance**: Dedicated compute
-- **Higher cost**: ~$150-200/month minimum
-
-Use Premium plan for production if:
-- Cold starts are unacceptable
-- High request volume expected
-- Need VNet integration
+Estimated cost: **$5-10/month** for typical usage.
 
 ## Monitoring
 
-### View Function App Status
-
-```bash
-az functionapp show \
-  --name <FUNCTION_APP_NAME> \
-  --resource-group <RESOURCE_GROUP_NAME> \
-  --query state
-```
-
-### Check Deployment Status
-
-```bash
-az deployment group list \
-  --resource-group <RESOURCE_GROUP_NAME> \
-  --output table
-```
-
-### View Application Insights
-
-```bash
-az monitor app-insights component show \
-  --app <APP_INSIGHTS_NAME> \
-  --resource-group <RESOURCE_GROUP_NAME>
-```
+See [DEPLOYMENT_NOTES.md](../DEPLOYMENT_NOTES.md#monitoring) for monitoring guidance and Application Insights queries.
 
 ## Troubleshooting
 
-### Deployment Fails
+### Common Issues
 
-1. Check error message in deployment output
-2. View detailed deployment logs:
-   ```bash
-   az deployment group show \
-     --name <DEPLOYMENT_NAME> \
-     --resource-group <RESOURCE_GROUP_NAME>
-   ```
+**Deployment fails with "Name not available":**
+- Resource names must be globally unique
+- Change `baseName` parameter to a unique value
 
-### "Name not available" Error
+**RBAC assignment fails:**
+- Ensure you have Owner or User Access Administrator role
+- Service Principal needs both Contributor and User Access Administrator roles
 
-Resource names must be globally unique. Try:
-- Change `baseName` parameter
-- Use different `environment` value
+**Key Vault access denied:**
+- Wait 2-5 minutes for RBAC permissions to propagate after deployment
 
-### RBAC Assignment Fails
-
-Ensure you have permissions to assign roles:
-- Owner or User Access Administrator role on the resource group
-
-### Key Vault Access Denied
-
-Wait a few minutes after deployment for RBAC permissions to propagate.
+For comprehensive troubleshooting, see:
+- [SETUP.md](../SETUP.md#troubleshooting) - General troubleshooting
+- [AZURE_SETUP.md](../AZURE_SETUP.md#troubleshooting) - Manual deployment troubleshooting
 
 ## Cleanup
 
 To delete all resources:
 
 ```bash
-az group delete \
-  --name <RESOURCE_GROUP_NAME> \
-  --yes \
-  --no-wait
+az group delete --name RESOURCE_GROUP_NAME --yes --no-wait
 ```
 
-**Warning**: This permanently deletes all resources in the resource group.
+⚠️ **Warning:** This permanently deletes all resources in the resource group.
 
 ## Multiple Environments
 
-To deploy multiple environments (dev, staging, prod):
+Deploy multiple environments using separate parameter files:
 
 1. Create separate parameter files:
    - `parameters.dev.json`
@@ -400,35 +338,22 @@ To deploy multiple environments (dev, staging, prod):
    RESOURCE_GROUP_NAME="ghactionsdash-prod-rg" PARAMETERS_FILE="parameters.prod.json" ./deploy.sh
    ```
 
-## CI/CD Deployment
+## Automated Deployment with GitHub Actions
 
-For automated infrastructure deployment, this repository includes a GitHub Actions workflow at `.github/workflows/deploy-azure-infrastructure.yml`.
+This repository includes a workflow at `.github/workflows/deploy-azure-infrastructure.yml` for automated deployment.
 
-### Setup
+**Benefits:**
+- ✅ Validates secrets and configuration
+- ✅ Securely injects GitHub App credentials
+- ✅ Deploys all resources
+- ✅ Provides detailed summaries with next steps
 
-1. **Add Required Secrets** to your repository (Settings → Secrets and variables → Actions):
-   - `GH_APP_ID`: Your GitHub App ID
-   - `GH_APP_PRIVATE_KEY`: Your GitHub App Private Key (.pem file contents)
-   - `AZURE_CREDENTIALS`: Azure service principal credentials (JSON format)
-
-2. **Configure parameters.json**: Update `infrastructure/parameters.json` with your deployment values (location, baseName, environment). The GitHub App ID is automatically injected from secrets during deployment.
-
-3. **Trigger Deployment**:
-   - Manually: Go to Actions → Deploy Azure Infrastructure → Run workflow
-   - Automatically: Push changes to `infrastructure/` directory on main branch
-
-The workflow automatically:
-- ✅ Validates required secrets and tools
-- ✅ Checks for parameters.json file
-- ✅ Injects GitHub App ID securely
-- ✅ Deploys Azure infrastructure
-- ✅ Uploads GitHub App Private Key to Key Vault
-- ✅ Validates deployment
-- ✅ Provides detailed job summaries with next steps
+**See:** [SETUP.md](../SETUP.md) for complete automated deployment guide.
 
 ## Support
 
-For issues with:
-- **Bicep syntax**: See [Bicep documentation](https://docs.microsoft.com/en-us/azure/azure-resource-manager/bicep/)
-- **Azure resources**: See [Azure documentation](https://docs.microsoft.com/en-us/azure/)
-- **Deployment errors**: Check Azure deployment logs in the portal
+For issues:
+- **General setup**: See [SETUP.md](../SETUP.md#troubleshooting)
+- **Manual deployment**: See [AZURE_SETUP.md](../AZURE_SETUP.md#troubleshooting)
+- **Bicep syntax**: See [Bicep documentation](https://docs.microsoft.com/azure/azure-resource-manager/bicep/)
+- **Azure resources**: See [Azure documentation](https://docs.microsoft.com/azure/)

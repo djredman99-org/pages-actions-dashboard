@@ -509,7 +509,8 @@ The Azure Function backend provides a production-ready, secure, and scalable sol
 
 ### Documentation
 
-- [AZURE_SETUP.md](AZURE_SETUP.md) - Complete setup guide
+- [SETUP.md](SETUP.md) - Complete setup guide with automated deployment
+- [AZURE_SETUP.md](AZURE_SETUP.md) - Manual deployment guide (advanced)
 - [function-app/README.md](function-app/README.md) - Function development guide
 - [infrastructure/README.md](infrastructure/README.md) - Infrastructure details
 - [README.md](README.md) - Main project documentation

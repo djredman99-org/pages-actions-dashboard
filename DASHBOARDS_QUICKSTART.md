@@ -1,5 +1,7 @@
 # Multiple Dashboards - Quick Start Guide
 
+> **Note:** This is a feature guide. For initial setup, see [SETUP.md](SETUP.md).
+
 ## What's New?
 
 Your GitHub Actions Dashboard now supports multiple dashboards! Organize workflows by environment, team, or any way that makes sense for your organization.

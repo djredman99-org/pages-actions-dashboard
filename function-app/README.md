@@ -1,6 +1,21 @@
 # Azure Function App - GitHub Actions Dashboard API
 
-This Azure Function App provides a secure backend API for the GitHub Actions Dashboard. It handles GitHub App authentication, retrieves workflow configurations from Azure Storage, and returns workflow statuses.
+> **Note:** This is a development reference. For deployment instructions, see [SETUP.md](../SETUP.md).
+
+This Azure Function App provides the secure backend API for the GitHub Actions Dashboard.
+
+## Overview
+
+The function app handles:
+- GitHub App authentication
+- Workflow configuration management
+- Workflow status retrieval from GitHub API
+- Dashboard management (create, rename, delete)
+
+All data is stored securely:
+- GitHub App credentials in Azure Key Vault
+- Workflow configurations in Azure Storage
+- No credentials exposed to the frontend
 
 ## Architecture
 
@@ -86,59 +101,29 @@ When running locally, the function uses your Azure CLI credentials (via `Default
 
 ## Deployment
 
-### Deploy to Azure
+### Automated Deployment (Recommended)
 
-1. Ensure infrastructure is deployed (see `../infrastructure/README.md`)
+Use the GitHub Actions workflow:
 
-2. Deploy function code:
-   ```bash
-   func azure functionapp publish <FUNCTION_APP_NAME>
-   ```
+1. Run the **"Deploy Azure Function"** workflow from the Actions tab
+2. Workflow automatically builds and deploys the function code
+3. Triggers automatically on changes to `function-app/**`
 
-3. Verify deployment:
-   ```bash
-   curl https://<FUNCTION_APP_NAME>.azurewebsites.net/api/get-workflow-statuses
-   ```
+**See:** [SETUP.md](../SETUP.md) for complete deployment guide.
 
-### CI/CD Deployment
+### Manual Deployment
 
-For automated deployments, use GitHub Actions with Azure Service Principal authentication. Example workflow:
+For manual deployment:
 
-```yaml
-name: Deploy Function App
+```bash
+# Install dependencies
+npm install
 
-on:
-  push:
-    branches: [main]
-    paths:
-      - 'function-app/**'
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-      
-      - name: Install dependencies
-        run: |
-          cd function-app
-          npm install
-      
-      - name: Login to Azure
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-      
-      - name: Deploy to Function App
-        run: |
-          cd function-app
-          func azure functionapp publish ${{ secrets.FUNCTION_APP_NAME }}
+# Deploy to Azure
+func azure functionapp publish FUNCTION_APP_NAME
 ```
+
+**See:** [AZURE_SETUP.md](../AZURE_SETUP.md) for manual deployment details.
 
 ## Configuration
 
@@ -180,285 +165,78 @@ Workflows are stored in Azure Storage as `workflows.json`:
 - `workflow` (string, required): Workflow filename (e.g., "ci.yml")
 - `label` (string, required): Display label for the dashboard
 
-**Note:** The configuration automatically migrates from legacy array format to the new object format with `dashboardId` when any function runs.
+**Note:** Configuration automatically migrates from legacy array format.
 
-Upload using Azure CLI:
-```bash
-az storage blob upload \
-  --account-name <STORAGE_ACCOUNT_NAME> \
-  --container-name workflow-configs \
-  --name workflows.json \
-  --file workflows.json \
-  --auth-mode login
-```
+**See:** [SETUP.md](../SETUP.md#configure-workflows-to-monitor) for workflow configuration guide.
 
 ### API Endpoints
 
-#### GET/POST `/api/get-workflow-statuses`
+For complete API documentation, see [WORKFLOW_MANAGEMENT_API.md](../WORKFLOW_MANAGEMENT_API.md).
 
-Returns workflow statuses for all configured workflows.
-
-**Response:**
-```json
-{
-  "dashboardId": "550e8400-e29b-41d4-a716-446655440000",
-  "workflows": [
-    {
-      "owner": "your-org",
-      "repo": "your-repo",
-      "workflow": "ci.yml",
-      "label": "CI Build",
-      "conclusion": "success",
-      "status": "completed",
-      "url": "https://github.com/your-org/your-repo/actions/runs/123456",
-      "updatedAt": "2025-12-21T20:00:00Z"
-    }
-  ],
-  "timestamp": "2025-12-21T20:17:31.942Z",
-  "count": 1
-}
-```
-
-#### POST `/api/add-workflow`
-
-Adds a new workflow to the dashboard configuration.
-
-**Request Body:**
-```json
-{
-  "repo": "owner/repo",
-  "workflow": "workflow-file.yml",
-  "label": "Workflow Label"
-}
-```
-
-**Success Response (201):**
-```json
-{
-  "success": true,
-  "message": "Workflow added successfully",
-  "dashboardId": "550e8400-e29b-41d4-a716-446655440000",
-  "workflow": {
-    "owner": "owner",
-    "repo": "repo",
-    "workflow": "workflow-file.yml",
-    "label": "Workflow Label"
-  }
-}
-```
-
-**Error Responses:**
-- `400 Bad Request`: Invalid request body or validation error
-- `409 Conflict`: Workflow already exists
-- `500 Internal Server Error`: Server error
-
-#### POST/DELETE `/api/remove-workflow`
-
-Removes a workflow from the dashboard configuration.
-
-**Request Body:**
-```json
-{
-  "repo": "owner/repo",
-  "workflow": "workflow-file.yml"
-}
-```
-
-**Success Response (200):**
-```json
-{
-  "success": true,
-  "message": "Workflow removed successfully",
-  "dashboardId": "550e8400-e29b-41d4-a716-446655440000",
-  "workflow": {
-    "owner": "owner",
-    "repo": "repo",
-    "workflow": "workflow-file.yml",
-    "label": "Workflow Label"
-  }
-}
-```
-
-**Error Responses:**
-- `400 Bad Request`: Invalid request body or validation error
-- `404 Not Found`: Workflow not found
-- `500 Internal Server Error`: Server error
-
-#### POST `/api/reorder-workflows`
-
-Reorders workflows within the active dashboard.
-
-**Request Body:**
-```json
-{
-  "workflows": [
-    {
-      "owner": "owner",
-      "repo": "repo",
-      "workflow": "first-workflow.yml"
-    },
-    {
-      "owner": "owner",
-      "repo": "repo",
-      "workflow": "second-workflow.yml"
-    }
-  ]
-}
-```
-
-**Success Response (200):**
-```json
-{
-  "success": true,
-  "message": "Reordered 2 workflows",
-  "dashboardId": "550e8400-e29b-41d4-a716-446655440000"
-}
-```
-
-**Error Responses:**
-- `400 Bad Request`: Invalid request body, workflow count mismatch, or validation error
-- `404 Not Found`: Dashboard not found
-- `500 Internal Server Error`: Server error
-
-**Note**: The workflows array must contain all existing workflows in the active dashboard in the desired order.
+**Key endpoints:**
+- `GET /api/get-workflow-statuses` - Get workflow statuses
+- `POST /api/add-workflow` - Add a workflow
+- `POST /api/remove-workflow` - Remove a workflow
+- `POST /api/create-dashboard` - Create a dashboard
+- `POST /api/rename-dashboard` - Rename a dashboard
+- `POST /api/delete-dashboard` - Delete a dashboard
 
 ## Monitoring
 
-### Application Insights
+Application Insights is automatically configured for monitoring. View logs:
 
-The function automatically logs to Application Insights. View logs in Azure Portal:
-
-1. Go to Function App → Application Insights
-2. Navigate to "Logs" or "Live Metrics"
-
-### Query Logs
-
-Example query to view function executions:
-```kusto
-requests
-| where operation_Name == "get-workflow-statuses"
-| project timestamp, duration, resultCode
-| order by timestamp desc
+```bash
+az functionapp log tail --name FUNCTION_APP_NAME --resource-group RESOURCE_GROUP_NAME
 ```
 
-### Error Tracking
-
-Track errors and exceptions:
-```kusto
-exceptions
-| where operation_Name == "get-workflow-statuses"
-| project timestamp, type, message, operation_Name
-| order by timestamp desc
-```
+**See:** [DEPLOYMENT_NOTES.md](../DEPLOYMENT_NOTES.md#monitoring) for monitoring queries and alerts.
 
 ## Troubleshooting
 
-### Function returns 500 error
+### Common Issues
 
-Check Application Insights logs for detailed error messages:
-```bash
-az monitor app-insights query \
-  --app <APP_INSIGHTS_NAME> \
-  --analytics-query "exceptions | order by timestamp desc | take 10"
-```
+**Function returns 500 errors:**
+- Check Application Insights logs
+- Verify RBAC permissions (Key Vault Secrets User, Storage Blob Data Contributor)
+- Ensure GitHub App credentials are in Key Vault
 
-### "Missing required environment variables"
+**GitHub App authentication failed:**
+- Verify GitHub App ID and private key in Key Vault
+- Check GitHub App is installed on target repositories
+- Ensure App has "Actions: Read" permission
 
-Verify environment variables are set in Function App configuration:
-```bash
-az functionapp config appsettings list \
-  --name <FUNCTION_APP_NAME> \
-  --resource-group <RESOURCE_GROUP_NAME>
-```
+**See:** [SETUP.md](../SETUP.md#troubleshooting) for comprehensive troubleshooting.
 
-### "Key Vault access failed"
+## Security
 
-Ensure Function App's Managed Identity has "Key Vault Secrets User" role:
-```bash
-az role assignment list \
-  --assignee <FUNCTION_APP_PRINCIPAL_ID> \
-  --scope /subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RG_NAME>/providers/Microsoft.KeyVault/vaults/<VAULT_NAME>
-```
+**Function returns 500 errors:**
+- Check Application Insights logs
+- Verify RBAC permissions (Key Vault Secrets User, Storage Blob Data Contributor)
+- Ensure GitHub App credentials are in Key Vault
 
-### "Storage access failed"
+**GitHub App authentication failed:**
+- Verify GitHub App ID and private key in Key Vault
+- Check GitHub App is installed on target repositories
+- Ensure App has "Actions: Read" permission
 
-Ensure Function App's Managed Identity has "Storage Blob Data Contributor" role:
-```bash
-az role assignment list \
-  --assignee <FUNCTION_APP_PRINCIPAL_ID> \
-  --scope /subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RG_NAME>/providers/Microsoft.Storage/storageAccounts/<STORAGE_NAME>
-```
-
-### GitHub App authentication failed
-
-Verify GitHub App credentials in Key Vault:
-```bash
-az keyvault secret show \
-  --vault-name <VAULT_NAME> \
-  --name github-app-id
-
-az keyvault secret show \
-  --vault-name <VAULT_NAME> \
-  --name github-app-private-key
-```
-
-## Performance
-
-### Caching
-
-The function uses a 60-second cache on the client side to reduce Azure Function invocations. Adjust in `pages/api.js`:
-
-```javascript
-this.cacheTTL = 60000; // milliseconds
-```
-
-### Cold Start
-
-Azure Functions on Consumption plan may experience cold starts. Typical cold start: 2-5 seconds. For production, consider:
-
-- Premium Plan: Eliminates cold starts with pre-warmed instances
-- Always On: Keeps function loaded (requires Premium or App Service plan)
-
-### Rate Limiting
-
-GitHub API rate limits apply. GitHub App installations have higher rate limits (5,000 requests/hour) compared to Personal Access Tokens.
+**See:** [SETUP.md](../SETUP.md#troubleshooting) for comprehensive troubleshooting.
 
 ## Security
 
 ### Managed Identity
 
-The function uses System-assigned Managed Identity to access:
-- Azure Key Vault (for GitHub App credentials)
-- Azure Storage (for workflow configurations)
-
-No credentials are stored in the function code or configuration.
+The function uses System-assigned Managed Identity to access Azure resources without storing credentials.
 
 ### CORS
 
-Configure CORS to restrict access to your GitHub Pages domain:
+Configure CORS to restrict access:
 
 ```bash
 az functionapp cors add \
-  --name <FUNCTION_APP_NAME> \
-  --resource-group <RESOURCE_GROUP_NAME> \
+  --name FUNCTION_APP_NAME \
+  --resource-group RESOURCE_GROUP_NAME \
   --allowed-origins "https://your-org.github.io"
 ```
-
-📖 **Pages Setup**: See [PAGES_SETUP.md](../PAGES_SETUP.md) for complete GitHub Pages configuration and authentication setup.
-
-### Function Keys
-
-By default, the function uses `authLevel: 'anonymous'` for easy access. For production, consider enabling function keys:
-
-1. Change `authLevel: 'function'` in function definition
-2. Retrieve function key:
-   ```bash
-   az functionapp function keys list \
-     --name <FUNCTION_APP_NAME> \
-     --resource-group <RESOURCE_GROUP_NAME> \
-     --function-name get-workflow-statuses
-   ```
-3. Pass key in requests: `?code=<FUNCTION_KEY>`
 
 ## Contributing
 
@@ -468,19 +246,27 @@ When modifying the function:
 2. Verify against real Azure resources
 3. Deploy to a test environment first
 4. Monitor Application Insights for errors
-5. Update documentation as needed
+5. Update documentation
 
 ## Dependencies
 
-- `@azure/functions`: Azure Functions runtime
-- `@azure/identity`: Azure authentication (Managed Identity)
-- `@azure/keyvault-secrets`: Key Vault client
-- `@azure/storage-blob`: Blob Storage client
-- `@octokit/auth-app`: GitHub App authentication
-- `@octokit/rest`: GitHub API client
+Key packages:
+- `@azure/functions` - Azure Functions runtime
+- `@azure/identity` - Managed Identity authentication
+- `@azure/keyvault-secrets` - Key Vault access
+- `@azure/storage-blob` - Blob Storage access
+- `@octokit/auth-app` - GitHub App authentication
+- `@octokit/rest` - GitHub API client
 
-Keep dependencies updated:
+Update dependencies regularly:
 ```bash
 npm outdated
 npm update
 ```
+
+## Support
+
+For function-related issues:
+- **Setup/Deployment**: See [SETUP.md](../SETUP.md)
+- **API Documentation**: See [WORKFLOW_MANAGEMENT_API.md](../WORKFLOW_MANAGEMENT_API.md)
+- **Monitoring**: See [DEPLOYMENT_NOTES.md](../DEPLOYMENT_NOTES.md)
